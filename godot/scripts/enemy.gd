@@ -137,7 +137,7 @@ func can_see(player: CharacterBody3D) -> bool:
 	return true
 
 
-func move_toward(tx: float, tz: float, speed: float, dt: float) -> bool:
+func step_toward(tx: float, tz: float, speed: float, dt: float) -> bool:
 	var dx := tx - global_position.x
 	var dz := tz - global_position.z
 	var d := Vector2(dx, dz).length()
@@ -184,12 +184,12 @@ func update_enemy(dt: float, player: CharacterBody3D, story: RefCounted) -> Stri
 		target = pp
 	var sp := speed_mul
 	if state == "chase":
-		move_toward(target.x, target.z, float(e["chase"]) * sp, dt)
+		step_toward(target.x, target.z, float(e["chase"]) * sp, dt)
 		var d := Vector2(pp.x - global_position.x, pp.z - global_position.z).length()
 		if d < float(e["catch_dist"]) and not hidden_safe:
 			return "caught"
 	elif state == "investigate":
-		if move_toward(target.x, target.z, float(e["investigate"]) * sp, dt):
+		if step_toward(target.x, target.z, float(e["investigate"]) * sp, dt):
 			state = "search"
 			search_t = 0.0
 	elif state == "search":
@@ -202,7 +202,7 @@ func update_enemy(dt: float, player: CharacterBody3D, story: RefCounted) -> Stri
 			state = "patrol"
 	elif state == "patrol":
 		var w: Vector3 = waypoints[wp]
-		if move_toward(w.x, w.z, float(e["patrol"]) * sp, dt):
+		if step_toward(w.x, w.z, float(e["patrol"]) * sp, dt):
 			wp = (wp + 1) % waypoints.size()
 	if mesh_root:
 		mesh_root.position.y = absf(sin(Time.get_ticks_msec() * 0.004)) * 0.03
