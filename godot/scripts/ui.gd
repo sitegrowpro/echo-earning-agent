@@ -343,7 +343,7 @@ func _build_phone() -> void:
 	for t in ["millers", "priya", "unknown"]:
 		var b := _button("Dana" if t == "millers" else ("Priya" if t == "priya" else "???"), 13)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var tt := t
+		var tt: String = t
 		b.pressed.connect(func(): _on_thread(tt))
 		th.add_child(b)
 		thread_btns[t] = b
