@@ -696,7 +696,7 @@ func _make_rain(center: Vector3, extents: Vector3) -> void:
 	dm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	dm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	drop.material = dm
-	p.draw_pass_1 = drop
+	p.mesh = drop
 	p.position = center
 	add_child(p)
 	rain_nodes.append(p)

@@ -124,7 +124,7 @@ func _fade(b: PackedFloat32Array, fade_in: float, fade_out: float) -> void:
 
 
 func _loopify(b: PackedFloat32Array, fade_ms := 60.0) -> void:
-	var n := mini(int(fade_ms / 1000.0 * rate), b.size() / 2)
+	var n := mini(int(fade_ms / 1000.0 * rate), int(b.size() / 2.0))
 	for i in n:
 		var t := float(i) / float(maxi(1, n))
 		var idx := b.size() - n + i
