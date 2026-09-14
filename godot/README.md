@@ -9,7 +9,9 @@ every sound are generated in code.
 
 ## Import into Godot (2 minutes)
 
-1. Install **Godot 4.3 or newer** (4.4/4.5+ fine) from https://godotengine.org.
+1. Install **Godot 4.6 (latest stable)** from https://godotengine.org/download
+   (4.3+ works too, but 4.6 is recommended — and it will **not** open in Godot 3.x,
+   that's a whole different engine generation).
 2. Extract the ZIP **to a normal folder** (e.g. `Documents/Godot/Housesit/`).
    The folder must directly contain `project.godot` — not nested double.
 3. Open Godot → **Project Manager → Import** → select the `project.godot` file
