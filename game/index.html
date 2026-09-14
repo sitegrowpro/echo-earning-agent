@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ECHES IN THE DARK — Episode 1: Home Alone</title>
+<link rel="stylesheet" href="css/style.css" />
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<!-- VHS / horror overlays -->
+<div id="vignette"></div>
+<div id="scanlines"></div>
+<div id="grain"></div>
+<div id="damage-flash"></div>
+<div id="fade-black"></div>
+
+<!-- HUD -->
+<div id="hud" class="hidden">
+  <div id="vhs-stamp"><span id="vhs-time">PM 08:12</span><span id="vhs-cam"> ▸ HOME</span></div>
+  <div id="crosshair"></div>
+  <div id="objectives"><div id="obj-title">OBJECTIVES</div><ul id="obj-list"></ul></div>
+  <div id="prompt" class="hidden"><span id="prompt-key">E</span><span id="prompt-text"></span></div>
+  <div id="holdbar" class="hidden"><div id="holdfill"></div></div>
+  <div id="subtitle" class="hidden"></div>
+  <div id="toast-wrap"></div>
+  <div id="meters">
+    <div id="stamina" title="Stamina"><div id="stamina-fill"></div></div>
+    <div id="noise" title="Noise"><div id="noise-fill"></div><span>NOISE</span></div>
+    <div id="battery" class="hidden" title="Flashlight battery"><div id="battery-fill"></div><span>LIGHT</span></div>
+  </div>
+  <div id="chapter-card" class="hidden"><div id="chapter-kicker"></div><div id="chapter-name"></div><div id="chapter-sub"></div></div>
+  <div id="hint-keys">WASD move · SHIFT run · C crouch · E interact · F flashlight · TAB phone · ESC pause</div>
+</div>
+
+<!-- Phone -->
+<div id="phone" class="hidden">
+  <div id="phone-notch"></div>
+  <div id="phone-clock">8:12 PM</div>
+  <div id="phone-threads">
+    <button data-thread="mom">Mom</button>
+    <button data-thread="mason">Mason</button>
+    <button data-thread="unknown" id="tab-unknown" class="hidden">Unknown</button>
+  </div>
+  <div id="phone-messages"></div>
+  <div id="phone-replies"></div>
+</div>
+<div id="call-overlay" class="hidden">
+  <div id="caller-name">Mom</div>
+  <div id="caller-sub">incoming call…</div>
+  <div id="call-buttons"><button id="call-accept">Accept</button><button id="call-decline">Decline</button></div>
+</div>
+
+<!-- Dialogue choices -->
+<div id="dialog" class="hidden">
+  <div id="dialog-speaker"></div>
+  <div id="dialog-text"></div>
+  <div id="dialog-options"></div>
+</div>
+
+<!-- Readable note -->
+<div id="note" class="hidden">
+  <div id="note-title"></div>
+  <div id="note-body"></div>
+  <div id="note-foot">[E] / click to close</div>
+</div>
+
+<!-- Peephole -->
+<div id="peephole" class="hidden"><div id="peephole-ring"><div id="peephole-view"></div></div><div id="peephole-foot">[E] / click to step back</div></div>
+
+<!-- Main menu -->
+<div id="menu">
+  <div id="menu-inner">
+    <div id="game-kicker">RAYLL-STYLE EPISODIC HORROR · EPISODE 1</div>
+    <h1>ECHES<br/>IN THE DARK</h1>
+    <div id="game-sub">“Home Alone” — a playable night you will not forget.</div>
+    <div id="menu-buttons">
+      <button id="btn-new">▶ New Night</button>
+      <button id="btn-continue" disabled>Continue</button>
+      <button id="btn-how">How to play</button>
+      <button id="btn-endings">Endings <span id="endings-count"></span></button>
+      <button id="btn-settings">Settings</button>
+    </div>
+    <div id="menu-panels">
+      <div id="panel-how" class="menu-panel hidden">
+        <h3>How to play</h3>
+        <p>You are <b>Alex</b>, 15, home alone for one night while your parents work late.
+        Do your chores. Heat your dinner. Answer your texts. Then survive what knocks.</p>
+        <ul>
+          <li><b>WASD</b> move · <b>Mouse</b> look · <b>SHIFT</b> sprint (loud!) · <b>C</b> crouch (quiet)</li>
+          <li><b>E</b> interact / hold <b>E</b> for long tasks · <b>F</b> flashlight · <b>TAB</b> phone</li>
+          <li>Running, doors and beeps make <b>noise</b>. When <i>he</i> is inside, noise gets you found.</li>
+          <li>You can hide <b>under the bed</b> and in <b>closets</b>. Turn the flashlight OFF when hiding.</li>
+          <li>There are <b>4 endings</b>. Your dialogue choices and noise matter. ~60 minutes.</li>
+        </ul>
+        <p class="warn">🖥 Desktop + mouse + headphones recommended. Click the game to lock the mouse.</p>
+      </div>
+      <div id="panel-endings" class="menu-panel hidden">
+        <h3>Endings</h3>
+        <ul id="endings-list"></ul>
+      </div>
+      <div id="panel-settings" class="menu-panel hidden">
+        <h3>Settings</h3>
+        <label>Mouse sensitivity <input id="set-sens" type="range" min="0.3" max="3" step="0.1" value="1" /></label>
+        <label>Volume <input id="set-vol" type="range" min="0" max="1" step="0.05" value="0.8" /></label>
+        <label><input id="set-subs" type="checkbox" checked /> Subtitles</label>
+        <label><input id="set-grain" type="checkbox" checked /> Film grain + VHS effect</label>
+        <label><input id="set-headbob" type="checkbox" checked /> Head-bob</label>
+      </div>
+    </div>
+    <div id="menu-foot">A complete single-file-per-system horror game · autosaves every chapter · headphones on 🔦</div>
+  </div>
+</div>
+
+<!-- Pause -->
+<div id="pause" class="hidden">
+  <div id="pause-inner">
+    <h2>Paused</h2>
+    <div id="pause-obj"></div>
+    <div id="pause-buttons">
+      <button id="btn-resume">Resume</button>
+      <button id="btn-save">Save</button>
+      <button id="btn-quit">Quit to menu</button>
+    </div>
+    <div class="menu-panel">
+      <label>Mouse sensitivity <input id="set-sens2" type="range" min="0.3" max="3" step="0.1" value="1" /></label>
+      <label>Volume <input id="set-vol2" type="range" min="0" max="1" step="0.05" value="0.8" /></label>
+    </div>
+  </div>
+</div>
+
+<!-- Ending screen -->
+<div id="ending" class="hidden">
+  <div id="ending-inner">
+    <div id="ending-kicker"></div>
+    <h2 id="ending-title"></h2>
+    <p id="ending-text"></p>
+    <div id="ending-stats"></div>
+    <div id="ending-buttons"><button id="btn-again">Play again</button><button id="btn-tomenu">Menu</button></div>
+  </div>
+</div>
+
+<!-- Death / jumpscare -->
+<div id="scare" class="hidden"><div id="scare-face">◉_◉</div></div>
+
+<div id="loading" class="hidden"><div id="loading-text">Loading night…</div></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
