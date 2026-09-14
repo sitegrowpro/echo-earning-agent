@@ -286,7 +286,7 @@ func _reset_run() -> void:
 	world.escape_win_body.get_child(0).set_deferred("disabled", false)
 	for id in world.doors.keys():
 		var d = world.doors[id]
-		var open := id == "guest" or id == "bath"
+		var open: bool = id == "guest" or id == "bath"
 		d.set("is_open", open)
 		d.set("target", float(d.get("swing")) if open else 0.0)
 		d.set("angle", float(d.get("swing")) if open else 0.0)

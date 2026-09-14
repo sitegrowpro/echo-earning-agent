@@ -985,10 +985,10 @@ func update(dt: float) -> void:
 			sub("\"POLICE! SHOW ME YOUR HANDS— ...Clear! Kid? KID, YOU'RE SAFE NOW.\"", 7.0)
 			finish("C")
 	var est: String = String(enemy.get("state"))
-	var hunted := est == "chase" or est == "investigate"
+	var hunted: bool = est == "chase" or est == "investigate"
 	var pp: Vector3 = player.global_position
 	var ep: Vector3 = enemy.global_position
-	var near_hidden := String(player.get("hidden")) != "" and Vector2(pp.x - ep.x, pp.z - ep.z).length() < 5.0 and est != "dormant" and est != "gone" and est != "perch"
+	var near_hidden: bool = String(player.get("hidden")) != "" and Vector2(pp.x - ep.x, pp.z - ep.z).length() < 5.0 and est != "dormant" and est != "gone" and est != "perch"
 	audio.set_heart(hunted or near_hidden, est == "chase")
 	if flicker_t > 0.0 and flicker_room != "":
 		flicker_t -= dt

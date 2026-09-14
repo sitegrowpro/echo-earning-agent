@@ -111,7 +111,7 @@ func _physics_process(dt: float) -> void:
 	var ix := Input.get_axis("move_left", "move_right")
 	var iz := Input.get_axis("move_forward", "move_back")
 	moving = ix != 0.0 or iz != 0.0
-	var want_sprint := Input.is_action_pressed("sprint") and moving and iz < 0.0 and not crouch and stamina > CFG.STAM_MIN
+	var want_sprint: bool = Input.is_action_pressed("sprint") and moving and iz < 0.0 and not crouch and stamina > CFG.STAM_MIN
 	if want_sprint:
 		stamina = maxf(0.0, stamina - CFG.STAM_DRAIN * dt)
 	else:

@@ -165,7 +165,7 @@ func update_enemy(dt: float, player: CharacterBody3D, story: RefCounted) -> Stri
 	var seen := can_see(player)
 	var pnoise := float(player.get("noise"))
 	var dist := Vector2(pp.x - global_position.x, pp.z - global_position.z).length()
-	var heard := pnoise > 45.0 and dist < float(e["hear_radius"]) + pnoise * 0.05
+	var heard: bool = pnoise > 45.0 and dist < float(e["hear_radius"]) + pnoise * 0.05
 	var hidden_safe: bool = String(player.get("hidden")) != "" and pnoise < 30.0 and not bool(story.get("flash_is_on"))
 	if (seen and not hidden_safe) or (String(player.get("hidden")) != "" and pnoise > 55.0):
 		if state != "chase":
