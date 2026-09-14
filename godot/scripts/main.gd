@@ -335,7 +335,7 @@ func _start(fresh: bool) -> void:
 				(world.doors["master"]).set("locked", false)
 			if story.chapter == 4 and not story.is_done("fuse"):
 				world.set_power(false)
-			if story.chapter >= 5:
+			if story.chapter >= 5 and not bool(story.flags.get("in_market", false)):
 				enemy.visible = true
 				enemy.call("place", 0.0, -0.5, 0.0)
 				enemy.set("state", "patrol")

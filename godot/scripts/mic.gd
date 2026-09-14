@@ -39,7 +39,12 @@ func setup(p_tree: SceneTree) -> void:
 	mic_player.stream = AudioStreamMicrophone.new()
 	mic_player.bus = "MicCapture"
 	tree.root.add_child.call_deferred(mic_player)
-	(func(): if is_instance_valid(mic_player) and not mic_player.playing: mic_player.play()).call_deferred()
+	call_deferred("_late_play")
+
+
+func _late_play() -> void:
+	if is_instance_valid(mic_player) and not mic_player.playing:
+		mic_player.play()
 
 
 func poll(dt: float, active: bool) -> void:
