@@ -30,6 +30,7 @@ var escape_win_body: StaticBody3D
 var rain_nodes: Array[CPUParticles3D] = []
 var env: Environment
 var moon: DirectionalLight3D
+var sky_mat: ProceduralSkyMaterial
 var _mat_cache := {}
 
 const PERCHES := {
@@ -265,15 +266,14 @@ func set_market_mood(inside: bool) -> void:
 	if env == null:
 		return
 	if inside:
+		env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 		env.ambient_light_color = Color(0.85, 0.88, 0.9)
 		env.ambient_light_energy = 1.15
 		env.fog_enabled = false
-		env.background_color = Color(0.05, 0.06, 0.07)
 	else:
-		env.ambient_light_color = Color(0.12, 0.15, 0.22)
-		env.ambient_light_energy = 0.6
+		env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+		env.ambient_light_energy = 0.35
 		env.fog_enabled = true
-		env.background_color = Color(0.01, 0.01, 0.02)
 
 
 func flash_lightning() -> void:
@@ -290,7 +290,7 @@ func flash_lightning() -> void:
 	t.tween_callback(func(): moon.light_energy = 2.2)
 	t.tween_interval(0.25)
 	t.tween_property(moon, "light_energy", 0.25, 0.6)
-	t.parallel().tween_property(env, "ambient_light_energy", 0.6, 0.6)
+	t.parallel().tween_property(env, "ambient_light_energy", 0.35, 0.6)
 	t.tween_callback(func(): moon.light_color = Color(0.56, 0.66, 1.0))
 
 
@@ -367,15 +367,34 @@ func build() -> void:
 func _build_env() -> void:
 	var we := WorldEnvironment.new()
 	env = Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.01, 0.01, 0.02)
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.12, 0.15, 0.22)
-	env.ambient_light_energy = 0.6
+	# Dusk sky: deep blue zenith bleeding to a dying orange horizon.
+	# This is what windows and the open door frame (the F2F look).
+	sky_mat = ProceduralSkyMaterial.new()
+	sky_mat.sky_top_color = Color(0.012, 0.025, 0.085)
+	sky_mat.sky_horizon_color = Color(0.30, 0.13, 0.09)
+	sky_mat.ground_bottom_color = Color(0.004, 0.004, 0.01)
+	sky_mat.ground_horizon_color = Color(0.09, 0.06, 0.07)
+	sky_mat.sun_angle_max = 30.0
+	sky_mat.sun_curve = 0.08
+	var sky := Sky.new()
+	sky.sky_material = sky_mat
+	env.background_mode = Environment.BG_SKY
+	env.sky = sky
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	env.ambient_light_energy = 0.35
+	# Filmic + bloom: lamps, TV and windows bleed like a camcorder at night.
+	env.tonemap_mode = Environment.TONE_MAPPER_ACES
+	env.tonemap_exposure = 1.05
+	env.glow_enabled = true
+	env.glow_intensity = 0.6
+	env.glow_strength = 1.1
+	env.glow_bloom = 0.15
+	env.ssao_enabled = true
 	env.fog_enabled = true
 	env.fog_mode = Environment.FOG_MODE_EXPONENTIAL
-	env.fog_density = 0.022
-	env.fog_light_color = Color(0.03, 0.04, 0.07)
+	env.fog_density = 0.028
+	env.fog_light_color = Color(0.05, 0.07, 0.12)
+	env.fog_sky_affect = 0.35
 	we.environment = env
 	add_child(we)
 	moon = DirectionalLight3D.new()

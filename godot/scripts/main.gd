@@ -188,6 +188,19 @@ func _physics_process(dt: float) -> void:
 	if story.chapter == 6 and not story.finished and room == "street":
 		story.finish("B")
 	ui.set_meters(player.stamina, player.noise, float(story.items.get("battery", 100.0)), bool(story.items.get("flash", false)))
+	var est2: String = String(enemy.get("state"))
+	var dread := 0.3
+	if est2 == "chase":
+		dread = 1.0
+	elif est2 == "investigate":
+		dread = 0.7
+	elif String(player.get("hidden")) != "" and story.chapter >= 5:
+		dread = 0.8
+	elif story.chapter >= 5:
+		dread = 0.55
+	elif bool(story.flags.get("in_market", false)):
+		dread = 0.15
+	ui.set_dread(dread)
 	ui.set_mic(mic.enabled and mic.available and not story.finished, mic.level, mic.loud, String(player.get("hidden")) != "")
 	var cur: Dictionary = interact.update(dt)
 	if not cur.is_empty():

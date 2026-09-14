@@ -1065,5 +1065,10 @@ func refresh_continue() -> void:
 	continue_btn.disabled = not game.has_save()
 
 
+func set_dread(x: float) -> void:
+	if vhs_rect and vhs_rect.material:
+		(vhs_rect.material as ShaderMaterial).set_shader_parameter("dread", clampf(x, 0.0, 1.0))
+
+
 func apply_settings_vis() -> void:
 	vhs_rect.visible = bool(game.settings.get("grain", true))
