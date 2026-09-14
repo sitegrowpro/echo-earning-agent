@@ -1,0 +1,1265 @@
+extends RefCounted
+## STORY — Episode 2: "THE HOUSESIT". Same Fears-to-Fathom skeleton as Episode 1
+## (7 chapters, phone dread, knock, blackout, hunter, 3 escapes, 4 endings),
+## with a brand-new story: Jamie, 17, housesitting for the Millers. One storm.
+## One cat named Biscuit. And "Daniel", who says he's their son.
+
+const CFG := preload("res://scripts/config.gd")
+const WorldScript := preload("res://scripts/world.gd")
+
+const NOTES := {
+	"mail": {"title": "Letter — Hollow Creek HOA", "body": "NOTICE TO ALL RESIDENTS\n\nSeveral homeowners have reported a man standing at the edge of properties after dark. Just standing. Watching.\n\nHe leaves if you speak to him. He always comes back.\n\nKeep doors locked. Keep porch lights ON.\n\n— The Association"},
+	"fridge": {"title": "HOUSE RULES — Dana", "body": "JAMIE!! Welcome!! Rules:\n\n1. Biscuit gets ONE scoop. He WILL lie to you.\n2. Lasagna's in the fridge, 3 min in the microwave. Eat like you mean it.\n3. Master bedroom door sticks — just leave it shut.\n4. Breaker box is in the laundry if the storm trips anything.\n5. !!! If ANYONE says they're our son — WE DON'T HAVE A SON. Call us IMMEDIATELY.\n\nHave fun!! — Dana :)"},
+	"photo": {"title": "Framed photo (back)", "body": "In neat pen: \"Dana, Martin & Biscuit. Summer '23. Our perfect family.\"\n\nThe photo shows three figures on this very porch.\n\nAt the far edge of the frame there's a fourth shape. Tall. Blurred. Like someone who stepped in at the last second — or was cropped out."},
+	"doodle": {"title": "Essay margin", "body": "College essay draft — \"Describe a place that shaped you.\" Half a page.\n\nIn the margin you've doodled the Millers' house. And by the fence, a tall figure with no face.\n\nYou don't remember drawing that."},
+	"master": {"title": "Note on the master bed — Martin", "body": "D —\n\nCalled the locksmith AGAIN about the bedroom window latch. It DOESN'T lock. I've told you four times. Anyone could get in through there.\n\nWedge a chair under it until it's fixed. I'm serious this time.\n\n— M."},
+	"bath": {"title": "Old sitter's emergency card", "body": "A laminated card, yellowed: \"SITTER EMERGENCY NUMBERS — the Millers.\"\n\nOn the back, in different handwriting, dated last spring:\n\n\"quit. not doing this house again. third night in a row he just STOOD in the yard watching the windows. dana laughed it off. i'm done. — K.\""},
+	"manual": {"title": "Breaker box manual", "body": "HOLLOW CREEK ELECTRIC — Model FB-3\n\n\"If all breakers trip at once, flip each switch LEFT then RIGHT, one at a time. Wait for the click.\n\nWARNING: simultaneous trips usually mean a surge... or manual interference at the meter.\"\n\nSomeone has circled \"manual interference\" in red."},
+	"priya_note": {"title": "Note slipped under the door", "body": "In Priya's handwriting, shaky:\n\n\"jamie i drove by and there was a guy standing by the side of the house just STARING at the windows. i honked and he looked RIGHT at me and smiled. i'm going home. DO NOT open the door tonight. call me\"\n\nThe ink is smeared, like it was written fast."},
+}
+
+const CHAPTERS := [
+	{"kicker": "7:48 PM", "name": "Arrival", "sub": "One night. One cat. What could go wrong?"},
+	{"kicker": "8:15 PM", "name": "Chores", "sub": "Biscuit gets ONE scoop."},
+	{"kicker": "9:10 PM", "name": "Dinner & Static", "sub": "Something on the news. Something outside."},
+	{"kicker": "10:05 PM", "name": "Knock Knock", "sub": "\"I'm Daniel. The Millers' son.\""},
+	{"kicker": "10:41 PM", "name": "Blackout", "sub": "The dark is full of sounds."},
+	{"kicker": "11:12 PM", "name": "He's Inside", "sub": "Don't run. Don't breathe. Don't shine light."},
+	{"kicker": "11:47 PM", "name": "Run", "sub": "Whatever you do — don't let him touch you."},
+]
+
+var audio
+var world
+var enemy: CharacterBody3D
+var player: CharacterBody3D
+var root: Node3D
+var tree: SceneTree
+var ui
+var phone: RefCounted
+
+var chapter := -1
+var flags := {}
+var objectives: Array = []
+var items := {}
+var notes_found: Array = []
+var choices: Array = []
+var clock_min := 19.0 * 60.0 + 48.0
+var start_msec := 0
+var spotted := 0
+var finished := false
+var script_token := 0
+var micro := {"state": "idle", "t": 0.0}
+var news_t := 0.0
+var news_seg := 0
+var police_t := -1.0
+var police_light: OmniLight3D
+var police_phase := 0.0
+var stranger_out := false
+var essay_pages := 0
+var fuse_n := 0
+var flicker_t := 0.0
+var flicker_room := ""
+var dialog_open := false
+var note_open := false
+var peep_open := false
+var call_open := false
+var hide_warned := false
+var flash_is_on := false
+var _whisp_t := 0.0
+var _rain2 := false
+
+
+func setup(deps: Dictionary) -> void:
+	audio = deps["audio"]
+	world = deps["world"]
+	enemy = deps["enemy"]
+	player = deps["player"]
+	root = deps["root"]
+	tree = deps["tree"]
+	ui = deps["ui"]
+	phone = deps["phone"]
+
+
+func reset_state() -> void:
+	chapter = -1
+	flags = {}
+	objectives = []
+	items = {"flash": false, "flash_on": false, "battery": 100.0, "batteries": 0, "master_key": false, "car_keys": false, "food": "", "trash": false}
+	notes_found = []
+	choices = []
+	clock_min = 19.0 * 60.0 + 48.0
+	start_msec = Time.get_ticks_msec()
+	spotted = 0
+	finished = false
+	script_token = 0
+	micro = {"state": "idle", "t": 0.0}
+	news_t = 0.0
+	news_seg = 0
+	police_t = -1.0
+	if police_light and is_instance_valid(police_light):
+		police_light.queue_free()
+	police_light = null
+	police_phase = 0.0
+	stranger_out = false
+	essay_pages = 0
+	fuse_n = 0
+	flicker_t = 0.0
+	flicker_room = ""
+	dialog_open = false
+	note_open = false
+	peep_open = false
+	call_open = false
+	hide_warned = false
+	flash_is_on = false
+	_whisp_t = 0.0
+	_rain2 = false
+
+
+func ui_busy() -> bool:
+	return dialog_open or note_open or peep_open or call_open or finished
+
+
+# ---------- helpers ----------
+func toast(t: String) -> void:
+	ui.toast(t)
+
+
+func sub(t: String, dur := 4.0) -> void:
+	ui.subtitle(t, dur)
+
+
+func obj(id: String, text: String) -> void:
+	for o in objectives:
+		if o["id"] == id:
+			return
+	objectives.append({"id": id, "text": text, "done": false})
+	render_obj()
+
+
+func done(id: String) -> void:
+	for o in objectives:
+		if o["id"] == id and not bool(o["done"]):
+			o["done"] = true
+			audio.pickup()
+			render_obj()
+			toast("✓ " + String(o["text"]))
+			check_advance()
+			return
+
+
+func is_done(id: String) -> bool:
+	for o in objectives:
+		if o["id"] == id:
+			return bool(o["done"])
+	return false
+
+
+func render_obj() -> void:
+	ui.objectives(objectives)
+
+
+func say(sp: String, text: String, opts: Array) -> void:
+	dialog_open = true
+	player.set("frozen", true)
+	var wrapped: Array = []
+	for o in opts:
+		var cb: Callable = o["cb"]
+		wrapped.append({"text": o["text"], "cb": func(): _close_say(cb)})
+	ui.show_dialog(sp, text, wrapped)
+
+
+func _close_say(cb: Callable) -> void:
+	dialog_open = false
+	player.set("frozen", false)
+	ui.close_dialog()
+	cb.call()
+
+
+func read_note(id: String) -> void:
+	if not NOTES.has(id):
+		return
+	if not notes_found.has(id):
+		notes_found.append(id)
+		toast("📄 Note (%d/8)" % notes_found.size())
+	note_open = true
+	player.set("frozen", true)
+	audio.ui_click()
+	ui.note_show(String(NOTES[id]["title"]), String(NOTES[id]["body"]))
+
+
+func close_note() -> void:
+	note_open = false
+	player.set("frozen", false)
+	ui.note_close()
+
+
+func clock_str() -> String:
+	var h24 := int(clock_min / 60.0) % 24
+	var m := int(clock_min) % 60
+	var h := (h24 + 11) % 12 + 1
+	var ap := "PM" if h24 >= 12 else "AM"
+	return "%d:%02d %s" % [h, m, ap]
+
+
+# ---------- game flow ----------
+func new_game() -> void:
+	reset_state()
+	player.global_position = Vector3(0, 0, 7.4)
+	player.call("set_look", 0.0, 0.0)
+	goto_chapter(0)
+
+
+func serialize() -> Dictionary:
+	var dones: Array = []
+	for o in objectives:
+		if bool(o["done"]):
+			dones.append(o["id"])
+	return {
+		"chapter": chapter, "flags": flags, "items": items, "notes_found": notes_found,
+		"choices": choices, "clock_min": clock_min, "essay_pages": essay_pages,
+		"objectives_done": dones,
+		"pos": [player.global_position.x, player.global_position.z],
+		"yaw": float(player.get("yaw")),
+	}
+
+
+func load_data(s: Dictionary) -> void:
+	reset_state()
+	for k in (s.get("flags", {}) as Dictionary).keys():
+		flags[k] = (s["flags"] as Dictionary)[k]
+	for k in (s.get("items", {}) as Dictionary).keys():
+		items[k] = (s["items"] as Dictionary)[k]
+	notes_found = (s.get("notes_found", []) as Array).duplicate()
+	choices = (s.get("choices", []) as Array).duplicate()
+	clock_min = float(s.get("clock_min", clock_min))
+	essay_pages = int(s.get("essay_pages", 0))
+	var pos: Array = s.get("pos", [0.0, 7.4])
+	player.global_position = Vector3(float(pos[0]), 0.0, float(pos[1]))
+	player.call("set_look", float(s.get("yaw", 0.0)), 0.0)
+	goto_chapter(int(s.get("chapter", 0)))
+	for id in (s.get("objectives_done", []) as Array):
+		for o in objectives:
+			if o["id"] == id:
+				o["done"] = true
+	render_obj()
+
+
+func goto_chapter(n: int) -> void:
+	script_token += 1
+	chapter = n
+	var c: Dictionary = CHAPTERS[n]
+	ui.chapter_card(String(c["kicker"]), "Chapter %d: %s" % [n, String(c["name"])], String(c["sub"]))
+	objectives = []
+	match n:
+		0:
+			_setup0()
+		1:
+			_setup1()
+		2:
+			_setup2()
+		3:
+			_setup3()
+		4:
+			_setup4()
+		5:
+			_setup5()
+		6:
+			_setup6()
+	render_obj()
+	ui.autosave()
+
+
+func check_advance() -> void:
+	if chapter == 0 and is_done("lock"):
+		goto_chapter(1)
+	elif chapter == 1 and is_done("biscuit") and is_done("mail") and is_done("trash") and is_done("thermo") and is_done("essay"):
+		goto_chapter(2)
+	elif chapter == 2 and is_done("dinner") and is_done("news") and is_done("priya"):
+		goto_chapter(3)
+	elif chapter == 3 and is_done("peep") and is_done("door") and is_done("millersreply"):
+		goto_chapter(4)
+	elif chapter == 4 and is_done("flash") and is_done("fuse"):
+		goto_chapter(5)
+	elif chapter == 5 and is_done("key") and is_done("carkeys"):
+		goto_chapter(6)
+
+
+# ================= CHAPTER SETUPS =================
+func _setup0() -> void:
+	obj("lock", "Get inside and lock the front door")
+	sub("Rain. A strange house. Mrs. Miller's spare key under the mat — right where she said.", 5.0)
+	phone.call("incoming", "millers", [
+		"Hi Jamie!! Thank you again for watching the house 🏠",
+		"Biscuit gets ONE scoop, not two — he will lie to you",
+		"Spare key's under the mat. Lock up behind you!! — Dana",
+	], 1.6, script_token)
+	_ch0_priya()
+
+
+func _ch0_priya() -> void:
+	var t := script_token
+	await tree.create_timer(9.0, false).timeout
+	if t != script_token:
+		return
+	phone.call("incoming", "priya", ["jamieeee u housesitting tonight??", "the millers place?? that house is CREEPY lol"], 1.6, t, func(): _ch0_replies())
+
+
+func _ch0_replies() -> void:
+	phone.call("set_replies", [
+		{"text": "\"Come keep me company?\"", "cb": func(): _reply_priya_invite(true)},
+		{"text": "\"Nah, I got Biscuit. 🐈\"", "cb": func(): _reply_priya_invite(false)},
+	])
+
+
+func _reply_priya_invite(yes: bool) -> void:
+	phone.call("clear_replies")
+	phone.call("send", "priya", "Come keep me company?" if yes else "Nah, I got Biscuit. 🐈")
+	flags["invited_priya"] = yes
+	choices.append("Invited Priya over" if yes else "Told Priya not to come")
+	if yes:
+		phone.call("incoming", "priya", ["omw after dinner!!", "bringing snacks AND my pepper spray. for the vibes 😭"], 1.6, script_token)
+	else:
+		phone.call("incoming", "priya", ["booo", "fineee. text me if the cat starts talking or whatever 😘"], 1.6, script_token)
+
+
+func _setup1() -> void:
+	obj("biscuit", "Feed Biscuit (ONE scoop — he will lie)")
+	obj("mail", "Bring in the mail from the mailbox")
+	obj("trash", "Take the trash out to the bin")
+	obj("thermo", "Turn the thermostat down (it's roasting)")
+	obj("essay", "Finish your college essay at the desk (3 pages)")
+	sub("The house ticks and settles. It always sounds bigger in the rain.", 5.0)
+	_ch1_texts()
+
+
+func _ch1_texts() -> void:
+	var t := script_token
+	await tree.create_timer(20.0, false).timeout
+	if t != script_token:
+		return
+	phone.call("incoming", "millers", ["How's our favorite housesitter? 😊 Biscuit behaving?"], 1.6, t, func(): _ch1_after_msgs(t))
+
+
+func _ch1_after_msgs(t: int) -> void:
+	phone.call("set_replies", [
+		{"text": "\"All good! He's an angel.\"", "cb": func(): _ch1_reply(true)},
+		{"text": "\"He bit me. Twice.\"", "cb": func(): _ch1_reply(false)},
+	])
+	await tree.create_timer(25.0, false).timeout
+	if t != script_token or chapter != 1:
+		return
+	call_millers()
+
+
+func _ch1_reply(nice: bool) -> void:
+	phone.call("clear_replies")
+	if nice:
+		phone.call("send", "millers", "All good! He's an angel.")
+		phone.call("incoming", "millers", ["That's my boy!! Give him a chin scratch for me 🐈"], 1.6, script_token)
+	else:
+		phone.call("send", "millers", "He bit me. Twice.")
+		phone.call("incoming", "millers", ["That's also my boy!! He loves you really 😅"], 1.6, script_token)
+
+
+func call_millers() -> void:
+	call_open = true
+	player.set("frozen", true)
+	audio.phone_buzz()
+	ui.call_show("Dana Miller 📞",
+		func(): _call_millers_end(true),
+		func(): _call_millers_end(false))
+
+
+func _call_millers_end(accepted: bool) -> void:
+	call_open = false
+	player.set("frozen", false)
+	ui.call_close()
+	if accepted:
+		sub("DANA: \"Just checking on my favorite housesitter! Biscuit fed? Doors locked? ...Good. We land tomorrow. You're a lifesaver, Jamie.\"", 7.0)
+	else:
+		phone.call("incoming", "millers", ["Wow. Declining your housesitting clients. 😒", "Kidding!! Call if you need ANYTHING."], 1.6, script_token)
+
+
+func _setup2() -> void:
+	obj("dinner", "Heat the lasagna and eat it on the couch")
+	obj("news", "Watch TV until the news is over")
+	obj("priya", "Reply to Priya")
+	sub("Your stomach growls. The fridge hums. Outside, the storm gets louder.", 5.0)
+	_ch2_texts()
+
+
+func _ch2_texts() -> void:
+	var t := script_token
+	await tree.create_timer(15.0, false).timeout
+	if t != script_token:
+		return
+	if bool(flags.get("invited_priya", false)):
+		flags["invited_priya"] = false
+		flags["priya_bailed"] = true
+		phone.call("incoming", "priya", ["jamie its POURING", "mom wont let me drive in this 😭", "tomorrow for sure, promise"], 1.6, t, func(): _ch2_after_msgs())
+	else:
+		phone.call("incoming", "priya", ["btw have you seen the news??", "theres some creep going around hollow creek", "prob fake but lock ur doors lol"], 1.6, t, func(): _ch2_after_msgs())
+
+
+func _ch2_after_msgs() -> void:
+	phone.call("set_replies", [
+		{"text": "\"lol it's just rain. chill.\"", "cb": func(): _ch2_reply(false)},
+		{"text": "\"Wait, what?? Tell me.\"", "cb": func(): _ch2_reply(true)},
+	])
+	toast("✉ Priya is waiting for a reply — TAB to open your phone.")
+
+
+func _ch2_reply(worried: bool) -> void:
+	phone.call("clear_replies")
+	if worried:
+		phone.call("send", "priya", "Wait, what?? Tell me.")
+		phone.call("incoming", "priya", ["some tall guy just STANDS in peoples yards at night", "cops got like 5 calls. he never does anything tho. just watches 👀"], 1.6, script_token)
+	else:
+		phone.call("send", "priya", "lol it's just rain. chill.")
+		phone.call("incoming", "priya", ["if u die in a horror movie im saying i told u so"], 1.6, script_token)
+	done("priya")
+
+
+func _setup3() -> void:
+	obj("peep", "Look through the peephole")
+	obj("door", "Deal with whoever is at the door (DO NOT OPEN IT)")
+	obj("millersreply", "Reply to Mrs. Miller")
+	_ch3_seq()
+
+
+func _ch3_seq() -> void:
+	var t := script_token
+	await tree.create_timer(9.0, false).timeout
+	if t != script_token:
+		return
+	audio.stop_rain()
+	world.set_rain(false)
+	sub("The rain stops. The house goes very, very quiet.", 4.0)
+	await tree.create_timer(5.0, false).timeout
+	if t != script_token:
+		return
+	_knock_sequence()
+
+
+func _knock_sequence() -> void:
+	var t := script_token
+	audio.knock_at(Vector3(0, 1.5, 5.5), "soft3")
+	enemy.call("perch", WorldScript.PERCHES["porch"])
+	stranger_out = true
+	sub("Knocking. Three slow knocks. Nobody visits at 10 PM in a storm.", 5.0)
+	toast("🚪 Someone is at the front door")
+	await tree.create_timer(20.0, false).timeout
+	if t != script_token:
+		return
+	if not is_done("peep"):
+		audio.knock_at(Vector3(0, 1.5, 5.5), "heavy3")
+		sub("Again. Heavier this time.", 4.0)
+	await tree.create_timer(25.0, false).timeout
+	if t != script_token:
+		return
+	if not is_done("door") and not bool(flags.get("talking", false)):
+		flags["talking"] = true
+		audio.knock_at(Vector3(0, 1.5, 5.5), "heavy2")
+		say("??? (through the door)", "\"...hey. Hey. I'm Daniel — the Millers' son. Locked myself out like an idiot. Can you let me in? It'll just take a second.\"", [
+			{"text": "\"The Millers don't HAVE a son. Leave.\"", "cb": func(): stranger_talk("lie")},
+			{"text": "\"...How do you know my name is Jamie?\"", "cb": func(): stranger_talk("ask")},
+			{"text": "(Say nothing. Step away from the door.)", "cb": func(): stranger_talk("silent")},
+		])
+
+
+func talk_through_door() -> void:
+	if bool(flags.get("talking", false)) or is_done("door"):
+		return
+	flags["talking"] = true
+	say("??? (through the door)", "\"...hey. Hey. I'm Daniel — the Millers' son. Locked myself out like an idiot. Can you let me in? It'll just take a second.\"", [
+		{"text": "\"The Millers don't HAVE a son. Leave.\"", "cb": func(): stranger_talk("lie")},
+		{"text": "\"...How do you know my name is Jamie?\"", "cb": func(): stranger_talk("ask")},
+		{"text": "(Say nothing. Step away from the door.)", "cb": func(): stranger_talk("silent")},
+	])
+
+
+func stranger_talk(how: String) -> void:
+	choices.append("Stranger talk: " + how)
+	if how == "lie":
+		enemy.set("aggression", int(enemy.get("aggression")) + 1)
+		say("???", "\"...Dana always forgets me. Let me IN, Jamie.\"", [
+			{"text": "(Back away. Say nothing more.)", "cb": func(): after_stranger()},
+		])
+	elif how == "ask":
+		audio.knock_at(Vector3(0, 1.5, 5.5), "one")
+		enemy.set("aggression", int(enemy.get("aggression")) + 1)
+		say("???", "\"Dana talks about you all the time. Her favorite housesitter... Jamie.\"", [
+			{"text": "(He knows your name. Back away.)", "cb": func(): after_stranger()},
+		])
+	else:
+		audio.knock_at(Vector3(0, 1.5, 5.5), "soft3")
+		sub("Silence. Then, very quietly: \"...okay. Okay. I'll come back later, then, Jamie.\"", 6.0)
+		after_stranger()
+
+
+func after_stranger() -> void:
+	var t := script_token
+	flags["talking"] = false
+	done("door")
+	enemy.call("vanish")
+	stranger_out = false
+	await tree.create_timer(7.0, false).timeout
+	if t != script_token:
+		return
+	audio.sting()
+	phone.call("incoming", "millers", [
+		"JAMIE. Look at this. NOW.",
+		"📷 [photo attached: this house, from the street. A TALL FIGURE stands under the streetlamp, facing your window.]",
+		"A neighbor just sent me this!!! There is a MAN outside the house",
+		"And Jamie... WE DON'T HAVE A SON. Lock EVERYTHING. I'm calling the police.",
+	], 1.4, t, func(): _after_stranger_msgs())
+
+
+func _after_stranger_msgs() -> void:
+	phone.call("set_replies", [
+		{"text": "\"Someone knocked. I didn't open it.\"", "cb": func(): _ch3_reply(true)},
+		{"text": "\"It's probably nothing, Mrs. Miller.\"", "cb": func(): _ch3_reply(false)},
+	])
+	flags["priya_note"] = true
+	toast("📄 Something slides under the front door...")
+
+
+func _ch3_reply(good: bool) -> void:
+	phone.call("clear_replies")
+	if good:
+		phone.call("send", "millers", "Someone knocked. I didn't open it.")
+		phone.call("incoming", "millers", ["GOOD. Stay away from the windows. Police are on the way."], 1.6, script_token)
+	else:
+		phone.call("send", "millers", "It's probably nothing, Mrs. Miller.")
+		phone.call("incoming", "millers", ["JAMIE. This is NOT nothing. STAY AWAY FROM THE WINDOWS."], 1.6, script_token)
+	done("millersreply")
+
+
+func _setup4() -> void:
+	obj("flash", "Find the flashlight (laundry shelf?)")
+	obj("fuse", "Reset the breaker box — 3 breakers")
+	if bool(items.get("flash", false)):
+		done("flash")
+	_ch4_seq()
+
+
+func _ch4_seq() -> void:
+	var t := script_token
+	await tree.create_timer(6.0, false).timeout
+	if t != script_token:
+		return
+	audio.power_down()
+	world.set_power(false)
+	sub("The lights die. The fridge sighs into silence. Only the storm's echo remains.", 5.0)
+	toast("⚡ POWER OUT")
+	audio.knock_at(Vector3(8.0, 1.5, 3.0), "one")
+	await tree.create_timer(12.0, false).timeout
+	if t != script_token:
+		return
+	phone.call("incoming", "unknown", ["the dark suits this house", "i cut the lights so i could see you better, jamie"], 2.5, t, func(): _ch4_after_msgs(t))
+
+
+func _ch4_after_msgs(t: int) -> void:
+	await tree.create_timer(8.0, false).timeout
+	if t != script_token or chapter != 4:
+		return
+	call_open = true
+	player.set("frozen", true)
+	audio.phone_buzz()
+	ui.call_show("Unknown number",
+		func(): _unknown_call_end(true),
+		func(): _unknown_call_end(false))
+
+
+func _unknown_call_end(accepted: bool) -> void:
+	call_open = false
+	player.set("frozen", false)
+	ui.call_close()
+	if accepted:
+		sub("...breathing. Slow. Close. Then a click. Then your own porch creak, through the phone.", 7.0)
+		audio.sting()
+		choices.append("Answered the unknown call")
+	else:
+		phone.call("incoming", "unknown", ["rude. ill just talk to you in person"], 1.6, script_token)
+		choices.append("Declined the unknown call")
+
+
+func _setup5() -> void:
+	obj("key", "Find the master bedroom key (kitchen drawer?)")
+	obj("carkeys", "Get the CAR KEYS from the master bedroom")
+	_ch5_seq()
+
+
+func _ch5_seq() -> void:
+	var t := script_token
+	await tree.create_timer(2.5, false).timeout
+	if t != script_token:
+		return
+	audio.glass_at(Vector3(1.5, 1.5, -5.5))
+	sub("GLASS. From the back of the house. The master window — the one that never locked.", 6.0)
+	toast("🪟 Something broke the back window")
+	enemy.set("aggression", int(enemy.get("aggression")) + 1)
+	await tree.create_timer(9.0, false).timeout
+	if t != script_token:
+		return
+	enemy.set("visible", true)
+	enemy.call("place", 2.5, -4.0, 0.0)
+	enemy.set("wp", 0)
+	enemy.set("state", "patrol")
+	sub("Floorboards. Slow footsteps. He is INSIDE the house.", 6.0)
+	toast("🔦 Turn OFF your flashlight. Crouch. Hide under the BED or in a CLOSET.")
+	phone.call("incoming", "millers", ["My car keys are in the bedroom dresser. If ANYTHING happens, take the car and GO. Police are 10 minutes out. HIDE. I love you like my own, Jamie — PLEASE be safe."], 1.6, t)
+
+
+func _setup6() -> void:
+	obj("escA", "🏃 Unlock the front door & run to the NEIGHBOR'S porch")
+	obj("escB", "🪟 Climb out the GUEST WINDOW & reach the STREET")
+	obj("escC", "📞 Call 911 on your phone, then HIDE until police arrive")
+	enemy.set("aggression", int(enemy.get("aggression")) + 1)
+	enemy.set("speed_mul", 1.12)
+	sub("Car keys in your fist. Three ways out. Pick one and COMMIT.", 6.0)
+	phone.call("set_replies", [{"text": "📞 CALL 911 NOW", "cb": func(): call911()}])
+	phone.call("show", "millers")
+	toast("📞 Open your phone (TAB) to call 911 — or RUN.")
+
+
+func call911() -> void:
+	if chapter != 6 or police_t >= 0.0:
+		return
+	call_open = true
+	player.set("frozen", true)
+	audio.phone_buzz()
+	ui.call_show("911",
+		func(): _call911_end(true),
+		func(): _call911_end(false))
+
+
+func _call911_end(accepted: bool) -> void:
+	call_open = false
+	player.set("frozen", false)
+	ui.call_close()
+	if accepted:
+		sub("911: \"Stay on the line. Officers are en route. Hide somewhere with a LOCK — and stay QUIET.\"", 7.0)
+		police_t = 0.0
+		toast("🚔 Police incoming. HIDE and stay quiet.")
+		choices.append("Called 911")
+		phone.call("clear_replies")
+	else:
+		phone.call("set_replies", [{"text": "📞 CALL 911 NOW", "cb": func(): call911()}])
+
+
+# ---------- per-frame ----------
+func update(dt: float) -> void:
+	clock_min += dt / 4.0
+	var s := clock_str()
+	ui.vhs(s)
+	phone.call("set_clock", s)
+	flash_is_on = bool(items.get("flash_on", false)) and bool(items.get("flash", false)) and float(items.get("battery", 0.0)) > 0.0
+	if flash_is_on:
+		items["battery"] = float(items["battery"]) - CFG.FLASH_DRAIN * dt
+		if float(items["battery"]) <= 0.0:
+			items["battery"] = 0.0
+			items["flash_on"] = false
+			flash_is_on = false
+			toast("🔦 Battery dead. Find batteries (kitchen drawer).")
+	if String(micro["state"]) == "running":
+		micro["t"] = float(micro["t"]) - dt
+		world.micro_light.visible = true
+		world.micro_light.light_energy = 1.5 + sin(Time.get_ticks_msec() * 0.02) * 0.7
+		if float(micro["t"]) <= 0.0:
+			micro["state"] = "done"
+			world.micro_light.visible = false
+			audio.microwave_beep(true)
+			player.set("noise", minf(100.0, float(player.get("noise")) + 25.0))
+			toast("🔔 The microwave beeps. (That was LOUD.)")
+	if chapter == 2 and world.tv_on and bool(player.get("sitting")) and not is_done("news"):
+		news_t += dt
+		var segs := [
+			[2.0, "📺 \"...police are asking Hollow Creek residents to lock their doors tonight...\""],
+			[45.0, "📺 \"...five separate calls about a tall figure standing in yards, watching homes...\""],
+			[90.0, "📺 \"...officials say he leaves when approached. He has never— [STATIC] —he is never gone...\""],
+		]
+		if news_seg < segs.size() and news_t >= float(segs[news_seg][0]):
+			sub(String(segs[news_seg][1]), 6.0)
+			audio.static_burst()
+			news_seg += 1
+		if news_t >= CFG.NEWS_TIME:
+			done("news")
+			sub("📺 \"...we'll be right back after—\" The screen cuts to static. The house feels colder.", 6.0)
+	if police_t >= 0.0 and not finished:
+		police_t += dt
+		if police_t > 120.0 and police_light == null:
+			audio.siren()
+			police_light = OmniLight3D.new()
+			police_light.light_energy = 6.0
+			police_light.omni_range = 30.0
+			police_light.position = Vector3(0, 3, 10)
+			root.add_child(police_light)
+			sub("SIRENS. Red and blue wash the windows. Just a little longer—", 6.0)
+		if police_light:
+			police_phase += dt * 6.0
+			police_light.light_color = Color(1, 0.13, 0.13) if sin(police_phase) > 0.0 else Color(0.13, 0.27, 1.0)
+		if police_t >= CFG.POLICE_WAIT:
+			sub("\"POLICE! SHOW ME YOUR HANDS— ...Clear! Kid? KID, YOU'RE SAFE NOW.\"", 7.0)
+			finish("C")
+	var est: String = String(enemy.get("state"))
+	var hunted := est == "chase" or est == "investigate"
+	var pp: Vector3 = player.global_position
+	var ep: Vector3 = enemy.global_position
+	var near_hidden := String(player.get("hidden")) != "" and Vector2(pp.x - ep.x, pp.z - ep.z).length() < 5.0 and est != "dormant" and est != "gone" and est != "perch"
+	audio.set_heart(hunted or near_hidden, est == "chase")
+	if flicker_t > 0.0 and flicker_room != "":
+		flicker_t -= dt
+		if world.room_lights.has(flicker_room):
+			for l in ((world.room_lights[flicker_room] as Dictionary)["lights"] as Array):
+				(l as OmniLight3D).visible = world.power and bool((world.room_lights[flicker_room] as Dictionary)["on"]) and randf() > 0.5
+		if flicker_t <= 0.0:
+			world.apply_lights()
+	if near_hidden:
+		_whisp_t += dt
+		if _whisp_t > 9.0:
+			_whisp_t = 0.0
+			sub("Floorboards inches away. Breathing. \"...I can hear your little heart, Jamie...\"", 5.0)
+	if chapter >= 5 and not _rain2:
+		_rain2 = true
+		world.set_rain(true)
+		audio.start_rain()
+
+
+func on_room(room: String) -> void:
+	ui.room_toast(world.room_name(room))
+	if room == "bath" and chapter == 4 and not bool(flags.get("mirror", false)):
+		flags["mirror"] = true
+		flicker("bath", 2.5)
+		audio.sting()
+		sub("On the fogged mirror, finger-written from the INSIDE of the glass: \"HE KNOWS YOUR NAME.\"", 7.0)
+	if room == "master" and chapter >= 5 and not bool(flags.get("master_enter", false)):
+		flags["master_enter"] = true
+		sub("The back window gapes open. Glass on the carpet. Curtains breathing in the wind.", 6.0)
+
+
+func flicker(room: String, dur: float) -> void:
+	flicker_room = room
+	flicker_t = dur
+
+
+func on_spotted() -> void:
+	spotted += 1
+	audio.sting()
+	ui.flash()
+	sub("HE SEES YOU. R U N .", 3.0)
+
+
+# ---------- doors ----------
+func toggle_door(id: String) -> void:
+	var d = world.doors.get(id)
+	if d == null:
+		return
+	if id == "master" and bool(d.get("locked")):
+		if bool(items.get("master_key", false)):
+			d.set("locked", false)
+			flags["master_open"] = true
+			audio.pickup()
+			toast("🔑 The key turns. The master bedroom sighs open...")
+		else:
+			audio.locked()
+			sub("Locked. The Millers' room. (Dana said the door sticks — the key must be around here somewhere...)", 4.0)
+			return
+	if id == "front":
+		if chapter == 0 and not bool(flags.get("deadbolt", false)):
+			d.set("is_open", false)
+			d.set("target", 0.0)
+			flags["deadbolt"] = true
+			audio.door_shut_at(Vector3(0, 1.2, 5.5))
+			done("lock")
+			sub("Deadbolt ON. The strange house seals itself around you like a held breath.", 4.0)
+			return
+		if chapter == 3 and stranger_out:
+			if not is_done("door") and not bool(flags.get("talking", false)):
+				talk_through_door()
+				return
+			if not is_done("door"):
+				return
+			say("Front door", "Your hand is on the deadbolt. He is RIGHT THERE on the other side.", [
+				{"text": "OPEN THE DOOR.", "cb": func(): _open_door_death(d)},
+				{"text": "(Step back. Keep it locked.)", "cb": func(): pass},
+			])
+			return
+		if chapter == 6 and bool(flags.get("deadbolt", false)) and not bool(flags.get("deadbolt_off", false)) and not bool(d.get("is_open")):
+			flags["deadbolt_off"] = true
+			audio.door_shut_at(Vector3(0, 1.2, 5.5))
+			player.set("noise", 100.0)
+			toast("🔓 Deadbolt OFF. RUN TO THE NEIGHBOR'S PORCH.")
+			sub("The deadbolt CLACKS. Behind you, something stands up very fast.", 4.0)
+			enemy.call("place", 2.5, 7.2, PI)
+			enemy.set("state", "investigate")
+			enemy.set("target", Vector3(0, 0, 6))
+			return
+	d.call("toggle")
+	if bool(d.get("is_open")):
+		audio.door_creak(true)
+	else:
+		audio.door_creak(false)
+	player.set("noise", minf(100.0, float(player.get("noise")) + 18.0))
+
+
+func _open_door_death(d) -> void:
+	d.set("is_open", true)
+	d.set("target", float(d.get("swing")))
+	audio.door_creak(true)
+	ui.jumpscare(func(): finish("D", "You opened the door."))
+
+
+# ---------- flashlight / hiding / sitting ----------
+func toggle_flash() -> void:
+	if not bool(items.get("flash", false)):
+		toast("🔦 You don't have a flashlight yet.")
+		return
+	if float(items.get("battery", 0.0)) <= 0.0:
+		toast("🔦 Battery dead — find batteries (kitchen drawer).")
+		return
+	items["flash_on"] = not bool(items.get("flash_on", false))
+	audio.ui_click()
+	if bool(items.get("flash_on", false)) and String(player.get("hidden")) != "":
+		toast("⚠️ Light ON while hiding = he WILL see you. Press F to kill it.")
+
+
+func hide(where: String) -> void:
+	if String(player.get("hidden")) == where:
+		player.set("hidden", "")
+		player.set("frozen", false)
+		audio.door_creak(false)
+		if where == "bed":
+			player.global_position = Vector3(-6.4, 0, -3.0)
+			player.call("set_look", -2.6, 0.0)
+		elif where == "closet":
+			player.global_position = Vector3(-3.6, 0, -2.0)
+			player.call("set_look", 0.75, 0.0)
+		elif where == "pcloset":
+			player.global_position = Vector3(2.2, 0, -2.0)
+			player.call("set_look", 0.67, 0.0)
+		return
+	player.set("hidden", where)
+	player.set("frozen", true)
+	var h: Dictionary = WorldScript.HIDE[where]
+	player.call("look_at_spot", h["pos"], h["look"])
+	audio.door_creak(true)
+	ui.flash_hide("Under the bed. Don't move. Don't breathe." if where == "bed" else "Inside the closet. Darkness is your only friend.")
+	if flash_is_on and not hide_warned:
+		hide_warned = true
+		toast("⚠️ YOUR FLASHLIGHT IS ON. Press F. NOW.")
+
+
+func sit_toggle() -> void:
+	if bool(player.get("sitting")):
+		player.set("sitting", false)
+		player.set("frozen", false)
+		player.global_position = Vector3(-2, 0, 4.15)
+		player.call("set_look", PI, 0.0)
+	else:
+		player.set("sitting", true)
+		player.set("frozen", true)
+		var h: Dictionary = WorldScript.HIDE["couch"]
+		player.call("look_at_spot", h["pos"], h["look"])
+		toast("📺 Sitting. Press E on the couch to stand.")
+
+
+# ---------- peephole ----------
+func peep() -> void:
+	peep_open = true
+	player.set("frozen", true)
+	var html := ""
+	if chapter == 3 and stranger_out:
+		html = "A tall man. Too close to the door.\nHe is holding something long and dark.\nA crowbar? An umbrella?\n\nHe looks DIRECTLY at the peephole.\n\nHe smiles."
+		audio.knock_at(Vector3(0, 1.5, 5.5), "one")
+		choices.append("Looked through the peephole")
+		_peep_voice()
+	elif chapter >= 5:
+		html = "Empty porch. Swinging bulb.\n...why is that comforting? He's not out there.\nHe's in here with you."
+	elif chapter == 3 and not stranger_out and not is_done("door"):
+		html = "Empty porch. Wet footprints lead AWAY...\nno. Toward the side of the house.\nToward the BACK windows."
+	else:
+		html = "Rain. The mailbox. The streetlamp buzzing.\nEverything normal. Everything fine."
+	ui.peephole(html)
+	if chapter == 3:
+		done("peep")
+
+
+func _peep_voice() -> void:
+	var t := script_token
+	await tree.create_timer(2.5, false).timeout
+	if t == script_token and peep_open:
+		sub("\"...I can see your little shadow under the door, Jamie.\"", 5.0)
+
+
+func close_peep() -> void:
+	peep_open = false
+	player.set("frozen", false)
+	ui.close_peephole()
+
+
+# ---------- endings ----------
+func finish(id: String, custom := "") -> void:
+	if finished:
+		return
+	finished = true
+	script_token += 1
+	audio.set_heart(false)
+	audio.set_tv(false)
+	var mins := int((Time.get_ticks_msec() - start_msec) / 60000.0)
+	var texts := {
+		"A": ["You slam into the neighbor's porch screaming. Lights explode on up and down the street. Behind you, at the edge of the lawn, a tall figure STOPS — watches — and then simply... isn't there anymore.\n\nThe police find wet footprints through the MILLERS' house. All the way to the front door. Stopping where you stood.\n\nDana cries and hugs you for a full minute. You never housesit again.", "The police find no one. But every officer who walks that hallway goes quiet at the master window."],
+		"B": ["Glass in your palms. Rain in your mouth. You hit the grass running and you do not look back — but you HEAR him, right behind the fence, matching you step for step, breathing like a man who has waited years for this.\n\nThen headlights. A car. A horn. And the breathing is gone.\n\nThe driver says you appeared out of nowhere, screaming. She says there was no one behind you.\n\nShe is wrong. You saw the streetlamp flicker as he stepped under it.", "You got out. That's more than the footprints in the yard suggest anyone else did."],
+		"C": ["Under the guest bed, cheek to the carpet, phone glowing against your chest. Footsteps circle the room. Once, the closet door creaks. Once, something kneels — you see black shoes by the bed skirt — and breathes.\n\n\"...I can hear your little heart, Jamie...\"\n\nThen: SIRENS. Shouting. Running. A flashlight beam sweeps under the bed and finds your face.\n\n\"Kid? KID, YOU'RE SAFE NOW.\"\n\nThey never catch him. But they find his footprints. Under your window. In the hallway. Stopping, for a long time, beside your bed.", "You survived the night. The morning news calls it \"a break-in.\" You know better."],
+		"D": [(custom + "\n\n" if custom != "" else "") + "A hand like winter closes over your mouth.\n\nThe last thing you hear is breathing, right against your ear, almost tender:\n\n\"...shhh...\"\n\n[ECHOES IN THE DARK — EPISODE 2: BAD END]", "He was always faster than you. Be smarter next time."],
+	}
+	var last_choices := "no choices made"
+	if not choices.is_empty():
+		last_choices = "choices: " + " · ".join(choices.slice(maxi(0, choices.size() - 4)))
+	ui.show_ending(id, String(texts[id][0]), String(texts[id][1]),
+		"⏱ %d min · 👁 spotted %d× · 📄 notes %d/8 · %s" % [mins, spotted, notes_found.size(), last_choices])
+
+
+# ================= INTERACTABLES =================
+func _door_prompt(id: String, label: String) -> String:
+	var d = world.doors.get(id)
+	if id == "front" and chapter == 0 and not bool(flags.get("deadbolt", false)):
+		return "Lock the front door"
+	if id == "front" and chapter == 3 and stranger_out and not is_done("door"):
+		return "Speak through the door"
+	if id == "front" and chapter == 3 and stranger_out:
+		return "Front door (he is RIGHT THERE)"
+	if id == "front" and chapter == 6 and bool(flags.get("deadbolt", false)) and not bool(flags.get("deadbolt_off", false)):
+		return "Throw the deadbolt & RUN"
+	if id == "master" and bool(d.get("locked")) and not bool(items.get("master_key", false)):
+		return "Master bedroom door (locked)"
+	if id == "master" and bool(d.get("locked")) and bool(items.get("master_key", false)):
+		return "Unlock with key"
+	return ("Close " if bool(d.get("is_open")) else "Open ") + label
+
+
+func _door_def(I, id: String, x: float, z: float, label: String) -> void:
+	I.add({"id": "door-" + id, "area": I.halo(Vector3(x, 1.2, z), 0.7),
+		"prompt": func(_c): return _door_prompt(id, label),
+		"on_use": func(_c): toggle_door(id)})
+
+
+func _note_def(I, id: String, pos: Vector3, flag: String = "") -> void:
+	I.add({"id": "note-" + id, "area": I.halo(pos, 0.55),
+		"prompt": func(_c): return "" if (flag != "" and not bool(flags.get(flag, false))) or note_open else "Read",
+		"on_use": func(_c): read_note(id)})
+
+
+func _sw_def(I, room: String, pos: Vector3, label: String) -> void:
+	I.add({"id": "sw-" + room, "area": I.halo(pos, 0.32),
+		"prompt": func(_c): return _sw_prompt(room, label),
+		"on_use": func(_c): _sw_use(room)})
+
+
+func _sw_prompt(room: String, label: String) -> String:
+	if not world.power:
+		return label + " light (no power)"
+	return label + " light (" + ("on" if bool((world.room_lights[room] as Dictionary)["on"]) else "off") + ")"
+
+
+func _sw_use(room: String) -> void:
+	if not world.power:
+		audio.locked()
+		return
+	world.set_room_light(room, not bool((world.room_lights[room] as Dictionary)["on"]))
+	audio.ui_click()
+
+
+func register(I) -> void:
+	_door_def(I, "front", 0.0, 5.5, "front door")
+	_door_def(I, "guest", -5.5, -1.5, "guest room door")
+	_door_def(I, "master", 1.5, -1.5, "master bedroom door")
+	_door_def(I, "bath", 5.2, -1.5, "bathroom door")
+	_door_def(I, "laundry", 7.25, -1.5, "laundry door")
+	I.add({"id": "peephole", "area": I.halo(Vector3(0, 1.6, 5.3), 0.4),
+		"prompt": func(c): return "Look through peephole" if (c["player"] as CharacterBody3D).global_position.z < 5.4 else "",
+		"on_use": func(_c): peep()})
+	I.add({"id": "biscuit", "area": I.halo(Vector3(6.4, 0.4, 4.9), 0.6),
+		"prompt": func(_c): return "Feed Biscuit (ONE scoop)" if chapter == 1 and not is_done("biscuit") else "",
+		"hold": func(_c): return 3.0,
+		"on_use": func(_c): _feed_biscuit()})
+	I.add({"id": "mailtake", "area": I.halo(Vector3(2.2, 1.25, 9.0), 0.6),
+		"prompt": func(_c): return "Take the mail" if chapter == 1 and not bool(flags.get("mail_taken", false)) else "",
+		"on_use": func(_c): _take_mail()})
+	I.add({"id": "trashbag", "area": I.halo(Vector3(4.9, 0.5, 2.6), 0.6),
+		"prompt": func(_c): return "Grab the trash bag" if chapter == 1 and not is_done("trash") and not bool(items.get("trash", false)) else "",
+		"on_use": func(_c): _take_trash()})
+	I.add({"id": "trashbin", "area": I.halo(Vector3(-2.6, 0.8, 6.3), 0.8),
+		"prompt": func(_c): return "Dump the trash" if bool(items.get("trash", false)) and not is_done("trash") else "",
+		"on_use": func(_c): _dump_trash()})
+	I.add({"id": "thermo", "area": I.halo(Vector3(-1, 1.5, -1.3), 0.4),
+		"prompt": func(_c): return "Turn thermostat down (78°?!)" if chapter == 1 and not is_done("thermo") else "Thermostat (72° — perfect)",
+		"on_use": func(_c): _thermo()})
+	I.add({"id": "essay", "area": I.halo(Vector3(-3.0, 0.95, -5.0), 0.6),
+		"prompt": func(_c): return "Write essay (page %d/3)" % (essay_pages + 1) if chapter == 1 and not is_done("essay") else "",
+		"hold": func(_c): return CFG.HOMEWORK_HOLD,
+		"on_use": func(_c): _essay_page()})
+	I.add({"id": "fridge", "area": I.halo(Vector3(7.0, 1.2, 1.0), 0.7),
+		"prompt": func(_c): return _fridge_prompt(),
+		"on_use": func(_c): _fridge_use()})
+	I.add({"id": "micro", "area": I.halo(Vector3(7.2, 1.25, 1.9), 0.6),
+		"prompt": func(_c): return _micro_prompt(),
+		"on_use": func(_c): _micro_use()})
+	I.add({"id": "tv", "area": I.halo(Vector3(-2, 0.95, 1.0), 0.8),
+		"prompt": func(_c): return "Turn TV off" if world.tv_on else "Turn TV on",
+		"on_use": func(_c): _tv_use()})
+	I.add({"id": "couch", "area": I.halo(Vector3(-2, 0.8, 3.3), 0.9),
+		"prompt": func(_c): return _couch_prompt(),
+		"hold": func(_c): return 3.0 if (bool(player.get("sitting")) and String(items.get("food", "")) == "hot") else 0.0,
+		"on_use": func(_c): _couch_use()})
+	I.add({"id": "drawer", "area": I.halo(Vector3(4.2, 0.75, 2.8), 0.6),
+		"prompt": func(_c): return _drawer_prompt(),
+		"on_use": func(_c): _drawer_use()})
+	I.add({"id": "flashlight", "area": I.halo(Vector3(7.8, 1.3, -3.6), 0.6),
+		"prompt": func(_c): return "Take the flashlight" if not bool(items.get("flash", false)) else "",
+		"on_use": func(_c): _take_flash()})
+	I.add({"id": "fuse", "area": I.halo(Vector3(7.8, 1.55, -2.6), 0.6),
+		"prompt": func(_c): return "Reset breaker %d/3 (hold)" % (fuse_n + 1) if chapter == 4 and not is_done("fuse") else "Breaker box (humming normally)",
+		"hold": func(_c): return 2.5 if chapter == 4 and not is_done("fuse") else 0.0,
+		"on_use": func(_c): _fuse()})
+	I.add({"id": "hidebed", "area": I.halo(Vector3(-6.4, 0.5, -3.3), 0.7),
+		"prompt": func(_c): return "Crawl out" if String(player.get("hidden")) == "bed" else "Hide under the bed",
+		"on_use": func(_c): hide("bed")})
+	I.add({"id": "hidecloset", "area": I.halo(Vector3(-2.7, 1.2, -2.0), 0.7),
+		"prompt": func(_c): return "Step out" if String(player.get("hidden")) == "closet" else "Hide in the closet",
+		"on_use": func(_c): hide("closet")})
+	I.add({"id": "hidepcloset", "area": I.halo(Vector3(3.2, 1.2, -2.0), 0.7),
+		"prompt": func(_c): return "Step out" if String(player.get("hidden")) == "pcloset" else "Hide in the master closet",
+		"on_use": func(_c): hide("pcloset")})
+	I.add({"id": "carkeys", "area": I.halo(Vector3(3.3, 1.0, -5.1), 0.6),
+		"prompt": func(_c): return "Take the CAR KEYS" if chapter >= 5 and not bool(items.get("car_keys", false)) else "",
+		"on_use": func(_c): _take_carkeys()})
+	I.add({"id": "bedwindow", "area": I.halo(Vector3(-5.5, 1.4, -5.35), 0.7),
+		"prompt": func(_c): return "CLIMB OUT the window (hold)" if chapter >= 6 else "Guest window (Dana: NEVER open at night)",
+		"hold": func(_c): return 3.0 if chapter >= 6 else 0.0,
+		"on_use": func(_c): _climb_window()})
+	I.add({"id": "neighbordoor", "area": I.halo(Vector3(-18.2, 1.3, 7.3), 1.2),
+		"prompt": func(_c): return "BANG on the neighbor's door (hold)" if chapter == 6 else "",
+		"hold": func(_c): return 1.5,
+		"on_use": func(_c): _neighbor()})
+	_note_def(I, "mail", Vector3(2.2, 1.25, 9.0), "mail_taken")
+	_note_def(I, "fridge", Vector3(7.0, 1.55, 1.0))
+	_note_def(I, "photo", Vector3(-7.6, 0.95, 0.95))
+	_note_def(I, "doodle", Vector3(-2.7, 0.9, -5.1))
+	_note_def(I, "master", Vector3(0.6, 0.95, -4.2), "master_open")
+	_note_def(I, "bath", Vector3(5.2, 1.1, -2.0))
+	_note_def(I, "manual", Vector3(7.8, 0.95, -3.0))
+	_note_def(I, "priya_note", Vector3(0, 0.35, 5.15), "priya_note")
+	_sw_def(I, "living", Vector3(-3.4, 1.45, 0.32), "Living room")
+	_sw_def(I, "kitchen", Vector3(3.4, 1.45, 0.32), "Kitchen")
+	_sw_def(I, "hall", Vector3(0, 1.45, -1.32), "Hallway")
+	_sw_def(I, "guest", Vector3(-5.0, 1.45, -1.32), "Guest room")
+	_sw_def(I, "master", Vector3(2.0, 1.45, -1.32), "Master bedroom")
+	_sw_def(I, "bath", Vector3(5.9, 1.45, -1.32), "Bathroom")
+	_sw_def(I, "laundry", Vector3(6.9, 1.45, -1.32), "Laundry")
+	I.add({"id": "mirror", "area": I.halo(Vector3(5.2, 1.6, -1.9), 0.5),
+		"prompt": func(_c): return "Look in the mirror",
+		"on_use": func(_c): _mirror()})
+
+
+func _feed_biscuit() -> void:
+	done("biscuit")
+	sub("One scoop. Biscuit screams like you've starved him for years, then forgives you instantly. MRROW.", 5.0)
+
+
+func _take_mail() -> void:
+	flags["mail_taken"] = true
+	audio.pickup()
+	done("mail")
+	sub("Bills, coupons... and an official-looking letter from the HOA. (Read it with E.)", 4.0)
+
+
+func _take_trash() -> void:
+	items["trash"] = true
+	audio.pickup()
+	toast("🗑️ Trash bag acquired. It's leaking. Great.")
+
+
+func _dump_trash() -> void:
+	items["trash"] = false
+	audio.door_shut_at(Vector3(-2.6, 0.8, 6.3))
+	done("trash")
+	sub("The bin lid CLANGS. Across the street, the streetlamp flickers. Was someone standing under it?", 5.0)
+
+
+func _thermo() -> void:
+	if chapter != 1 or is_done("thermo"):
+		return
+	audio.ui_click()
+	done("thermo")
+	sub("72°. The vents sigh. Somewhere, the house ticks like a cooling engine.", 4.0)
+
+
+func _essay_page() -> void:
+	essay_pages += 1
+	clock_min += 25.0
+	if essay_pages >= 3:
+		done("essay")
+		sub("Done. Three pages on 'a place that shaped you.' Your hand is dead but your conscience is clean.", 5.0)
+	else:
+		toast("📝 Page %d/3 done. Only %d more..." % [essay_pages, 3 - essay_pages])
+
+
+func _fridge_prompt() -> String:
+	if chapter == 2 and String(items.get("food", "")) == "" and String(micro["state"]) == "idle":
+		return "Take Dana's lasagna"
+	return "Fridge (lasagna, milk, regret)"
+
+
+func _fridge_use() -> void:
+	if chapter == 2 and String(items.get("food", "")) == "" and String(micro["state"]) == "idle":
+		items["food"] = "cold"
+		audio.pickup()
+		toast("🍝 Cold lasagna. The microwave is right there.")
+	else:
+		audio.ui_click()
+
+
+func _micro_prompt() -> String:
+	if String(items.get("food", "")) == "cold" and String(micro["state"]) == "idle":
+		return "Microwave the lasagna (75s)"
+	if String(micro["state"]) == "running":
+		return "Microwaving... (%ds)" % int(ceil(float(micro["t"])))
+	if String(micro["state"]) == "done":
+		return "Take the hot lasagna"
+	return "Microwave (empty, humming faintly)"
+
+
+func _micro_use() -> void:
+	if String(items.get("food", "")) == "cold" and String(micro["state"]) == "idle":
+		items["food"] = ""
+		micro["state"] = "running"
+		micro["t"] = CFG.MICRO_TIME
+		world.micro_light.visible = true
+		audio.ui_click()
+		toast("⏱ 75 seconds. Maybe watch TV while you wait...")
+	elif String(micro["state"]) == "done":
+		micro["state"] = "idle"
+		items["food"] = "hot"
+		audio.pickup()
+		toast("🍝 Hot lasagna! Eat it on the couch like a civilized goblin.")
+
+
+func _tv_use() -> void:
+	if not world.power:
+		audio.locked()
+		toast("📺 No power. Right.")
+		return
+	world.set_tv(not world.tv_on)
+	audio.set_tv(world.tv_on)
+	audio.ui_click()
+	if world.tv_on:
+		sub("\"...LOCAL NEWS AT NINE. Our top story tonight: Hollow Creek police—\" Sit down to watch.", 5.0)
+
+
+func _couch_prompt() -> String:
+	if bool(player.get("sitting")) and String(items.get("food", "")) == "hot":
+		return "Eat dinner (hold)"
+	if bool(player.get("sitting")):
+		return "Stand up"
+	return "Sit on the couch"
+
+
+func _couch_use() -> void:
+	if bool(player.get("sitting")) and String(items.get("food", "")) == "hot":
+		items["food"] = ""
+		done("dinner")
+		sub("Peak cuisine: couch lasagna. Eaten with a plastic fork. Zero regrets.", 5.0)
+	else:
+		sit_toggle()
+
+
+func _drawer_prompt() -> String:
+	if not bool(flags.get("batteries", false)):
+		return "Search the junk drawer"
+	if chapter >= 5 and not bool(items.get("master_key", false)):
+		return "Search the drawer again (key?)"
+	return "Junk drawer (dead pens, takeout menus)"
+
+
+func _drawer_use() -> void:
+	audio.ui_click()
+	if not bool(flags.get("batteries", false)):
+		flags["batteries"] = true
+		items["batteries"] = int(items.get("batteries", 0)) + 1
+		items["battery"] = 100.0
+		toast("🔋 Batteries! Flashlight recharged to 100%.")
+		sub("A full pack of AAs. Dana labels everything: \"FLASHLIGHT — DO NOT STEAL -DANA.\"", 4.0)
+	elif chapter >= 5 and not bool(items.get("master_key", false)):
+		items["master_key"] = true
+		audio.pickup()
+		done("key")
+		sub("Taped under the drawer: a brass key. \"MASTER — DO NOT.\" ...Sorry, Dana.", 5.0)
+	else:
+		sub("Dead pens. Soy sauce packets. A Size D battery. Nope.", 3.0)
+
+
+func _take_flash() -> void:
+	items["flash"] = true
+	audio.pickup()
+	done("flash")
+	toast("🔦 Flashlight! Press F to toggle. Watch the battery.")
+
+
+func _fuse() -> void:
+	if chapter != 4 or is_done("fuse"):
+		return
+	fuse_n += 1
+	audio.static_burst()
+	player.set("noise", 60.0)
+	if fuse_n >= 3:
+		world.set_power(true)
+		audio.power_up()
+		done("fuse")
+		sub("CLICK. The house gasps back to life. Light floods the hallway — and for one frame, a TALL SHADOW shrinks off the wall.", 6.0)
+		flicker("hall", 1.5)
+	else:
+		toast("⚡ Breaker %d/3... the box growls." % fuse_n)
+
+
+func _take_carkeys() -> void:
+	items["car_keys"] = true
+	audio.pickup()
+	done("carkeys")
+	sub("Car keys. You can't drive stick. But the panic button... the headlights... options. Or just RUN.", 6.0)
+
+
+func _climb_window() -> void:
+	if chapter < 6:
+		sub("Dana's rule #1: windows stay shut at night. ...Rules might change tonight.", 4.0)
+		return
+	world.escape_win_body.get_child(0).set_deferred("disabled", true)
+	player.set("hidden", "")
+	player.set("frozen", false)
+	player.global_position = Vector3(-5.5, 0, -6.5)
+	player.call("set_look", -PI * 0.5, 0.0)
+	player.set("noise", 100.0)
+	audio.glass_at(Vector3(-5.5, 1.4, -5.5))
+	flags["escaped_window"] = true
+	sub("Cold air. Wet grass. RUN — east side, around the fence, to the STREET.", 6.0)
+	toast("🏃 REACH THE STREET (south, past the fence)!")
+	enemy.call("place", -1.5, -6.8, -PI * 0.5)
+	enemy.set("state", "investigate")
+	enemy.set("target", Vector3(-5.5, 0, -6.5))
+	enemy.set("speed_mul", 1.15)
+
+
+func _neighbor() -> void:
+	if chapter != 6:
+		return
+	audio.knock_at(Vector3(-18.2, 1.3, 7.3), "heavy3")
+	finish("A")
+
+
+func _mirror() -> void:
+	if chapter >= 4 and not bool(flags.get("mirror_look", false)):
+		flags["mirror_look"] = true
+		audio.sting()
+		sub("Your reflection blinks a half-second late. Behind it, for one frame: the hallway. A tall shape. Gone.", 6.0)
+	else:
+		sub("You look great. Terrified, but great.", 3.0)

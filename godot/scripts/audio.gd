@@ -1,0 +1,402 @@
+extends Node
+## Procedural audio: every sound is synthesized at boot into AudioStreamWAV.
+## Zero audio files. 2D pool for UI/feet/phone, 3D pool for world sounds.
+
+var rate := 22050
+var bank := {}
+var pool2d: Array[AudioStreamPlayer] = []
+var pool3d: Array[AudioStreamPlayer3D] = []
+var i2d := 0
+var i3d := 0
+var room_player: AudioStreamPlayer
+var rain_player: AudioStreamPlayer
+var tv_player: AudioStreamPlayer
+var heart_player: AudioStreamPlayer
+var heart_on := false
+var heart_fast := false
+var heart_t := 0.0
+var vol := 0.8
+
+
+func _ready() -> void:
+	randomize()
+	for i in 10:
+		var p := AudioStreamPlayer.new()
+		add_child(p)
+		pool2d.append(p)
+		var q := AudioStreamPlayer3D.new()
+		q.max_distance = 60.0
+		add_child(q)
+		pool3d.append(q)
+	room_player = AudioStreamPlayer.new()
+	add_child(room_player)
+	rain_player = AudioStreamPlayer.new()
+	add_child(rain_player)
+	tv_player = AudioStreamPlayer.new()
+	add_child(tv_player)
+	heart_player = AudioStreamPlayer.new()
+	add_child(heart_player)
+	_build_bank()
+	set_vol(vol)
+
+
+func set_vol(v: float) -> void:
+	vol = v
+	var db := -60.0 if v <= 0.01 else linear_to_db(v)
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Master"), db)
+
+
+# ---------- synthesis helpers ----------
+func _empty(dur: float) -> PackedFloat32Array:
+	var b := PackedFloat32Array()
+	b.resize(maxi(1, int(dur * rate)))
+	return b
+
+
+func _put_tone(b: PackedFloat32Array, freq: float, volu: float, wave: String, start: float, dur: float, slide_to := 0.0, decay := 3.0) -> void:
+	var s0 := int(start * rate)
+	var n := int(dur * rate)
+	if n <= 0:
+		return
+	var phase := 0.0
+	for i in n:
+		var f := freq
+		if slide_to > 0.0:
+			f = lerpf(freq, slide_to, float(i) / float(n - 1))
+		phase += TAU * f / rate
+		var s := 0.0
+		match wave:
+			"sine":
+				s = sin(phase)
+			"square":
+				s = 1.0 if sin(phase) > 0.0 else -1.0
+			"tri":
+				s = asin(clampf(sin(phase), -1.0, 1.0)) * 0.6366
+			"saw":
+				s = fmod(phase, TAU) / PI - 1.0
+		var env := 1.0
+		if decay > 0.0:
+			env = exp(-decay * float(i) / float(n - 1))
+		var idx := s0 + i
+		if idx >= 0 and idx < b.size():
+			b[idx] += s * volu * env
+
+
+func _put_noise(b: PackedFloat32Array, volu: float, start: float, dur: float, cutoff := 0.0, highpass := false, decay := 3.0) -> void:
+	var s0 := int(start * rate)
+	var n := int(dur * rate)
+	if n <= 0:
+		return
+	var alpha := 0.0
+	if cutoff > 0.0:
+		alpha = 1.0 - exp(-TAU * cutoff / rate)
+	var y := 0.0
+	for i in n:
+		var x := randf() * 2.0 - 1.0
+		var out := x
+		if cutoff > 0.0:
+			y += alpha * (x - y)
+			out = (x - y) if highpass else y
+		var env := 1.0
+		if decay > 0.0:
+			env = exp(-decay * float(i) / float(n - 1))
+		var idx := s0 + i
+		if idx >= 0 and idx < b.size():
+			b[idx] += out * volu * env
+
+
+func _fade(b: PackedFloat32Array, fade_in: float, fade_out: float) -> void:
+	var ni := int(fade_in * rate)
+	var no := int(fade_out * rate)
+	for i in mini(ni, b.size()):
+		b[i] *= float(i) / float(maxi(1, ni))
+	for i in mini(no, b.size()):
+		b[b.size() - 1 - i] *= float(i) / float(maxi(1, no))
+
+
+func _loopify(b: PackedFloat32Array, fade_ms := 60.0) -> void:
+	var n := mini(int(fade_ms / 1000.0 * rate), b.size() / 2)
+	for i in n:
+		var t := float(i) / float(maxi(1, n))
+		var idx := b.size() - n + i
+		b[idx] = b[idx] * (1.0 - t) + b[i] * t
+
+
+func _wav(b: PackedFloat32Array) -> AudioStreamWAV:
+	var bytes := PackedByteArray()
+	bytes.resize(b.size() * 2)
+	for i in b.size():
+		var v := int(clampf(b[i], -1.0, 1.0) * 32767.0)
+		if v < 0:
+			v += 65536
+		bytes[i * 2] = v & 0xFF
+		bytes[i * 2 + 1] = (v >> 8) & 0xFF
+	var w := AudioStreamWAV.new()
+	w.format = AudioStreamWAV.FORMAT_16_BITS
+	w.mix_rate = rate
+	w.stereo = false
+	w.data = bytes
+	return w
+
+
+func _loop_wav(b: PackedFloat32Array) -> AudioStreamWAV:
+	_loopify(b)
+	var w := _wav(b)
+	w.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	w.loop_begin = 0
+	w.loop_end = b.size()
+	return w
+
+
+func _build_bank() -> void:
+	var b: PackedFloat32Array
+	# footsteps
+	b = _empty(0.14)
+	_put_tone(b, 90.0, 0.5, "sine", 0.0, 0.1, 60.0, 6.0)
+	_put_noise(b, 0.12, 0.0, 0.08, 600.0, false, 6.0)
+	bank["step_walk"] = _wav(b)
+	b = _empty(0.14)
+	_put_tone(b, 100.0, 0.85, "sine", 0.0, 0.11, 55.0, 5.0)
+	_put_noise(b, 0.25, 0.0, 0.1, 800.0, false, 5.0)
+	bank["step_run"] = _wav(b)
+	b = _empty(0.16)
+	_put_tone(b, 80.0, 0.22, "sine", 0.0, 0.12, 55.0, 5.0)
+	bank["step_crouch"] = _wav(b)
+	# doors
+	b = _empty(0.65)
+	_put_tone(b, 180.0, 0.3, "saw", 0.05, 0.5, 340.0, 1.5)
+	_put_noise(b, 0.05, 0.05, 0.5, 900.0, false, 1.5)
+	bank["creak_open"] = _wav(b)
+	b = _empty(0.65)
+	_put_tone(b, 320.0, 0.3, "saw", 0.05, 0.5, 140.0, 1.5)
+	_put_noise(b, 0.05, 0.05, 0.5, 900.0, false, 1.5)
+	bank["creak_close"] = _wav(b)
+	b = _empty(0.28)
+	_put_tone(b, 65.0, 0.9, "sine", 0.0, 0.24, 40.0, 5.0)
+	_put_noise(b, 0.2, 0.0, 0.1, 500.0, false, 6.0)
+	bank["shut"] = _wav(b)
+	b = _empty(0.3)
+	_put_tone(b, 140.0, 0.5, "square", 0.0, 0.07, 0.0, 8.0)
+	_put_tone(b, 110.0, 0.5, "square", 0.11, 0.09, 0.0, 8.0)
+	bank["locked"] = _wav(b)
+	# knocks (baked sequences)
+	b = _empty(1.1)
+	for k in 3:
+		_put_tone(b, 85.0, 0.9, "sine", 0.05 + k * 0.3, 0.16, 55.0, 6.0)
+	bank["knock_soft"] = _wav(b)
+	b = _empty(1.5)
+	for k in 3:
+		_put_tone(b, 55.0, 1.0, "sine", 0.05 + k * 0.42, 0.2, 35.0, 5.0)
+	bank["knock_heavy"] = _wav(b)
+	b = _empty(1.0)
+	for k in 2:
+		_put_tone(b, 55.0, 1.0, "sine", 0.05 + k * 0.42, 0.2, 35.0, 5.0)
+	bank["knock2"] = _wav(b)
+	b = _empty(0.35)
+	_put_tone(b, 70.0, 0.9, "sine", 0.02, 0.2, 45.0, 5.0)
+	bank["knock1"] = _wav(b)
+	# glass
+	b = _empty(0.55)
+	_put_noise(b, 0.8, 0.0, 0.5, 3800.0, true, 5.0)
+	_put_tone(b, 1200.0, 0.3, "tri", 0.0, 0.2, 400.0, 5.0)
+	bank["glass"] = _wav(b)
+	# phone / ui
+	b = _empty(0.5)
+	_put_tone(b, 880.0, 0.5, "sine", 0.0, 0.12, 0.0, 4.0)
+	_put_tone(b, 1174.0, 0.5, "sine", 0.13, 0.2, 0.0, 4.0)
+	bank["ding"] = _wav(b)
+	b = _empty(0.95)
+	_put_tone(b, 160.0, 0.6, "saw", 0.0, 0.35, 0.0, 0.5)
+	_put_tone(b, 160.0, 0.6, "saw", 0.45, 0.35, 0.0, 0.5)
+	bank["buzz"] = _wav(b)
+	b = _empty(0.2)
+	_put_tone(b, 1046.0, 0.6, "square", 0.0, 0.15, 0.0, 2.0)
+	bank["beep1"] = _wav(b)
+	b = _empty(1.1)
+	_put_tone(b, 1046.0, 0.6, "square", 0.0, 0.15, 0.0, 2.0)
+	_put_tone(b, 1046.0, 0.6, "square", 0.25, 0.15, 0.0, 2.0)
+	_put_tone(b, 1046.0, 0.6, "square", 0.5, 0.35, 0.0, 2.0)
+	bank["beep3"] = _wav(b)
+	b = _empty(0.08)
+	_put_tone(b, 520.0, 0.35, "square", 0.0, 0.05, 0.0, 8.0)
+	bank["click"] = _wav(b)
+	b = _empty(0.25)
+	_put_tone(b, 660.0, 0.5, "tri", 0.0, 0.2, 880.0, 2.0)
+	bank["pickup"] = _wav(b)
+	b = _empty(0.4)
+	_put_noise(b, 0.6, 0.0, 0.4, 0.0, false, 4.0)
+	bank["static"] = _wav(b)
+	# sting
+	b = _empty(1.2)
+	for f in [110.0, 116.0, 233.0, 466.0, 932.0]:
+		_put_tone(b, f, 0.28, "saw", 0.0, 1.1, 0.0, 3.0)
+	_put_tone(b, 45.0, 0.9, "sine", 0.0, 0.8, 30.0, 3.0)
+	bank["sting"] = _wav(b)
+	# siren
+	b = _empty(6.0)
+	var phase := 0.0
+	for i in b.size():
+		var t := float(i) / rate
+		var f := 770.0 + 110.0 * sin(TAU * t / 1.8)
+		phase += TAU * f / rate
+		b[i] += asin(clampf(sin(phase), -1.0, 1.0)) * 0.6366 * 0.4
+	_fade(b, 2.0, 0.5)
+	bank["siren"] = _wav(b)
+	# power
+	b = _empty(0.7)
+	_put_tone(b, 300.0, 0.4, "saw", 0.0, 0.65, 40.0, 0.8)
+	bank["power_down"] = _wav(b)
+	b = _empty(0.5)
+	_put_tone(b, 80.0, 0.35, "saw", 0.0, 0.45, 320.0, 0.8)
+	bank["power_up"] = _wav(b)
+	# heartbeat (single double-thump, scheduled in _process)
+	b = _empty(0.8)
+	_put_tone(b, 55.0, 0.9, "sine", 0.0, 0.28, 35.0, 5.0)
+	_put_tone(b, 52.0, 0.7, "sine", 0.42, 0.28, 35.0, 5.0)
+	bank["heart"] = _wav(b)
+	# loops
+	b = _empty(2.0)
+	_put_noise(b, 0.5, 0.0, 2.0, 220.0, false, 0.0)
+	_put_tone(b, 59.0, 0.06, "sine", 0.0, 2.0, 0.0, 0.0)
+	bank["room_loop"] = _loop_wav(b)
+	b = _empty(2.0)
+	_put_noise(b, 0.35, 0.0, 2.0, 2500.0, true, 0.0)
+	bank["rain_loop"] = _loop_wav(b)
+	b = _empty(1.0)
+	_put_noise(b, 0.3, 0.0, 1.0, 400.0, true, 0.0)
+	bank["tv_loop"] = _loop_wav(b)
+
+
+# ---------- playback ----------
+func _play2d(sound: String, vol_db := 0.0, pitch := 1.0) -> void:
+	if not bank.has(sound):
+		return
+	var p := pool2d[i2d]
+	i2d = (i2d + 1) % pool2d.size()
+	p.stream = bank[sound]
+	p.volume_db = vol_db
+	p.pitch_scale = pitch
+	p.play()
+
+
+func _play3d(sound: String, pos: Vector3, vol_db := 0.0, pitch := 1.0) -> void:
+	if not bank.has(sound):
+		return
+	var p := pool3d[i3d]
+	i3d = (i3d + 1) % pool3d.size()
+	p.global_position = pos
+	p.stream = bank[sound]
+	p.volume_db = vol_db
+	p.pitch_scale = pitch
+	p.play()
+
+
+func _process(delta: float) -> void:
+	if heart_on:
+		heart_t -= delta
+		if heart_t <= 0.0:
+			heart_t = 0.62 if heart_fast else 0.95
+			heart_player.stream = bank["heart"]
+			heart_player.play()
+
+
+# ---------- public API ----------
+func start_ambience() -> void:
+	if not room_player.playing:
+		room_player.stream = bank["room_loop"]
+		room_player.volume_db = -14.0
+		room_player.play()
+
+
+func start_rain() -> void:
+	if not rain_player.playing:
+		rain_player.stream = bank["rain_loop"]
+		rain_player.volume_db = -12.0
+		rain_player.play()
+
+
+func stop_rain() -> void:
+	rain_player.stop()
+
+
+func set_tv(on: bool) -> void:
+	if on and not tv_player.playing:
+		tv_player.stream = bank["tv_loop"]
+		tv_player.volume_db = -16.0
+		tv_player.play()
+	elif not on:
+		tv_player.stop()
+
+
+func set_heart(on: bool, fast := false) -> void:
+	heart_on = on
+	heart_fast = fast
+
+
+func footstep(run: bool, crouch: bool) -> void:
+	var s := "step_walk"
+	if run:
+		s = "step_run"
+	elif crouch:
+		s = "step_crouch"
+	_play2d(s, 0.0, randf_range(0.92, 1.08))
+
+
+func door_creak(open: bool) -> void:
+	_play2d("creak_open" if open else "creak_close", -4.0, randf_range(0.95, 1.05))
+
+
+func door_shut_at(pos: Vector3) -> void:
+	_play3d("shut", pos, 0.0)
+
+
+func locked() -> void:
+	_play2d("locked", 0.0)
+
+
+func knock_at(pos: Vector3, kind := "soft3") -> void:
+	_play3d("knock_soft" if kind == "soft3" else ("knock_heavy" if kind == "heavy3" else ("knock2" if kind == "heavy2" else "knock1")), pos, 2.0)
+
+
+func glass_at(pos: Vector3) -> void:
+	_play3d("glass", pos, 2.0)
+
+
+func text_ding() -> void:
+	_play2d("ding", 0.0)
+
+
+func phone_buzz() -> void:
+	_play2d("buzz", 0.0)
+
+
+func microwave_beep(final := false) -> void:
+	_play2d("beep3" if final else "beep1", 0.0)
+
+
+func sting() -> void:
+	_play2d("sting", 0.0)
+
+
+func siren() -> void:
+	_play2d("siren", 2.0)
+
+
+func power_down() -> void:
+	_play2d("power_down", 0.0)
+
+
+func power_up() -> void:
+	_play2d("power_up", 0.0)
+
+
+func ui_click() -> void:
+	_play2d("click", 0.0)
+
+
+func pickup() -> void:
+	_play2d("pickup", 0.0)
+
+
+func static_burst() -> void:
+	_play2d("static", -2.0)

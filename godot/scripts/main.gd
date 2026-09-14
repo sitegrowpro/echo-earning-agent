@@ -1,0 +1,383 @@
+extends Node3D
+## MAIN — game manager: states, menus, saves, input, per-frame glue.
+
+const Story := preload("res://scripts/story.gd")
+const Phone := preload("res://scripts/phone.gd")
+const Interact := preload("res://scripts/interact.gd")
+const Save := preload("res://scripts/save.gd")
+
+@onready var world = $World
+@onready var player = $Player
+@onready var enemy = $Enemy
+@onready var audio = $Audio
+@onready var ui = $UI
+@onready var camera = $Player/Camera3D
+@onready var flash = $Player/Camera3D/Flashlight
+@onready var ray = $Player/Camera3D/InteractRay
+
+var story
+var phone
+var interact
+var settings := {}
+var state := "menu"
+var last_room := ""
+var last_ending := ""
+var shake_t := 0.0
+
+
+func _ready() -> void:
+	ui.process_mode = Node.PROCESS_MODE_ALWAYS
+	_ensure_input()
+	settings = Save.get_settings()
+	player.audio = audio
+	enemy.audio = audio
+	story = Story.new()
+	phone = Phone.new()
+	story.setup({"audio": audio, "world": world, "enemy": enemy, "player": player, "root": self, "tree": get_tree(), "ui": ui, "phone": phone})
+	phone.audio = audio
+	phone.ui = ui
+	phone.story = story
+	phone.tree = get_tree()
+	interact = Interact.new()
+	interact.parent = world
+	interact.ray = ray
+	interact.ctx = {"story": story, "audio": audio, "player": player, "world": world, "enemy": enemy, "ui": ui, "ui_blocked": Callable(self, "is_ui_blocked")}
+	story.register(interact)
+	ui.setup(self, story, phone)
+	apply_settings()
+	ui.refresh_endings_list()
+	ui.refresh_continue()
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+func _ensure_input() -> void:
+	var defs := {
+		"move_forward": [87, 4194320], "move_back": [83, 4194322],
+		"move_left": [65, 4194319], "move_right": [68, 4194321],
+		"sprint": [4194325], "crouch": [67, 4194326],
+		"interact": [69], "flashlight": [70], "phone": [4194306],
+		"phone_next": [81], "reply_1": [49], "reply_2": [50], "reply_3": [51],
+		"pause_game": [4194305],
+	}
+	for a in defs.keys():
+		if not InputMap.has_action(a):
+			InputMap.add_action(a)
+		if InputMap.action_get_events(a).is_empty():
+			for code in (defs[a] as Array):
+				var ev := InputEventKey.new()
+				ev.device = -1
+				ev.physical_keycode = code
+				InputMap.action_add_event(a, ev)
+
+
+func is_ui_blocked() -> bool:
+	return story.ui_busy() or state != "playing"
+
+
+func update_mouse() -> void:
+	if state == "playing" and not story.ui_busy() and not phone.visible:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	else:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+func _is_echo(event: InputEvent) -> bool:
+	return event is InputEventKey and (event as InputEventKey).echo
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if state == "paused":
+		if event.is_action_pressed("pause_game") and not _is_echo(event):
+			resume_game()
+		return
+	if state != "playing":
+		return
+	if _is_echo(event):
+		return
+	if event.is_action_pressed("phone") and not story.ui_busy():
+		audio.ui_click()
+		phone.toggle()
+		return
+	if phone.visible:
+		if event.is_action_pressed("reply_1"):
+			ui.press_reply(0)
+			return
+		if event.is_action_pressed("reply_2"):
+			ui.press_reply(1)
+			return
+		if event.is_action_pressed("reply_3"):
+			ui.press_reply(2)
+			return
+		if event.is_action_pressed("phone_next"):
+			var order := ["millers", "priya", "unknown"]
+			phone.show(order[(order.find(phone.active) + 1) % order.size()])
+			return
+	if story.note_open and (event.is_action_pressed("interact") or event.is_action_pressed("pause_game")):
+		story.close_note()
+		return
+	if story.peep_open and (event.is_action_pressed("interact") or event.is_action_pressed("pause_game")):
+		story.close_peep()
+		return
+	if ui.dialog_panel.visible:
+		if event.is_action_pressed("reply_1"):
+			ui.press_dialog(0)
+			return
+		if event.is_action_pressed("reply_2"):
+			ui.press_dialog(1)
+			return
+		if event.is_action_pressed("reply_3"):
+			ui.press_dialog(2)
+			return
+	if story.ui_busy():
+		return
+	if event.is_action_pressed("interact"):
+		interact.press()
+	if event.is_action_released("interact"):
+		interact.release()
+	if event.is_action_pressed("flashlight"):
+		story.toggle_flash()
+	if event.is_action_pressed("pause_game"):
+		pause_game()
+	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
+		if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+			update_mouse()
+
+
+func _physics_process(dt: float) -> void:
+	if state != "playing":
+		return
+	var pp: Vector3 = player.global_position
+	var room := room_of(pp)
+	if room != last_room:
+		last_room = room
+		if not story.finished:
+			story.on_room(room)
+	player.indoor = room != "porch" and room != "yard" and room != "street"
+	story.update(dt)
+	var res: String = enemy.update_enemy(dt, player, story)
+	if res == "caught" and not story.finished:
+		ui.jumpscare(Callable(story, "finish").bind("D", "He was faster. He is always faster."))
+	var target_e := 8.0 if story.flash_is_on else 0.0
+	flash.light_energy += (target_e - flash.light_energy) * minf(1.0, dt * 10.0)
+	if story.chapter == 6 and not story.finished and room == "street":
+		story.finish("B")
+	ui.set_meters(player.stamina, player.noise, float(story.items.get("battery", 100.0)), bool(story.items.get("flash", false)))
+	var cur: Dictionary = interact.update(dt)
+	if not cur.is_empty():
+		ui.set_prompt(String(cur["text"]), float(cur["hold"]) > 0.0)
+		if interact.holding and interact.hold_need > 0.0:
+			ui.set_hold(interact.hold_t / interact.hold_need)
+		else:
+			ui.set_hold(-1.0)
+	else:
+		ui.set_prompt("", false)
+		ui.set_hold(-1.0)
+	if shake_t > 0.0:
+		shake_t -= dt
+		camera.h_offset = randf_range(-0.06, 0.06)
+		camera.v_offset = randf_range(-0.06, 0.06)
+	elif String(enemy.get("state")) == "chase" and not story.finished:
+		camera.h_offset = randf_range(-0.012, 0.012)
+		camera.v_offset = randf_range(-0.012, 0.012)
+	else:
+		camera.h_offset = 0.0
+		camera.v_offset = 0.0
+
+
+func room_of(p: Vector3) -> String:
+	if p.z >= 5.5:
+		if absf(p.x) < 3.4 and p.z < 8.4:
+			return "porch"
+		return "street" if p.z >= 13.4 else "yard"
+	return world.room_at(p.x, p.z)
+
+
+# ---------- state flow ----------
+func _reset_run() -> void:
+	world.set_power(true)
+	world.set_rain(true)
+	world.set_tv(false)
+	audio.set_tv(false)
+	audio.set_heart(false)
+	world.escape_win_body.get_child(0).set_deferred("disabled", false)
+	for id in world.doors.keys():
+		var d = world.doors[id]
+		var open := id == "guest" or id == "bath"
+		d.set("is_open", open)
+		d.set("target", float(d.get("swing")) if open else 0.0)
+		d.set("angle", float(d.get("swing")) if open else 0.0)
+		d.rotation.y = float(d.get("angle"))
+		d.set("locked", id == "master")
+		(d.get("shape") as CollisionShape3D).set_deferred("disabled", open)
+	enemy.set("state", "dormant")
+	enemy.set("aggression", 0)
+	enemy.set("speed_mul", 1.0)
+	enemy.set("wp", 0)
+	enemy.visible = false
+	player.set("frozen", false)
+	player.set("hidden", "")
+	player.set("sitting", false)
+	player.set("noise", 0.0)
+	player.set("stamina", 100.0)
+	player.call("stand_up")
+	phone.threads = {"millers": [], "priya": [], "unknown": []}
+	phone.unread = {"millers": 0, "priya": 0, "unknown": 0}
+	phone.active = "millers"
+	phone.visible = false
+	ui.set_replies([])
+	ui.set_phone_visible(false)
+	ui.unknown_btn.visible = false
+
+
+func _start(fresh: bool) -> void:
+	audio.ui_click()
+	audio.start_ambience()
+	audio.start_rain()
+	_reset_run()
+	get_tree().paused = false
+	state = "playing"
+	ui.show_hud()
+	last_room = ""
+	if fresh:
+		Save.clear_save()
+		story.new_game()
+	else:
+		var s := Save.load_game()
+		if s.is_empty():
+			story.new_game()
+		else:
+			story.load_data(s)
+			if bool(story.flags.get("master_open", false)):
+				(world.doors["master"]).set("locked", false)
+			if story.chapter == 4 and not story.is_done("fuse"):
+				world.set_power(false)
+			if story.chapter >= 5:
+				enemy.visible = true
+				enemy.call("place", 0.0, -0.5, 0.0)
+				enemy.set("state", "patrol")
+	ui.refresh_continue()
+	update_mouse()
+
+
+func start_new() -> void:
+	_start(true)
+
+
+func start_continue() -> void:
+	_start(false)
+
+
+func pause_game() -> void:
+	if state != "playing" or story.ui_busy():
+		return
+	state = "paused"
+	autosave()
+	ui.show_pause(true)
+	get_tree().paused = true
+	update_mouse()
+
+
+func resume_game() -> void:
+	if state != "paused":
+		return
+	state = "playing"
+	ui.show_pause(false)
+	get_tree().paused = false
+	update_mouse()
+
+
+func save_now() -> void:
+	Save.save_game(story.serialize())
+	audio.ui_click()
+	ui.toast("💾 Saved.")
+
+
+func autosave() -> void:
+	if state == "playing" and story.chapter >= 0:
+		Save.save_game(story.serialize())
+
+
+func quit_to_menu() -> void:
+	if (state == "playing" or state == "paused") and not story.finished:
+		Save.save_game(story.serialize())
+	state = "menu"
+	get_tree().paused = false
+	phone.toggle(0)
+	ui.show_menu()
+	update_mouse()
+
+
+func on_ending(id: String) -> void:
+	last_ending = id
+	state = "ending"
+	Save.unlock_ending(id)
+	if id != "D":
+		Save.clear_save()
+	phone.toggle(0)
+	ui.hud.visible = false
+	audio.set_heart(false)
+	ui.refresh_endings_list()
+	ui.refresh_continue()
+
+
+func again_pressed() -> void:
+	audio.ui_click()
+	if last_ending == "D":
+		_rewind5()
+	else:
+		_start(true)
+
+
+func _rewind5() -> void:
+	ui.hide_ending()
+	_reset_run()
+	state = "playing"
+	get_tree().paused = false
+	ui.hud.visible = true
+	story.finished = false
+	story.flags = {"deadbolt": true, "batteries": true, "priya_note": true, "mail_taken": true, "invited_priya": bool(story.flags.get("invited_priya", false))}
+	story.items = {"flash": true, "flash_on": false, "battery": 100.0, "batteries": 1, "master_key": false, "car_keys": false, "food": "", "trash": false}
+	story.micro = {"state": "idle", "t": 0.0}
+	story.news_t = 0.0
+	story.news_seg = 0
+	story.police_t = -1.0
+	story.fuse_n = 3
+	player.global_position = Vector3(-5.5, 0, -3.5)
+	player.call("set_look", 0.3, 0.0)
+	story.goto_chapter(5)
+	update_mouse()
+
+
+func note_click() -> void:
+	if story.note_open:
+		story.close_note()
+
+
+func peep_click() -> void:
+	if story.peep_open:
+		story.close_peep()
+
+
+func setting_changed(key: String, v: Variant) -> void:
+	settings[key] = v
+	Save.save_settings(settings)
+	apply_settings()
+
+
+func apply_settings() -> void:
+	audio.set_vol(float(settings.get("vol", 0.8)))
+	player.sens = float(settings.get("sens", 1.0))
+	player.headbob = bool(settings.get("headbob", true))
+	ui.apply_settings_vis()
+
+
+func get_endings() -> Dictionary:
+	return Save.get_endings()
+
+
+func has_save() -> bool:
+	return Save.has_save()
+
+
+func shake(t: float) -> void:
+	shake_t = t
