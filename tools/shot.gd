@@ -44,16 +44,15 @@ func _process(_delta: float) -> bool:
 		main.get("story").call("toggle_door", "front")
 		main.get("story").call("toggle_door", "laundry")
 		main.get("story").call("_tv_use")
-		main.get("enemy").call("perch", {"x": 0.0, "z": 7.2, "face": 1.41})
 		Input.action_press("move_forward")
-		print("[SHOT] card dismissed; front open; TV on; Daniel perched; walking in")
-	elif stage == 2 and frames >= 170:
+		print("[SHOT] card dismissed; front open; TV on; walking in")
+	elif stage == 2 and frames >= 180:
 		stage = 3
 		Input.action_release("move_forward")
 		var pp: Vector3 = (main.get("player") as Node3D).global_position
 		print("[SHOT] walk-in final pos=", pp, " verdict=", "WALKIN-OK" if pp.z < 5.0 else "WALKIN-FAIL")
 		main.get("player").set("frozen", true)
-	elif stage == 3 and frames >= 250 + (stop_i + 1) * 35:
+	elif stage == 3 and frames >= 260 + (stop_i + 1) * 35:
 		stop_i += 1
 		# Capture the PREVIOUS stop: its teleport has had a full slot to render.
 		if stop_i >= 1 and stop_i - 1 < stops.size():
@@ -66,6 +65,9 @@ func _process(_delta: float) -> bool:
 		if stop_i == 7:
 			main.get("phone").call("toggle")
 			print("[SHOT] phone closed")
+		if stop_i == 8:
+			main.get("enemy").call("perch", {"x": 0.0, "z": 7.2, "face": 1.41})
+			print("[SHOT] Daniel perched for finale")
 		# Teleport to THIS stop (captured next slot).
 		if stop_i < stops.size():
 			var s: Dictionary = stops[stop_i]
