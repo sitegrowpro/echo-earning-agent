@@ -1,0 +1,54 @@
+name: godot-test
+# Remote engine lab: real compiler checks, headless boot, Xvfb screenshots.
+# Trigger: gh workflow run godot-test --ref <branch>
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system deps
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq xvfb libgl1-mesa-dri unzip
+
+      - name: Install Godot 4.7
+        run: |
+          cd /tmp
+          curl -sL -o godot.zip https://github.com/godotengine/godot/releases/download/4.7-stable/Godot_v4.7-stable_linux.x86_64.zip
+          unzip -o -q godot.zip
+          chmod +x Godot_v4.7-stable_linux.x86_64
+          ln -sf /tmp/Godot_v4.7-stable_linux.x86_64 /tmp/godot
+          /tmp/godot --version
+
+      - name: Import project
+        run: /tmp/godot --headless --path godot --import 2>&1 | tail -5
+
+      - name: Real compiler check (all scripts)
+        run: |
+          fails=0
+          for f in godot/scripts/*.gd; do
+            r="res://scripts/$(basename $f)"
+            out=$(/tmp/godot --headless --path godot --check-only --script "$r" 2>&1)
+            if echo "$out" | grep -qiE "error|parse|failed"; then echo "FAIL: $r"; echo "$out" | head -10; fails=1; else echo "OK: $r"; fi
+          done
+          exit $fails
+
+      - name: Headless boot run (400 frames, error capture)
+        run: /tmp/godot --headless --path godot --quit-after 400 --audio-driver Dummy > /tmp/boot.log 2>&1; echo "exit=$?"; grep -E "ERROR|SCRIPT ERROR|WARNING" /tmp/boot.log | head -40 || echo "no errors"
+
+      - name: Xvfb screenshots (menu + spawn + walk)
+        run: |
+          mkdir -p /tmp/shots
+          xvfb-run --auto-servernum --server-args="-screen 0 1280x720x24" /tmp/godot --path godot --resolution 1280x720 --rendering-driver opengl3 --audio-driver Dummy -s "$GITHUB_WORKSPACE/tools/shot.gd" > /tmp/shots/run.log 2>&1; echo "exit=$?"
+          cp /tmp/shot_*.png /tmp/shots/ 2>/dev/null || true
+          grep -E "SHOT|ERROR" /tmp/shots/run.log | head -30
+          ls -la /tmp/shots/
+
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-shots
+          path: /tmp/shots/
