@@ -1,9 +1,9 @@
 extends SceneTree
 ## CI screenshot tour driver. Run from the Godot project as:
 ##   godot --path godot -s "$PWD/tools/shot.gd"
-## Walks a 9-stop camera tour (menu, spawn, 5 rooms, phone, street) to prove
-## graphics + mechanics. Dev tooling only: the game zip builds from godot/,
-## so this file never ships.
+## Proves the front-door walk-in with real input, then walks a 10-stop camera
+## tour (menu, spawn, 5 rooms, phone, street, Daniel). Dev tooling only: the
+## game zip builds from godot/, so this file never ships.
 
 var main: Node
 var frames := 0
@@ -41,12 +41,19 @@ func _process(_delta: float) -> bool:
 		stage = 2
 		stop_i = -1
 		main.call("story_click")
+		main.get("story").call("toggle_door", "front")
 		main.get("story").call("toggle_door", "laundry")
 		main.get("story").call("_tv_use")
 		main.get("enemy").call("perch", {"x": 0.0, "z": 7.2, "face": 1.41})
+		Input.action_press("move_forward")
+		print("[SHOT] card dismissed; front open; TV on; Daniel perched; walking in")
+	elif stage == 2 and frames >= 170:
+		stage = 3
+		Input.action_release("move_forward")
+		var pp: Vector3 = (main.get("player") as Node3D).global_position
+		print("[SHOT] walk-in final pos=", pp, " verdict=", "WALKIN-OK" if pp.z < 5.0 else "WALKIN-FAIL")
 		main.get("player").set("frozen", true)
-		print("[SHOT] card dismissed; laundry open; TV on; Daniel perched; touring")
-	elif stage == 2 and frames >= 220 + (stop_i + 1) * 35:
+	elif stage == 3 and frames >= 250 + (stop_i + 1) * 35:
 		stop_i += 1
 		# Capture the PREVIOUS stop: its teleport has had a full slot to render.
 		if stop_i >= 1 and stop_i - 1 < stops.size():

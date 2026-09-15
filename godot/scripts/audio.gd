@@ -17,6 +17,7 @@ var whisper_player: AudioStreamPlayer
 var mj_player: AudioStreamPlayer
 var drone_player: AudioStreamPlayer
 var shower_player: AudioStreamPlayer
+var music_player: AudioStreamPlayer
 var vox := {}
 var heart_on := false
 var heart_fast := false
@@ -52,6 +53,8 @@ func _ready() -> void:
 	add_child(drone_player)
 	shower_player = AudioStreamPlayer.new()
 	add_child(shower_player)
+	music_player = AudioStreamPlayer.new()
+	add_child(music_player)
 	_build_bank()
 	set_vol(vol)
 
@@ -343,12 +346,27 @@ func _build_bank() -> void:
 	_put_tone(b, 59.0, 0.06, "sine", 0.0, 2.0, 0.0, 0.0)
 	bank["room_loop"] = _loop_wav(b)
 	b = _empty(4.0)
-	_put_noise(b, 0.3, 0.0, 4.0, 2800.0, true, 0.0)
-	_put_noise(b, 0.22, 0.0, 4.0, 700.0, false, 0.0)
+	_put_noise(b, 0.16, 0.0, 4.0, 900.0, false, 0.0)
+	_put_noise(b, 0.1, 0.0, 4.0, 320.0, false, 0.0)
 	for i in b.size():
 		var t := float(i) / rate
-		b[i] *= 0.75 + 0.25 * sin(TAU * t / 1.3 + 0.7) * sin(TAU * t / 3.1)
+		b[i] *= 0.7 + 0.3 * sin(TAU * t / 2.1 + 0.4) * sin(TAU * t / 3.7)
 	bank["rain_loop"] = _loop_wav(b)
+	b = _empty(16.0)
+	var prog := [
+		[110.0, 130.81, 164.81, 220.0], [87.31, 110.0, 130.81, 174.61],
+		[98.0, 130.81, 164.81, 196.0], [98.0, 123.47, 146.83, 196.0],
+	]
+	for ci in 4:
+		for f in (prog[ci] as Array):
+			_put_tone(b, float(f), 0.05, "sine", float(ci) * 4.0, 4.0, 0.0, 0.0)
+			_put_tone(b, float(f) * 1.003, 0.03, "sine", float(ci) * 4.0, 4.0, 0.0, 0.0)
+		_put_tone(b, float((prog[ci] as Array)[0]) * 0.5, 0.07, "sine", float(ci) * 4.0, 4.0, 0.0, 0.0)
+	for i in b.size():
+		var t := float(i) / rate
+		var pc := fmod(t, 4.0) / 4.0
+		b[i] *= sin(PI * pc) * (0.9 + 0.1 * sin(TAU * t / 16.0))
+	bank["music_loop"] = _loop_wav(b)
 	b = _empty(1.0)
 	_put_noise(b, 0.3, 0.0, 1.0, 400.0, true, 0.0)
 	bank["tv_loop"] = _loop_wav(b)
@@ -456,10 +474,17 @@ func start_ambience() -> void:
 func start_rain() -> void:
 	if not rain_player.playing:
 		rain_player.stream = bank["rain_loop"]
-		rain_player.volume_db = -12.0
+		rain_player.volume_db = -19.0
 		rain_player.play()
 	else:
 		set_rain_level(1.0)
+
+
+func start_music() -> void:
+	if not music_player.playing:
+		music_player.stream = bank["music_loop"]
+		music_player.volume_db = -17.0
+		music_player.play()
 
 
 func stop_rain() -> void:
@@ -468,7 +493,7 @@ func stop_rain() -> void:
 
 func set_rain_level(x: float) -> void:
 	if rain_player.playing:
-		rain_player.volume_db = lerpf(-38.0, -11.0, clampf(x, 0.0, 1.0))
+		rain_player.volume_db = lerpf(-40.0, -19.0, clampf(x, 0.0, 1.0))
 
 
 func set_shower(on: bool) -> void:

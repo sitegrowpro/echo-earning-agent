@@ -66,7 +66,7 @@ func incoming(thread: String, texts: Array, gap := 1.6, token := -1, on_done := 
 				who = "Priya"
 			elif thread == "unknown":
 				who = "Unknown number"
-			story.call("toast", "✉ " + who)
+			story.call("toast", "✉ " + who + ": " + String(t).left(90))
 			ui.render_phone_badges()
 		else:
 			ui.render_phone()

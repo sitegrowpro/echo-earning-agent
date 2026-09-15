@@ -26,11 +26,11 @@ void fragment() {
 	// Rolling tracking band tears the image horizontally while passing.
 	// Higher dread = more frequent tears.
 	float band_at = fract(TIME * 0.14) * 1.3 - 0.15;
-	float band = smoothstep(0.045, 0.0, abs(suv.y - band_at));
+	float band = smoothstep(0.032, 0.0, abs(suv.y - band_at));
 	float gate = step(0.55 - dread * 0.25, hash(vec2(floor(TIME * 0.14), 3.7)));
 	float tear = band * gate * track_strength * (0.4 + dread);
 	float tear_row = hash(vec2(floor(suv.y * 240.0), floor(TIME * 24.0))) - 0.5;
-	duv.x += tear * tear_row * 0.12;
+	duv.x += tear * tear_row * 0.08;
 	duv.y += tear * (hash(vec2(7.3, floor(TIME * 24.0))) - 0.5) * 0.02;
 	// Chromatic aberration: 3 taps, separation grows toward the edges.
 	vec2 ca = cc * r2 * chroma * SCREEN_PIXEL_SIZE * 8.0 + vec2(SCREEN_PIXEL_SIZE.x * chroma * 0.35, 0.0);
@@ -40,7 +40,7 @@ void fragment() {
 	vec3 col = vec3(r, g, b);
 	// Tracking-band interference: washed noise stripe.
 	float track_noise = hash(vec2(floor(suv.x * 160.0), floor(TIME * 24.0)));
-	col = mix(col, vec3(track_noise * 0.9 + 0.1), tear * 0.45);
+	col = mix(col, vec3(track_noise * 0.9 + 0.1), tear * 0.25);
 	col += vec3(0.75, 0.9, 0.8) * tear * track_noise * 0.12;
 	// Scanlines with a slow roll.
 	float scan = sin((suv.y + fract(TIME * 0.11) * 0.02) * 700.0) * 0.5 + 0.5;

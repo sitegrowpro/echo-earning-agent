@@ -357,6 +357,7 @@ func _start(fresh: bool) -> void:
 	audio.ui_click()
 	audio.start_ambience()
 	audio.start_rain()
+	audio.start_music()
 	_reset_run()
 	get_tree().paused = false
 	state = "playing"

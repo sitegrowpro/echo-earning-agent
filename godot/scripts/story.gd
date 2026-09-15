@@ -1218,7 +1218,9 @@ func toggle_door(id: String) -> void:
 		if chapter == 0 and not bool(flags.get("deadbolt", false)):
 			if player.global_position.z > 5.5:
 				if bool(d.get("is_open")):
-					toast("Get inside first.")
+					player.global_position = Vector3(clampf(player.global_position.x, -0.4, 0.4), 0.0, 4.9)
+					player.call("set_look", 0.0, 0.0)
+					audio.step_at(player.global_position, false)
 				else:
 					d.call("toggle")
 					audio.door_creak(true)

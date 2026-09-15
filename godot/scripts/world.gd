@@ -1218,14 +1218,14 @@ func reset_dread_props() -> void:
 
 func _light_rig() -> void:
 	_omni("living", Color(1.0, 0.85, 0.63), 2.2, 11.0, Vector3(-4, 2.3, 3), true)
-	_omni("living", Color(1.0, 0.9, 0.64), 1.2, 6.0, Vector3(-7.3, 1.9, 4.9))
-	_omni("kitchen", Color(1.0, 0.95, 0.85), 2.2, 11.0, Vector3(4, 2.4, 3), true)
-	_omni("hall", Color(1.0, 0.91, 0.77), 1.8, 9.0, Vector3(0, 2.4, -0.5), true)
-	_omni("guest", Color(1.0, 0.85, 0.63), 1.6, 7.0, Vector3(-4.5, 2.0, -3.5))
+	_omni("living", Color(1.0, 0.9, 0.64), 1.0, 6.0, Vector3(-7.3, 1.9, 4.9))
+	_omni("kitchen", Color(1.0, 0.95, 0.85), 1.8, 11.0, Vector3(4, 2.4, 3), true)
+	_omni("hall", Color(1.0, 0.91, 0.77), 1.5, 9.0, Vector3(0, 2.4, -0.5), true)
+	_omni("guest", Color(1.0, 0.85, 0.63), 1.35, 7.0, Vector3(-4.5, 2.0, -3.5))
 	_omni("guest", Color(0.81, 0.88, 1.0), 0.9, 4.0, Vector3(-3.58, 1.3, -4.93))
-	_omni("master", Color(1.0, 0.91, 0.77), 1.8, 9.0, Vector3(1, 2.4, -3.5))
+	_omni("master", Color(1.0, 0.91, 0.77), 1.5, 9.0, Vector3(1, 2.4, -3.5))
 	_omni("bath", Color(0.84, 0.93, 1.0), 1.1, 6.0, Vector3(5.2, 2.3, -3.5))
-	_omni("laundry", Color(1.0, 0.97, 0.85), 1.8, 7.0, Vector3(7.2, 2.3, -3.5))
+	_omni("laundry", Color(1.0, 0.97, 0.85), 1.5, 7.0, Vector3(7.2, 2.3, -3.5))
 	porch_light = OmniLight3D.new()
 	porch_light.light_color = Color(1.0, 0.85, 0.63)
 	porch_light.light_energy = 2.5
@@ -1272,7 +1272,8 @@ func _outside() -> void:
 	box(0.18, 3.0, 0.18, mat(Color(0.23, 0.18, 0.12), 0.9), Vector3(-2.9, 1.5, 7.9), 0.0, true)
 	box(0.18, 3.0, 0.18, mat(Color(0.23, 0.18, 0.12), 0.9), Vector3(2.9, 1.5, 7.9), 0.0, true)
 	box(6.8, 0.15, 3.0, mat(Color(0.08, 0.08, 0.09), 1.0), Vector3(0, 3.05, 6.8))
-	box(2.0, 0.12, 0.6, deck, Vector3(0, 0.06, 8.35), 0.0, true)
+	var step_ramp := box(6.4, 0.06, 0.75, deck, Vector3(0, 0.09, 8.42), 0.0, true)
+	step_ramp.rotation.x = 0.27
 	box(1.6, 0.03, 1.0, mat(Color(0.43, 0.23, 0.23), 1.0), Vector3(0, 0.2, 6.1))
 	box(0.12, 1.1, 0.12, mat(Color(0.23, 0.18, 0.12), 0.9), Vector3(2.2, 0.55, 9.0), 0.0, true)
 	box(0.55, 0.3, 0.35, mat(Color(0.18, 0.29, 0.48), 0.6), Vector3(2.2, 1.2, 9.0))
