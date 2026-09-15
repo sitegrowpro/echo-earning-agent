@@ -40,8 +40,6 @@ func _process(_delta: float) -> bool:
 
 
 func _shot(path: String) -> void:
-	await process_frame
-	await process_frame
 	var img := root.get_texture().get_image()
 	var err := img.save_png(path)
 	print("[SHOT] saved ", path, " err=", err)

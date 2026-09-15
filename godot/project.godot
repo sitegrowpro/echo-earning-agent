@@ -115,6 +115,11 @@ mute_mic={
 3d_physics/layer_5="Enemy"
 3d_physics/layer_6="WindowBlock"
 
+[audio]
+
+driver/enable_input=true
+
+
 [rendering]
 
 renderer/rendering_method="forward_plus"

@@ -35,6 +35,7 @@ var base_pitch := 0.0
 
 func _ready() -> void:
 	stamina = CFG.STAM_MAX
+	floor_snap_length = 0.3
 	eye_cur = CFG.EYE
 	_apply_look()
 
@@ -100,6 +101,10 @@ func surface_at() -> String:
 
 
 func _physics_process(dt: float) -> void:
+	if global_position.y < -10.0:
+		global_position = Vector3((bounds_min.x + bounds_max.x) * 0.5, 0.5, (bounds_min.y + bounds_max.y) * 0.5)
+		velocity = Vector3.ZERO
+		return
 	if frozen or hidden != "" or sitting:
 		velocity.x = 0.0
 		velocity.z = 0.0

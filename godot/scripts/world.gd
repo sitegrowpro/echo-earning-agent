@@ -443,6 +443,20 @@ func build() -> void:
 	_outside()
 
 
+func _ground_collision() -> void:
+	# One slab under the whole playable map (house, yard, street, neighbor).
+	var sb := StaticBody3D.new()
+	sb.collision_layer = 1
+	sb.collision_mask = 0
+	sb.position = Vector3(0, -0.25, 4.4)
+	var cs := CollisionShape3D.new()
+	var bs := BoxShape3D.new()
+	bs.size = Vector3(64, 0.5, 32)
+	cs.shape = bs
+	sb.add_child(cs)
+	add_child(sb)
+
+
 func _build_env() -> void:
 	var we := WorldEnvironment.new()
 	env = Environment.new()
@@ -482,6 +496,7 @@ func _build_env() -> void:
 	moon.shadow_enabled = true
 	moon.rotation_degrees = Vector3(-50, -30, 0)
 	add_child(moon)
+	_ground_collision()
 
 
 func _floor(x0: float, z0: float, x1: float, z1: float, m: Material) -> void:
@@ -1060,11 +1075,11 @@ func _outside() -> void:
 	road.position = Vector3(0, 0.0, 15)
 	add_child(road)
 	var deck := TEX.mat_for("deck", Color(0.38, 0.29, 0.22), 0.9)
-	box(6.4, 0.18, 2.6, deck, Vector3(0, 0.09, 6.8))
+	box(6.4, 0.18, 2.6, deck, Vector3(0, 0.09, 6.8), 0.0, true)
 	box(0.18, 3.0, 0.18, mat(Color(0.23, 0.18, 0.12), 0.9), Vector3(-2.9, 1.5, 7.9), 0.0, true)
 	box(0.18, 3.0, 0.18, mat(Color(0.23, 0.18, 0.12), 0.9), Vector3(2.9, 1.5, 7.9), 0.0, true)
 	box(6.8, 0.15, 3.0, mat(Color(0.08, 0.08, 0.09), 1.0), Vector3(0, 3.05, 6.8))
-	box(2.0, 0.12, 0.6, deck, Vector3(0, 0.06, 8.35))
+	box(2.0, 0.12, 0.6, deck, Vector3(0, 0.06, 8.35), 0.0, true)
 	box(1.6, 0.03, 1.0, mat(Color(0.43, 0.23, 0.23), 1.0), Vector3(0, 0.2, 6.1))
 	box(0.12, 1.1, 0.12, mat(Color(0.23, 0.18, 0.12), 0.9), Vector3(2.2, 0.55, 9.0), 0.0, true)
 	box(0.55, 0.3, 0.35, mat(Color(0.18, 0.29, 0.48), 0.6), Vector3(2.2, 1.2, 9.0))

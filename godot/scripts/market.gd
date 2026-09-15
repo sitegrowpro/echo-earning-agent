@@ -101,6 +101,16 @@ func build() -> void:
 	fl.material_override = TEX.mat_for("tile", Color(0.82, 0.83, 0.82), 0.35)
 	fl.position = Vector3(MX, 0.01, 0)
 	add_child(fl)
+	var slab := StaticBody3D.new()
+	slab.collision_layer = 1
+	slab.collision_mask = 0
+	slab.position = Vector3(MX, -0.25, 0)
+	var scs := CollisionShape3D.new()
+	var sbs := BoxShape3D.new()
+	sbs.size = Vector3(30, 0.5, 24)
+	scs.shape = sbs
+	slab.add_child(scs)
+	add_child(slab)
 	# (Grout lines now live in the floor texture; the old geometry strips are gone.)
 	var ce := MeshInstance3D.new()
 	var cm := PlaneMesh.new()
