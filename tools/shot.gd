@@ -19,6 +19,7 @@ var stops := [
 	{"eye": Vector3(2.5, 1.62, -0.5), "look": Vector3(-4.9, 1.3, -1.4), "file": "shot_07_hall.png"},
 	{"eye": Vector3(1.6, 1.62, 4.6), "look": Vector3(7.4, 1.0, 2.6), "file": "shot_08_phone.png"},
 	{"eye": Vector3(0, 1.62, 12.4), "look": Vector3(0, 1.8, 5.5), "file": "shot_09_street.png"},
+	{"eye": Vector3(-2.0, 1.62, 2.6), "look": Vector3(-4.5, 1.4, 5.5), "file": "shot_10_daniel.png"},
 ]
 
 
