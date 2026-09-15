@@ -1481,6 +1481,58 @@ func _sw_use(room: String) -> void:
 	audio.ui_click()
 
 
+func _switch_prompt(room: String, label: String) -> String:
+	var on := bool(world.porch_on) if room == "porch" else bool((world.room_lights[room] as Dictionary)["on"])
+	return "Turn the %s light off" % label if on else "Turn the %s light on" % label
+
+
+func _switch_use(room: String, label: String) -> void:
+	audio.ui_click()
+	if room == "porch":
+		world.porch_on = not world.porch_on
+	else:
+		(world.room_lights[room] as Dictionary)["on"] = not bool((world.room_lights[room] as Dictionary)["on"])
+	world.apply_lights()
+	var on2 := bool(world.porch_on) if room == "porch" else bool((world.room_lights[room] as Dictionary)["on"])
+	toast("💡 %s %s." % [label.capitalize(), "lit" if on2 else "dark"])
+
+
+func _switch_def(inter, id: String, room: String, pos: Vector3, label: String) -> void:
+	inter.add({"id": id, "area": inter.halo(pos, 0.45),
+		"prompt": func(_c): return _switch_prompt(room, label),
+		"on_use": func(_c): _switch_use(room, label)})
+
+
+func _shower() -> void:
+	if bool(flags.get("showered", false)):
+		return
+	flags["showered"] = true
+	player.set("frozen", true)
+	audio.set_shower(true)
+	sub("Hot water. Steam. For a minute the night can't touch you.", 5.0)
+	await tree.create_timer(6.0, false).timeout
+	audio.set_shower(false)
+	clock_min += 30.0
+	player.set("frozen", false)
+	choices.append("Took a hot shower")
+	toast("🚿 That helped more than you expected. (%s)" % clock_str())
+
+
+func _nap() -> void:
+	if bool(flags.get("napped", false)):
+		return
+	flags["napped"] = true
+	player.set("frozen", true)
+	ui.fade_swap(func(): _nap_wake(), 0.9)
+
+
+func _nap_wake() -> void:
+	clock_min += 30.0
+	player.set("frozen", false)
+	choices.append("Napped on the guest bed")
+	sub("You surface from a dream about teeth and doorbells. %s already." % clock_str(), 5.0)
+
+
 func register(inter) -> void:
 	_door_def(inter, "front", 0.0, 5.5, "front door")
 	_door_def(inter, "guest", -5.5, -1.5, "guest room door")
@@ -1526,7 +1578,7 @@ func register(inter) -> void:
 	inter.add({"id": "drawer", "area": inter.halo(Vector3(4.2, 0.75, 2.8), 0.6),
 		"prompt": func(_c): return _drawer_prompt(),
 		"on_use": func(_c): _drawer_use()})
-	inter.add({"id": "flashlight", "area": inter.halo(Vector3(7.8, 1.3, -3.6), 0.6),
+	inter.add({"id": "flashlight", "area": inter.halo(Vector3(6.8, 1.25, -3.6), 0.6),
 		"prompt": func(_c): return "Take the flashlight" if not bool(items.get("flash", false)) else "",
 		"on_use": func(_c): _take_flash()})
 	inter.add({"id": "fuse", "area": inter.halo(Vector3(7.8, 1.55, -2.6), 0.6),
@@ -1558,6 +1610,22 @@ func register(inter) -> void:
 	_note_def(inter, "photo", Vector3(-7.6, 0.95, 0.95))
 	_note_def(inter, "doodle", Vector3(-2.7, 0.9, -5.1))
 	_note_def(inter, "master", Vector3(0.6, 0.95, -4.2), "master_open")
+	_switch_def(inter, "sw_living", "living", Vector3(0.65, 1.35, 5.3), "living room")
+	_switch_def(inter, "sw_porch", "porch", Vector3(0.78, 1.35, 5.3), "porch")
+	_switch_def(inter, "sw_kitchen", "kitchen", Vector3(0.91, 1.35, 5.3), "kitchen")
+	_switch_def(inter, "sw_hall", "hall", Vector3(-4.9, 1.35, 0.3), "hallway")
+	_switch_def(inter, "sw_guest", "guest", Vector3(-4.85, 1.35, -1.3), "guest room")
+	_switch_def(inter, "sw_master", "master", Vector3(2.1, 1.35, -1.3), "master bedroom")
+	_switch_def(inter, "sw_bath", "bath", Vector3(4.6, 1.35, -1.3), "bathroom")
+	_switch_def(inter, "sw_laundry", "laundry", Vector3(6.67, 1.35, -1.3), "laundry")
+	inter.add({"id": "shower", "area": inter.halo(Vector3(4.6, 1.2, -4.5), 0.9),
+		"prompt": func(_c): return "Take a quick shower" if chapter >= 1 and not bool(flags.get("showered", false)) else "",
+		"hold": func(_c): return 2.5 if chapter >= 1 and not bool(flags.get("showered", false)) else 0.0,
+		"on_use": func(_c): _shower()})
+	inter.add({"id": "nap", "area": inter.halo(Vector3(-6.4, 0.9, -4.9), 0.6),
+		"prompt": func(_c): return "Lie down for a bit" if (chapter == 1 or chapter == 2) and not bool(flags.get("napped", false)) else "",
+		"hold": func(_c): return 2.0 if (chapter == 1 or chapter == 2) and not bool(flags.get("napped", false)) else 0.0,
+		"on_use": func(_c): _nap()})
 	_note_def(inter, "bath", Vector3(5.2, 1.1, -2.0))
 	_note_def(inter, "manual", Vector3(7.8, 0.95, -3.0))
 	_note_def(inter, "priya_note", Vector3(0, 0.35, 5.15), "priya_note")
@@ -1588,6 +1656,7 @@ func _feed_biscuit() -> void:
 
 func _take_mail() -> void:
 	flags["mail_taken"] = true
+	world.set_prop_visible("mailpapers", false)
 	audio.pickup()
 	done("mail")
 	sub("Bills, coupons... and an official-looking letter from the HOA. (Read it with E.)", 4.0)
@@ -1595,6 +1664,7 @@ func _take_mail() -> void:
 
 func _take_trash() -> void:
 	items["trash"] = true
+	world.set_prop_visible("trashbag", false)
 	audio.pickup()
 	toast("🗑️ Trash bag acquired. It's leaking. Great.")
 
@@ -1720,6 +1790,7 @@ func _drawer_use() -> void:
 
 func _take_flash() -> void:
 	items["flash"] = true
+	world.set_prop_visible("flashprop", false)
 	audio.pickup()
 	done("flash")
 	toast("🔦 Flashlight! Press F to toggle. Watch the battery.")
@@ -1744,6 +1815,7 @@ func _fuse() -> void:
 
 func _take_carkeys() -> void:
 	items["car_keys"] = true
+	world.set_prop_visible("carkeys", false)
 	audio.pickup()
 	done("carkeys")
 	sub("Car keys. You can't drive stick. But the panic button... the headlights... options. Or just RUN.", 6.0)

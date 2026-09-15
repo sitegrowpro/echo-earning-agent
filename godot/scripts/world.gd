@@ -31,6 +31,7 @@ var door_seep := {} # id -> {"mat": StandardMaterial3D, "rooms": Array}
 var _seep_sig := ""
 var shade_mats := {}
 var fan_hubs: Array[Node3D] = []
+var art_props := {}
 var clock_sec: Node3D
 var clock_sec_a := 0.0
 var glimpse: MeshInstance3D
@@ -437,6 +438,7 @@ func build() -> void:
 	_fixtures()
 	_window_dressing()
 	_dressing()
+	_furnish2()
 	_baseboards()
 	_build_clock()
 	_light_rig()
@@ -920,6 +922,185 @@ func _distant() -> void:
 	])
 
 
+func set_prop_visible(id: String, on: bool) -> void:
+	if art_props.has(id):
+		(art_props[id] as Node3D).visible = on
+
+
+func _switchplate(pos: Vector3, nz: float) -> void:
+	box(0.09, 0.14, 0.025, mat(Color(0.85, 0.83, 0.76), 0.6), pos)
+	box(0.03, 0.05, 0.03, mat(Color(0.72, 0.7, 0.64), 0.6), pos + Vector3(0, 0, nz * 0.022))
+
+
+func _furnish2() -> void:
+	var wood := mat(Color(0.31, 0.23, 0.15), 0.7)
+	var wood_l := mat(Color(0.45, 0.34, 0.22), 0.7)
+	var dark := mat(Color(0.16, 0.14, 0.12), 0.6)
+	var steel := mat(Color(0.54, 0.56, 0.58), 0.35, 0.5)
+	var white := mat(Color(0.85, 0.85, 0.85), 0.6)
+	var cream := mat(Color(0.87, 0.82, 0.7), 0.9)
+	var brass := mat(Color(0.55, 0.42, 0.2), 0.4, 0.6)
+	# ---- light switch plates (triple gang by the front door + one per room) ----
+	_switchplate(Vector3(0.65, 1.35, 5.37), -1.0)
+	_switchplate(Vector3(0.78, 1.35, 5.37), -1.0)
+	_switchplate(Vector3(0.91, 1.35, 5.37), -1.0)
+	_switchplate(Vector3(-4.9, 1.35, 0.37), -1.0)
+	_switchplate(Vector3(-4.85, 1.35, -1.37), 1.0)
+	_switchplate(Vector3(2.1, 1.35, -1.37), 1.0)
+	_switchplate(Vector3(4.6, 1.35, -1.37), 1.0)
+	_switchplate(Vector3(6.67, 1.35, -1.37), 1.0)
+	# ---- porch: mat + key, chair, table, dead plant ----
+	box(1.1, 0.04, 0.65, mat(Color(0.4, 0.2, 0.16), 1.0), Vector3(0, 0.2, 6.15))
+	box(0.14, 0.02, 0.05, brass, Vector3(0.35, 0.21, 6.32))
+	box(0.55, 0.07, 0.5, wood, Vector3(-2.4, 0.45, 7.2), 0.0, true)
+	box(0.55, 0.65, 0.07, wood, Vector3(-2.4, 0.8, 7.42))
+	for lx in [-0.22, 0.22]:
+		for lz in [-0.19, 0.19]:
+			box(0.06, 0.45, 0.06, wood, Vector3(-2.4 + lx, 0.22, 7.2 + lz))
+	box(0.42, 0.42, 0.42, wood, Vector3(-1.55, 0.21, 7.35), 0.0, true)
+	_cyl(0.045, 0.04, 0.11, mat(Color(0.5, 0.2, 0.15), 0.7), Vector3(-1.55, 0.47, 7.35))
+	_cyl(0.14, 0.11, 0.26, mat(Color(0.5, 0.28, 0.16), 0.8), Vector3(-2.9, 0.31, 5.9))
+	_ball(0.2, mat(Color(0.35, 0.28, 0.12), 1.0), Vector3(-2.9, 0.6, 5.9))
+	# ---- mailbox + mail prop, trash bin ----
+	box(0.12, 1.05, 0.12, wood, Vector3(2.2, 0.52, 9.0), 0.0, true)
+	box(0.28, 0.22, 0.55, mat(Color(0.16, 0.25, 0.18), 0.6), Vector3(2.2, 1.15, 9.0))
+	box(0.03, 0.25, 0.05, mat(Color(0.7, 0.12, 0.12), 0.6), Vector3(2.36, 1.3, 8.85))
+	art_props["mailpapers"] = box(0.2, 0.06, 0.3, white, Vector3(2.2, 1.29, 9.0))
+	box(0.6, 0.9, 0.6, mat(Color(0.13, 0.22, 0.14), 0.7), Vector3(-2.6, 0.45, 6.3), 0.0, true)
+	box(0.66, 0.08, 0.66, dark, Vector3(-2.6, 0.94, 6.3))
+	# ---- fences, path, road, sidewalk ----
+	var fence_m := mat(Color(0.26, 0.2, 0.14), 0.85)
+	for sx in [-9.0, 9.0]:
+		box(0.08, 0.1, 18.0, fence_m, Vector3(sx, 0.55, 7.0), 0.0, true)
+		box(0.08, 0.1, 18.0, fence_m, Vector3(sx, 0.95, 7.0))
+		var fz := -2.0
+		while fz <= 16.0:
+			box(0.12, 1.1, 0.12, fence_m, Vector3(sx, 0.55, fz))
+			fz += 2.5
+	for fx in [-5.1, 5.1]:
+		box(7.8, 0.1, 0.08, fence_m, Vector3(fx, 0.55, 11.0), 0.0, true)
+		box(7.8, 0.1, 0.08, fence_m, Vector3(fx, 0.95, 11.0))
+	var conc := TEX.mat_for("concrete", Color(0.5, 0.5, 0.5), 0.95)
+	for i in 3:
+		box(1.3, 0.07, 0.9, conc, Vector3(0, 0.035, 9.2 + float(i) * 0.8))
+	box(60.0, 0.04, 7.0, TEX.mat_for("asphalt", Color(0.35, 0.35, 0.38), 0.95), Vector3(0, 0.02, 16.5))
+	box(60.0, 0.12, 0.25, conc, Vector3(0, 0.06, 12.9))
+	box(60.0, 0.12, 0.25, conc, Vector3(0, 0.06, 20.1))
+	box(60.0, 0.06, 1.6, TEX.mat_for("concrete", Color(0.55, 0.55, 0.55), 0.95), Vector3(0, 0.03, 11.9))
+	# ---- the Millers' sedan ----
+	var car_m := mat(Color(0.12, 0.18, 0.35), 0.4, 0.4)
+	box(4.3, 0.62, 1.85, car_m, Vector3(-5.5, 0.62, 15.8), 0.0, true)
+	box(2.3, 0.55, 1.65, mat(Color(0.05, 0.07, 0.1), 0.2), Vector3(-5.8, 1.2, 15.8))
+	var tire := mat(Color(0.05, 0.05, 0.06), 0.9)
+	for wx in [-6.9, -4.1]:
+		for wz in [14.95, 16.65]:
+			var wh := _cyl(0.33, 0.33, 0.25, tire, Vector3(wx, 0.33, wz))
+			wh.rotation.x = PI * 0.5
+	box(0.06, 0.18, 0.35, mat(Color(0.75, 0.78, 0.7), 0.3), Vector3(-3.34, 0.65, 15.25))
+	box(0.06, 0.18, 0.35, mat(Color(0.75, 0.78, 0.7), 0.3), Vector3(-3.34, 0.65, 16.35))
+	box(0.06, 0.15, 0.3, mat(Color(0.4, 0.08, 0.08), 0.4), Vector3(-7.66, 0.65, 15.25))
+	box(0.06, 0.15, 0.3, mat(Color(0.4, 0.08, 0.08), 0.4), Vector3(-7.66, 0.65, 16.35))
+	# ---- trees, bushes, hydrant, second lamp, moon, stars ----
+	var bark := mat(Color(0.2, 0.15, 0.1), 0.9)
+	var leaf := mat(Color(0.08, 0.14, 0.08), 1.0)
+	for tp in [Vector3(-12, 0, 4), Vector3(11, 0, -3), Vector3(-10, 0, 15)]:
+		_cyl(0.16, 0.24, 2.6, bark, tp + Vector3(0, 1.3, 0))
+		_ball(1.3, leaf, tp + Vector3(0, 3.0, 0))
+		_ball(1.1, leaf, tp + Vector3(0.6, 3.7, 0.3))
+		_ball(0.9, leaf, tp + Vector3(-0.5, 4.3, -0.2))
+	for bp in [Vector3(-6.5, 0.4, 6.0), Vector3(-5.5, 0.4, 6.0), Vector3(5.5, 0.4, 6.0), Vector3(6.5, 0.4, 6.0), Vector3(-3.6, 0.4, 7.0), Vector3(3.6, 0.4, 7.0)]:
+		_ball(0.5, leaf, bp)
+	_cyl(0.12, 0.14, 0.5, mat(Color(0.7, 0.6, 0.1), 0.6), Vector3(8.5, 0.3, 13.5))
+	_ball(0.12, mat(Color(0.7, 0.6, 0.1), 0.6), Vector3(8.5, 0.6, 13.5))
+	_cyl(0.07, 0.09, 5.2, dark, Vector3(-14, 2.6, 14))
+	_ball(0.14, glow_mat(Color(1.0, 0.91, 0.64), 2.0), Vector3(-14, 5.2, 14))
+	_ball(1.8, glow_mat(Color(0.9, 0.93, 1.0), 1.2), Vector3(28, 32, -25))
+	var starm := glow_mat(Color(0.8, 0.85, 1.0), 1.0)
+	for i in 26:
+		var sa := float(i) * 2.4
+		var sr := 30.0 + float(i % 5) * 4.0
+		_ball(0.12, starm, Vector3(cos(sa) * sr, 24.0 + float(i % 7), sin(sa) * sr - 5.0))
+	# ---- neighbor: somebody might be home ----
+	_ball(0.08, glow_mat(Color(1.0, 0.83, 0.54), 2.0), Vector3(-13.4, 2.4, 10.0))
+	var np := MeshInstance3D.new()
+	var npm := PlaneMesh.new()
+	npm.size = Vector2(1.3, 0.95)
+	np.mesh = npm
+	np.material_override = glow_mat(Color(1.0, 0.83, 0.54), 1.6)
+	np.position = Vector3(-13.44, 1.7, 10.0)
+	np.rotation.y = PI * 0.5
+	add_child(np)
+	# ---- living: coffee-table life, books, plant, frames ----
+	_cyl(0.045, 0.04, 0.11, mat(Color(0.5, 0.2, 0.15), 0.7), Vector3(-2.35, 0.46, 2.0))
+	box(0.07, 0.03, 0.2, dark, Vector3(-1.8, 0.42, 2.25), 0.4)
+	box(0.32, 0.07, 0.42, cream, Vector3(-2.1, 0.44, 1.9), -0.15)
+	box(0.3, 0.1, 0.24, mat(Color(0.6, 0.15, 0.12), 0.8), Vector3(-1.0, 0.89, 3.55))
+	box(0.26, 0.08, 0.2, mat(Color(0.15, 0.25, 0.5), 0.8), Vector3(-1.0, 0.98, 3.55), 0.3)
+	_cyl(0.16, 0.12, 0.32, mat(Color(0.5, 0.28, 0.16), 0.8), Vector3(-7.5, 0.16, 0.9))
+	_ball(0.28, mat(Color(0.12, 0.25, 0.12), 1.0), Vector3(-7.5, 0.6, 0.9))
+	_ball(0.24, mat(Color(0.12, 0.25, 0.12), 1.0), Vector3(-7.4, 0.85, 0.8))
+	_ball(0.2, mat(Color(0.12, 0.25, 0.12), 1.0), Vector3(-7.55, 1.05, 0.95))
+	box(0.04, 0.55, 0.45, dark, Vector3(-7.86, 1.7, 1.0))
+	box(0.045, 0.45, 0.35, mat(Color(0.3, 0.4, 0.35), 0.9), Vector3(-7.86, 1.7, 1.0))
+	box(0.04, 0.55, 0.45, dark, Vector3(-7.86, 1.7, 4.3))
+	box(0.045, 0.45, 0.35, mat(Color(0.4, 0.35, 0.3), 0.9), Vector3(-7.86, 1.7, 4.3))
+	# ---- kitchen: sink, stove, magnets, fruit, trash prop ----
+	box(0.5, 0.1, 0.65, steel, Vector3(7.5, 0.97, 4.2))
+	_cyl(0.025, 0.025, 0.28, steel, Vector3(7.68, 1.1, 4.2))
+	box(0.22, 0.04, 0.05, steel, Vector3(7.58, 1.23, 4.2))
+	box(0.55, 0.03, 0.7, dark, Vector3(7.55, 0.98, 2.6))
+	for bx in [7.45, 7.65]:
+		for bz in [2.42, 2.78]:
+			_cyl(0.09, 0.09, 0.02, mat(Color(0.05, 0.05, 0.06), 0.6), Vector3(bx, 1.0, bz))
+	for kz in [2.4, 2.6, 2.8]:
+		box(0.03, 0.05, 0.05, white, Vector3(7.19, 0.75, kz))
+	box(0.02, 0.07, 0.06, mat(Color(0.7, 0.1, 0.1), 0.6), Vector3(6.94, 1.25, 0.85))
+	box(0.02, 0.07, 0.06, mat(Color(0.1, 0.3, 0.7), 0.6), Vector3(6.94, 1.4, 1.0))
+	box(0.02, 0.07, 0.06, mat(Color(0.1, 0.6, 0.2), 0.6), Vector3(6.94, 1.5, 1.15))
+	box(0.015, 0.28, 0.22, white, Vector3(6.94, 1.6, 1.0))
+	_cyl(0.17, 0.1, 0.09, wood, Vector3(4.2, 1.0, 3.0))
+	_ball(0.06, mat(Color(0.85, 0.45, 0.1), 0.7), Vector3(4.13, 1.08, 2.97))
+	_ball(0.06, mat(Color(0.7, 0.1, 0.1), 0.7), Vector3(4.27, 1.08, 3.03))
+	_ball(0.06, mat(Color(0.4, 0.65, 0.15), 0.7), Vector3(4.2, 1.08, 2.93))
+	art_props["trashbag"] = box(0.45, 0.55, 0.45, mat(Color(0.08, 0.1, 0.08), 0.9), Vector3(4.9, 0.28, 2.6), 0.0, true)
+	# ---- hall: vase on the console ----
+	_cyl(0.07, 0.1, 0.28, mat(Color(0.2, 0.4, 0.4), 0.6), Vector3(-3.8, 0.94, -1.25))
+	_ball(0.07, mat(Color(0.15, 0.35, 0.15), 1.0), Vector3(-3.8, 1.15, -1.25))
+	# ---- guest: bedside lamp, closet doors ----
+	_cyl(0.09, 0.11, 0.05, dark, Vector3(-7.5, 0.58, -5.1))
+	_cyl(0.02, 0.02, 0.3, dark, Vector3(-7.5, 0.75, -5.1))
+	_cyl(0.14, 0.17, 0.2, cream, Vector3(-7.5, 0.95, -5.1))
+	var gl := glow_mat(Color(1.0, 0.9, 0.7), 1.6)
+	_ball(0.05, gl, Vector3(-7.5, 0.93, -5.1))
+	_shade("guest", gl, 1.6)
+	box(0.62, 1.86, 0.04, wood_l, Vector3(-3.02, 0.98, -1.68))
+	box(0.62, 1.86, 0.04, wood_l, Vector3(-2.38, 0.98, -1.68))
+	_ball(0.03, brass, Vector3(-2.78, 1.0, -1.64))
+	_ball(0.03, brass, Vector3(-2.62, 1.0, -1.64))
+	# ---- master: closet doors, mirror, car-key prop ----
+	box(0.62, 1.86, 0.04, wood_l, Vector3(2.88, 0.98, -1.68))
+	box(0.62, 1.86, 0.04, wood_l, Vector3(3.52, 0.98, -1.68))
+	_ball(0.03, brass, Vector3(3.12, 1.0, -1.64))
+	_ball(0.03, brass, Vector3(3.28, 1.0, -1.64))
+	box(0.04, 1.1, 0.7, mat(Color(0.1, 0.13, 0.16), 0.05, 0.9), Vector3(-1.86, 1.6, -3.5))
+	art_props["carkeys"] = box(0.13, 0.02, 0.06, brass, Vector3(3.3, 0.87, -5.1))
+	# ---- bath: vanity bar, shelf + bottles, TP ----
+	var vb := glow_mat(Color(0.9, 0.95, 1.0), 1.8)
+	box(0.5, 0.08, 0.1, vb, Vector3(5.2, 2.15, -1.62))
+	_shade("bath", vb, 1.8)
+	box(0.25, 0.04, 0.7, white, Vector3(6.28, 1.5, -3.0))
+	_cyl(0.035, 0.035, 0.14, mat(Color(0.2, 0.5, 0.7), 0.6), Vector3(6.28, 1.59, -3.2))
+	_cyl(0.035, 0.035, 0.14, mat(Color(0.7, 0.4, 0.2), 0.6), Vector3(6.28, 1.59, -3.0))
+	_cyl(0.035, 0.035, 0.14, mat(Color(0.5, 0.2, 0.5), 0.6), Vector3(6.28, 1.59, -2.8))
+	_cyl(0.06, 0.06, 0.11, white, Vector3(5.5, 0.51, -4.9))
+	# ---- laundry: flashlight shelf + prop, shelf, detergent ----
+	box(0.4, 0.05, 0.5, wood, Vector3(6.8, 1.2, -3.6))
+	box(0.05, 0.05, 0.2, dark, Vector3(6.8, 1.26, -3.62))
+	art_props["flashprop"] = box(0.07, 0.07, 0.08, steel, Vector3(6.8, 1.26, -3.48))
+	box(1.4, 0.05, 0.35, wood, Vector3(7.27, 1.55, -5.25))
+	box(0.22, 0.3, 0.16, mat(Color(0.85, 0.4, 0.15), 0.6), Vector3(7.85, 1.72, -5.25))
+
+
 func _poster(pos: Vector3, c: Color) -> void:
 	var p := MeshInstance3D.new()
 	var pm := PlaneMesh.new()
@@ -1040,7 +1221,7 @@ func _light_rig() -> void:
 	porch_light.light_energy = 2.5
 	porch_light.omni_range = 10.0
 	porch_light.shadow_enabled = true
-	porch_light.position = Vector3(0, 2.9, 6.8)
+	porch_light.position = Vector3(1.3, 2.75, 6.5)
 	add_child(porch_light)
 	var bulb := MeshInstance3D.new()
 	var sm := SphereMesh.new()
@@ -1048,8 +1229,10 @@ func _light_rig() -> void:
 	sm.height = 0.18
 	bulb.mesh = sm
 	bulb.material_override = glow_mat(Color(1.0, 0.83, 0.54), 2.0)
-	bulb.position = Vector3(0, 2.9, 6.7)
+	bulb.position = Vector3(1.3, 2.75, 6.5)
 	add_child(bulb)
+	box(0.07, 0.07, 1.2, mat(Color(0.16, 0.14, 0.12), 0.6), Vector3(1.3, 2.95, 5.95))
+	box(0.06, 0.28, 0.06, mat(Color(0.16, 0.14, 0.12), 0.6), Vector3(1.3, 2.82, 6.5))
 
 
 func _outside() -> void:
@@ -1105,6 +1288,7 @@ func _outside() -> void:
 	spot.light_energy = 6.0
 	spot.spot_range = 13.0
 	spot.spot_angle = 38.0
+	spot.shadow_enabled = true
 	spot.position = Vector3(8, 5.1, 12.5)
 	spot.rotation.x = -PI / 2.0
 	add_child(spot)

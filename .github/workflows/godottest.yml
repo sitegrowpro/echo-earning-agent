@@ -60,7 +60,7 @@ jobs:
           grep -E "SHOT|ERROR" /tmp/run.log | head -30 > testshots/shot_lines.txt || true
           grep -E "ERROR|SCRIPT ERROR" /tmp/run.log | sort | uniq -c | sort -rn | head -30 > testshots/run_errors.txt || echo none > testshots/run_errors.txt
           ls -la testshots/
-          test -f testshots/shot_menu.png && test -f testshots/shot_spawn.png && test -f testshots/shot_walked.png
+          test -f testshots/shot_01_menu.png && test -f testshots/shot_09_street.png && test $(ls testshots/shot_*.png | wc -l) -ge 9
 
       - name: Commit evidence back
         if: always()

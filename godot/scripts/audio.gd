@@ -16,6 +16,7 @@ var hum_player: AudioStreamPlayer
 var whisper_player: AudioStreamPlayer
 var mj_player: AudioStreamPlayer
 var drone_player: AudioStreamPlayer
+var shower_player: AudioStreamPlayer
 var vox := {}
 var heart_on := false
 var heart_fast := false
@@ -49,6 +50,8 @@ func _ready() -> void:
 	add_child(mj_player)
 	drone_player = AudioStreamPlayer.new()
 	add_child(drone_player)
+	shower_player = AudioStreamPlayer.new()
+	add_child(shower_player)
 	_build_bank()
 	set_vol(vol)
 
@@ -370,6 +373,13 @@ func _build_bank() -> void:
 		var t := float(i) / rate
 		b[i] *= 0.6 + 0.4 * (0.5 + 0.5 * sin(TAU * t / 5.3)) * (0.5 + 0.5 * sin(TAU * t / 7.7 + 2.0))
 	bank["drone_loop"] = _loop_wav(b)
+	b = _empty(3.0)
+	_put_noise(b, 0.32, 0.0, 3.0, 3400.0, true, 0.0)
+	_put_noise(b, 0.2, 0.0, 3.0, 900.0, false, 0.0)
+	for i in b.size():
+		var t := float(i) / rate
+		b[i] *= 0.8 + 0.2 * sin(TAU * t / 0.7 + 1.1) * sin(TAU * t / 2.3)
+	bank["shower_loop"] = _loop_wav(b)
 
 
 func _mj_groove() -> PackedFloat32Array:
@@ -459,6 +469,15 @@ func stop_rain() -> void:
 func set_rain_level(x: float) -> void:
 	if rain_player.playing:
 		rain_player.volume_db = lerpf(-38.0, -11.0, clampf(x, 0.0, 1.0))
+
+
+func set_shower(on: bool) -> void:
+	if on and not shower_player.playing:
+		shower_player.stream = bank["shower_loop"]
+		shower_player.volume_db = -13.0
+		shower_player.play()
+	elif not on:
+		shower_player.stop()
 
 
 func thunder() -> void:
