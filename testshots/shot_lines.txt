@@ -1,0 +1,8 @@
+[SHOT] main instanced
+[SHOT] menu captured; starting new game
+[SHOT] saved /tmp/shot_menu.png err=0
+[SHOT] spawn captured at pos=(0.0, -2871.98, 7.4); walking forward
+[SHOT] saved /tmp/shot_spawn.png err=0
+[SHOT] walked-final pos=(0.0, -8283.524, -7.6)
+[SHOT] DONE
+ERROR: 4 resources still in use at exit (run with --verbose for details).
