@@ -107,7 +107,7 @@ func build() -> void:
 	var cm := PlaneMesh.new()
 	cm.size = Vector2(X1 - X0, Z1 - Z0)
 	ce.mesh = cm
-	ce.material_override = mat(Color(0.55, 0.56, 0.55), 0.9)
+	ce.material_override = TEX.mat_for("ceiling", Color(0.58, 0.59, 0.58), 0.9)
 	ce.rotation.x = PI
 	ce.position = Vector3(MX, 3.4, 0)
 	add_child(ce)

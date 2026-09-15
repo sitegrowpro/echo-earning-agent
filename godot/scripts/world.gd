@@ -619,7 +619,7 @@ func _outside() -> void:
 	var rm := PlaneMesh.new()
 	rm.size = Vector2(90, 3.4)
 	road.mesh = rm
-	road.material_override = mat(Color(0.05, 0.05, 0.06), 1.0)
+	road.material_override = TEX.mat_for("asphalt", Color(0.06, 0.06, 0.07), 1.0)
 	road.position = Vector3(0, 0.0, 15)
 	add_child(road)
 	var deck := mat(Color(0.35, 0.27, 0.2), 0.9)

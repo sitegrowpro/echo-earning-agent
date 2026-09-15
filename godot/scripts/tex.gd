@@ -1,0 +1,187 @@
+extends RefCounted
+## Procedural low-fi surface textures (F2F/PS1 recipe: 64-128px diffuse detail,
+## point-filtered, tiled in world space). Fully deterministic: fixed seeds, so
+## the art direction is identical on every run and every machine.
+##
+## Patterns are light-gray luminance detail (average ~0.85-1.0); the material's
+## albedo_color tint carries the hue. Periodic patterns tile by construction;
+## noise patterns are made tileable with a wrapped-offset blend.
+
+const TILE_METERS := {
+	"planks": 2.0, "tile": 1.0, "carpet": 2.0, "drywall": 2.0,
+	"concrete": 2.0, "asphalt": 4.0, "grass": 4.0, "deck": 2.0,
+	"ceiling": 1.2,
+}
+
+static var _tex_cache := {}
+static var _mat_cache := {}
+
+
+## Finished, cached, world-triplanar material for a surface kind.
+static func mat_for(kind: String, tint: Color, rough: float, metal := 0.0) -> StandardMaterial3D:
+	var key := "%s|%s|%f|%f" % [kind, tint.to_html(), rough, metal]
+	if _mat_cache.has(key):
+		return _mat_cache[key]
+	var m := StandardMaterial3D.new()
+	m.albedo_color = tint
+	m.albedo_texture = get_tex(kind)
+	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+	m.roughness = rough
+	m.metallic = metal
+	# World-space triplanar: one material keeps correct texel density on every
+	# box/plane regardless of size, and wall segments share continuous texture.
+	m.uv1_triplanar = true
+	m.uv1_world_triplanar = true
+	var s := 1.0 / float(TILE_METERS.get(kind, 2.0))
+	m.uv1_scale = Vector3(s, s, s)
+	m.uv1_triplanar_sharpness = 12.0
+	_mat_cache[key] = m
+	return m
+
+
+static func get_tex(kind: String) -> ImageTexture:
+	if _tex_cache.has(kind):
+		return _tex_cache[kind]
+	var img: Image
+	match kind:
+		"planks":
+			img = _planks(128, 16, 1, 11)
+		"deck":
+			img = _planks(128, 16, 2, 77)
+		"tile":
+			img = _tile_grid(64, 16, 101)
+		"ceiling":
+			img = _ceiling_grid(64, 32, 202)
+		"carpet":
+			img = _speckle(64, 0.85, 0.10, 0.10, 303)
+		"drywall":
+			img = _blotch(64, 0.95, 0.06, 404)
+		"concrete":
+			img = _speckle(64, 0.80, 0.12, 0.06, 505)
+		"asphalt":
+			img = _speckle(64, 0.80, 0.15, 0.10, 606)
+		"grass":
+			img = _grass(64, 707)
+		_:
+			img = Image.create_empty(4, 4, false, Image.FORMAT_RGBA8)
+			img.fill(Color(1, 1, 1))
+	_tex_cache[kind] = ImageTexture.create_from_image(img)
+	return _tex_cache[kind]
+
+
+static func _noise(octaves: int, freq: float, seed: int) -> FastNoiseLite:
+	var n := FastNoiseLite.new()
+	n.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	n.fractal_octaves = octaves
+	n.frequency = freq
+	n.seed = seed
+	return n
+
+
+static func _row_hash(i: int, salt: int) -> float:
+	return fract(sin(float(i) * 12.9898 + float(salt) * 78.233) * 43758.5453)
+
+
+## Horizontal wood planks. plank_h must divide `size` so the tile wraps.
+static func _planks(size: int, plank_h: int, gap_px: int, seed: int) -> Image:
+	var img := Image.create_empty(size, size, false, Image.FORMAT_RGBA8)
+	var n := _noise(3, 0.9, seed)
+	for y in size:
+		var row := y / plank_h
+		var tone := 0.92 + (_row_hash(row, seed) - 0.5) * 0.12
+		for x in size:
+			var v := tone + n.get_noise_2d(float(x) * 0.22, float(row) * 2.7) * 0.09
+			if y % plank_h < gap_px:
+				v = 0.45
+			elif x == (row * 47 + 20) % size:
+				v *= 0.82 # plank-end seam, fixed position so it tiles
+			img.set_pixel(x, y, Color(v, v, v))
+	return img
+
+
+## Ceramic-style grid: cells with grout lines + per-cell jitter.
+static func _tile_grid(size: int, cell: int, seed: int) -> Image:
+	var img := Image.create_empty(size, size, false, Image.FORMAT_RGBA8)
+	var n := _noise(2, 1.2, seed)
+	for y in size:
+		for x in size:
+			var cx := x / cell
+			var cy := y / cell
+			var v := 0.96 + (_row_hash(cx * 31 + cy, seed) - 0.5) * 0.09
+			v += n.get_noise_2d(float(x), float(y)) * 0.03
+			if x % cell == 0 or y % cell == 0:
+				v = 0.55
+			img.set_pixel(x, y, Color(v, v, v))
+	return img
+
+
+## Acoustic ceiling tile: large grid + pin-dot perforations + speckle.
+static func _ceiling_grid(size: int, cell: int, seed: int) -> Image:
+	var img := Image.create_empty(size, size, false, Image.FORMAT_RGBA8)
+	var n := _noise(2, 1.5, seed)
+	for y in size:
+		for x in size:
+			var v := 0.97 + n.get_noise_2d(float(x), float(y)) * 0.04
+			if x % cell == 0 or y % cell == 0:
+				v = 0.60
+			elif x % 8 == 4 and y % 8 == 4:
+				v = 0.72
+			img.set_pixel(x, y, Color(v, v, v))
+	return img
+
+
+## Generic speckle surface (carpet / concrete / asphalt): noise + grain.
+static func _speckle(size: int, base: float, noise_amp: float, grain_amp: float, seed: int) -> Image:
+	var img := Image.create_empty(size, size, false, Image.FORMAT_RGBA8)
+	var n := _noise(3, 0.8, seed)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed
+	for y in size:
+		for x in size:
+			var v := base + n.get_noise_2d(float(x), float(y)) * noise_amp
+			v += (rng.randf() - 0.5) * 2.0 * grain_amp
+			img.set_pixel(x, y, Color(v, v, v))
+	return _tileable(img)
+
+
+## Faint large blotches for painted drywall.
+static func _blotch(size: int, base: float, amp: float, seed: int) -> Image:
+	var img := Image.create_empty(size, size, false, Image.FORMAT_RGBA8)
+	var n := _noise(2, 0.25, seed)
+	for y in size:
+		for x in size:
+			var v := base + n.get_noise_2d(float(x), float(y)) * amp
+			img.set_pixel(x, y, Color(v, v, v))
+	return _tileable(img)
+
+
+## Vertical grass-blade streaks (stretched noise on x, fine on y).
+static func _grass(size: int, seed: int) -> Image:
+	var img := Image.create_empty(size, size, false, Image.FORMAT_RGBA8)
+	var n := _noise(3, 1.0, seed)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed
+	for y in size:
+		for x in size:
+			var v := 0.85 + n.get_noise_2d(float(x) * 0.55, float(y) * 0.08) * 0.15
+			v += (rng.randf() - 0.5) * 0.08
+			img.set_pixel(x, y, Color(v, v, v))
+	return _tileable(img)
+
+
+## Wrapped-offset blend: averages each pixel with its half-tile offsets,
+## guaranteeing the result wraps seamlessly in both axes.
+static func _tileable(img: Image) -> Image:
+	var w := img.get_width()
+	var h := img.get_height()
+	var out := Image.create_empty(w, h, false, Image.FORMAT_RGBA8)
+	var hw := w / 2
+	var hh := h / 2
+	for y in h:
+		for x in w:
+			var c := img.get_pixel(x, y)
+			c += img.get_pixel((x + hw) % w, y)
+			c += img.get_pixel(x, (y + hh) % h)
+			c += img.get_pixel((x + hw) % w, (y + hh) % h)
+			out.set_pixel(x, y, c / 4.0)
+	return out

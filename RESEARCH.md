@@ -61,7 +61,7 @@ This doc is the single source of truth for "what makes F2F *feel* like F2F".
 
 | F2F element | Status in our build |
 |---|---|
-| Unity low-poly + 128px point textures | HALF — models procedural ✓, textures flat colors → **procedural ImageTextures next** |
+| Unity low-poly + 128px point textures | DONE — tex.gd: 9 procedural surfaces, NEAREST, world-triplanar |
 | VHS Pro (grain/CA/distortion/tracking) | DONE — true screen-space shader (barrel + CA + roll-bar displacement) |
 | Dusk sky + dark interiors + bloom | DONE (visual pass 1: ProceduralSky, ACES, glow, SSAO, fog) |
 | Phone-as-second-screen | DONE (3 threads, calls, photos, 911) |
