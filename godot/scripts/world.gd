@@ -426,7 +426,7 @@ func build() -> void:
 		{"at": 13.2, "w": 0.9, "kind": "door"},
 		{"at": 15.25, "w": 0.85, "kind": "door"},
 	], wall_in)
-	run_v(0.0, 0.5, ZS, [{"at": 2.5, "w": 2.1, "y0": 0.0, "y1": 2.3, "kind": "arch"}], wall_in)
+	run_v(0.0, 0.5, 3.6, [{"at": 1.55, "w": 2.1, "y0": 0.0, "y1": 2.3, "kind": "arch"}], wall_in)
 	run_v(-2.0, ZN, -1.5, [], wall_in)
 	run_v(4.0, ZN, -1.5, [], wall_in)
 	run_v(6.5, ZN, -1.5, [], wall_in)
