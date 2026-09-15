@@ -1,10 +1,14 @@
 name: godot-test
-# Remote engine lab: real compiler checks, headless boot, Xvfb screenshots.
-# Trigger: gh workflow run godot-test --ref <branch>
+# Remote engine lab: evidence is committed back to testshots/ (logs + PNGs),
+# because Actions CDNs are unreachable from the dev sandbox. Read evidence
+# with: git pull && ls testshots/
 on:
   workflow_dispatch:
   push:
     branches: [arena/01a0a065-echo-earning-agent]
+
+permissions:
+  contents: write
 
 jobs:
   test:
@@ -12,45 +16,57 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: arena/01a0a065-echo-earning-agent
 
       - name: Install system deps
         run: sudo apt-get update -qq && sudo apt-get install -y -qq xvfb libgl1-mesa-dri unzip
 
       - name: Install Godot 4.7
         run: |
+          mkdir -p testshots
           cd /tmp
           curl -sL -o godot.zip https://github.com/godotengine/godot/releases/download/4.7-stable/Godot_v4.7-stable_linux.x86_64.zip
           unzip -o -q godot.zip
           chmod +x Godot_v4.7-stable_linux.x86_64
           ln -sf /tmp/Godot_v4.7-stable_linux.x86_64 /tmp/godot
-          /tmp/godot --version
+          /tmp/godot --version | tee $GITHUB_WORKSPACE/testshots/version.txt
 
       - name: Import project
-        run: /tmp/godot --headless --path godot --import 2>&1 | tail -5
+        run: /tmp/godot --headless --path godot --import > testshots/import.log 2>&1; echo "exit=$?" >> testshots/import.log; tail -3 testshots/import.log
 
       - name: Real compiler check (all scripts)
         run: |
           fails=0
+          : > testshots/checks.txt
           for f in godot/scripts/*.gd; do
             r="res://scripts/$(basename $f)"
             out=$(/tmp/godot --headless --path godot --check-only --script "$r" 2>&1)
-            if echo "$out" | grep -qiE "error|parse|failed"; then echo "FAIL: $r"; echo "$out" | head -10; fails=1; else echo "OK: $r"; fi
+            if echo "$out" | grep -qiE "error|parse|failed"; then echo "FAIL: $r" | tee -a testshots/checks.txt; echo "$out" | head -10 | tee -a testshots/checks.txt; fails=1; else echo "OK: $r" | tee -a testshots/checks.txt; fi
           done
           exit $fails
 
       - name: Headless boot run (400 frames, error capture)
-        run: /tmp/godot --headless --path godot --quit-after 400 --audio-driver Dummy > /tmp/boot.log 2>&1; echo "exit=$?"; grep -E "ERROR|SCRIPT ERROR|WARNING" /tmp/boot.log | head -40 || echo "no errors"
+        run: |
+          /tmp/godot --headless --path godot --quit-after 400 --audio-driver Dummy > /tmp/boot.log 2>&1
+          echo "exit=$?" > testshots/boot_summary.txt
+          grep -E "ERROR|SCRIPT ERROR|WARNING" /tmp/boot.log | sort | uniq -c | sort -rn | head -40 > testshots/boot_errors.txt || echo "no errors" > testshots/boot_errors.txt
+          cat testshots/boot_summary.txt testshots/boot_errors.txt
 
       - name: Xvfb screenshots (menu + spawn + walk)
         run: |
-          mkdir -p /tmp/shots
-          xvfb-run --auto-servernum --server-args="-screen 0 1280x720x24" /tmp/godot --path godot --resolution 1280x720 --rendering-driver opengl3 --audio-driver Dummy -s "$GITHUB_WORKSPACE/tools/shot.gd" > /tmp/shots/run.log 2>&1; echo "exit=$?"
-          cp /tmp/shot_*.png /tmp/shots/ 2>/dev/null || true
-          grep -E "SHOT|ERROR" /tmp/shots/run.log | head -30
-          ls -la /tmp/shots/
+          xvfb-run --auto-servernum --server-args="-screen 0 1280x720x24" /tmp/godot --path godot --resolution 1280x720 --rendering-driver opengl3 --audio-driver Dummy -s "$GITHUB_WORKSPACE/tools/shot.gd" > /tmp/run.log 2>&1; echo "exit=$?"
+          cp /tmp/shot_*.png testshots/ 2>/dev/null || true
+          grep -E "SHOT|ERROR" /tmp/run.log | head -30 > testshots/shot_lines.txt || true
+          grep -E "ERROR|SCRIPT ERROR" /tmp/run.log | sort | uniq -c | sort -rn | head -30 > testshots/run_errors.txt || echo none > testshots/run_errors.txt
+          ls -la testshots/
+          test -f testshots/shot_menu.png && test -f testshots/shot_spawn.png && test -f testshots/shot_walked.png
 
-      - name: Upload evidence
-        uses: actions/upload-artifact@v4
-        with:
-          name: godot-shots
-          path: /tmp/shots/
+      - name: Commit evidence back
+        if: always()
+        run: |
+          git config user.name "arena-testbot"
+          git config user.email "arena-testbot@local"
+          git add testshots/ || true
+          git commit -m "[skip ci] test evidence run $GITHUB_RUN_ID" || echo "nothing to commit"
+          git push origin HEAD:arena/01a0a065-echo-earning-agent || echo "push failed"
