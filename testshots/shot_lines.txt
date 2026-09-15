@@ -2,31 +2,39 @@
 [SHOT] saved /tmp/shot_01_menu.png err=0
 [SHOT] menu captured; starting new game
 [SHOT] card dismissed; front open; TV on; walking in
+[SHOT] body @StaticBody3D@5 pos=(0.0, -0.25, 4.4) layer=1 mask=0 shape_dis=false
+[SHOT] body @StaticBody3D@48 pos=(-2.0625, 1.4, 5.5) layer=1 mask=0 shape_dis=false
+[SHOT] body @StaticBody3D@51 pos=(2.0625, 1.4, 5.5) layer=1 mask=0 shape_dis=false
+[SHOT] body @StaticBody3D@193 pos=(0.0, 1.4, 1.225) layer=1 mask=0 shape_dis=false
+[SHOT] body @StaticBody3D@196 pos=(0.0, 1.4, 4.775) layer=1 mask=0 shape_dis=false
+[SHOT] body @AnimatableBody3D@220 pos=(-0.575, 0.0, 5.5) layer=2 mask=0 shape_dis=false
+[SHOT] body @StaticBody3D@278 pos=(-2.0, 0.35, 3.3) layer=1 mask=0 shape_dis=false
+[SHOT] body @StaticBody3D@281 pos=(-2.0, 0.75, 3.75) layer=1 mask=0 shape_dis=false
+[SHOT] body @StaticBody3D@286 pos=(-2.0, 0.2, 2.1) layer=1 mask=0 shape_dis=false
+[SHOT] body @StaticBody3D@325 pos=(1.8, 0.37, 4.6) layer=1 mask=0 shape_dis=false
+[SHOT] body @StaticBody3D@328 pos=(1.8, 0.4, 3.8) layer=1 mask=0 shape_dis=false
+[SHOT] body @StaticBody3D@331 pos=(2.6, 0.4, 4.6) layer=1 mask=0 shape_dis=false
+[SHOT] body @StaticBody3D@530 pos=(-2.4, 0.45, 7.2) layer=1 mask=0 shape_dis=false
+[SHOT] body @StaticBody3D@538 pos=(-1.55, 0.21, 7.35) layer=1 mask=0 shape_dis=false
+[SHOT] body @StaticBody3D@544 pos=(2.2, 0.52, 9.0) layer=1 mask=0 shape_dis=false
+[SHOT] body @StaticBody3D@550 pos=(-2.6, 0.45, 6.3) layer=1 mask=0 shape_dis=false
+[SHOT] body @StaticBody3D@771 pos=(0.0, 0.09, 6.8) layer=1 mask=0 shape_dis=false
+[SHOT] body @StaticBody3D@774 pos=(-2.9, 1.5, 7.9) layer=1 mask=0 shape_dis=false
+[SHOT] body @StaticBody3D@777 pos=(2.9, 1.5, 7.9) layer=1 mask=0 shape_dis=false
+[SHOT] body @StaticBody3D@781 pos=(0.0, 0.09, 8.42) layer=1 mask=0 shape_dis=false
+[SHOT] body @StaticBody3D@785 pos=(2.2, 0.55, 9.0) layer=1 mask=0 shape_dis=false
+[SHOT] body @StaticBody3D@789 pos=(-2.6, 0.47, 6.3) layer=1 mask=0 shape_dis=false
+[SHOT] body @Area3D@1252 pos=(0.0, 1.2, 5.5) layer=4 mask=0 shape_dis=false
+[SHOT] body @Area3D@1262 pos=(0.0, 1.6, 5.3) layer=4 mask=0 shape_dis=false
+[SHOT] body @Area3D@1266 pos=(2.2, 1.25, 9.0) layer=4 mask=0 shape_dis=false
+[SHOT] body @Area3D@1270 pos=(-2.6, 0.8, 6.3) layer=4 mask=0 shape_dis=false
+[SHOT] body @Area3D@1282 pos=(-2.0, 0.8, 3.3) layer=4 mask=0 shape_dis=false
+[SHOT] body @Area3D@1302 pos=(2.2, 1.25, 9.0) layer=4 mask=0 shape_dis=false
+[SHOT] body @Area3D@1312 pos=(0.65, 1.35, 5.3) layer=4 mask=0 shape_dis=false
+[SHOT] body @Area3D@1314 pos=(0.78, 1.35, 5.3) layer=4 mask=0 shape_dis=false
+[SHOT] body @Area3D@1316 pos=(0.91, 1.35, 5.3) layer=4 mask=0 shape_dis=false
+[SHOT] body @Area3D@1336 pos=(0.0, 0.35, 5.15) layer=4 mask=0 shape_dis=false
+[SHOT] body Player pos=(0.0, 0.179841, 7.4) layer=8 mask=35 shape_dis=false
 [SHOT] probe f140 pos=(0.0, 0.179841, 7.4)
 [SHOT] probe f150 pos=(0.0, 0.179672, 5.84106)
 [SHOT] probe f160 pos=(0.0, 0.179672, 5.84106)
-[SHOT] probe f170 pos=(0.0, 0.179672, 5.84106)
-[SHOT] walk-in final pos=(0.0, 0.179672, 5.84106) verdict=WALKIN-FAIL
-[SHOT] saved /tmp/shot_02_spawn.png err=0
-[SHOT] stop 2 saved
-[SHOT] saved /tmp/shot_03_living.png err=0
-[SHOT] stop 3 saved
-[SHOT] saved /tmp/shot_04_kitchen.png err=0
-[SHOT] stop 4 saved
-[SHOT] saved /tmp/shot_05_guest.png err=0
-[SHOT] stop 5 saved
-[SHOT] saved /tmp/shot_06_bath.png err=0
-[SHOT] stop 6 saved
-[SHOT] saved /tmp/shot_07_hall.png err=0
-[SHOT] stop 7 saved
-[SHOT] phone opened
-[SHOT] saved /tmp/shot_08_phone.png err=0
-[SHOT] stop 8 saved
-[SHOT] phone closed
-[SHOT] saved /tmp/shot_09_street.png err=0
-[SHOT] stop 9 saved
-[SHOT] Daniel perched for finale
-[SHOT] saved /tmp/shot_10_daniel.png err=0
-[SHOT] stop 10 saved
-[SHOT] DONE
-ERROR: 4 resources still in use at exit (run with --verbose for details).
