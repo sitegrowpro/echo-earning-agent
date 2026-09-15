@@ -44,7 +44,7 @@ func _process(_delta: float) -> bool:
 		(main.get("story") as Node).call("_tv_use")
 		(main.get("player") as Node).set("frozen", true)
 		print("[SHOT] card dismissed; laundry open; TV on; touring")
-	elif stage == 2 and frames >= 220 + (stop_i + 1) * 90:
+	elif stage == 2 and frames >= 220 + (stop_i + 1) * 55:
 		stop_i += 1
 		if stop_i == 6:
 			(main.get("phone") as Node).call("toggle")

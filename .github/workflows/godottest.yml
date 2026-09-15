@@ -54,8 +54,9 @@ jobs:
           cat testshots/boot_summary.txt testshots/boot_errors.txt
 
       - name: Xvfb screenshots (menu + spawn + walk)
+        timeout-minutes: 14
         run: |
-          xvfb-run --auto-servernum --server-args="-screen 0 1280x720x24" /tmp/godot --path godot --resolution 1280x720 --rendering-driver opengl3 --audio-driver Dummy -s "$GITHUB_WORKSPACE/tools/shot.gd" > /tmp/run.log 2>&1; echo "exit=$?"
+          timeout 780 xvfb-run --auto-servernum --server-args="-screen 0 1280x720x24" /tmp/godot --path godot --resolution 1280x720 --rendering-driver opengl3 --audio-driver Dummy -s "$GITHUB_WORKSPACE/tools/shot.gd" > /tmp/run.log 2>&1; echo "exit=$?"
           cp /tmp/shot_*.png testshots/ 2>/dev/null || true
           grep -E "SHOT|ERROR" /tmp/run.log | head -30 > testshots/shot_lines.txt || true
           grep -E "ERROR|SCRIPT ERROR" /tmp/run.log | sort | uniq -c | sort -rn | head -30 > testshots/run_errors.txt || echo none > testshots/run_errors.txt
