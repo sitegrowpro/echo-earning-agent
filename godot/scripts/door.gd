@@ -70,10 +70,14 @@ func setup(p_id: String, w: float, p_swing: float, p_open: bool, p_locked: bool,
 
 
 func _process(dt: float) -> void:
-	if absf(target - angle) < 0.001:
+	if absf(target - angle) < 0.002:
+		if angle != target:
+			angle = target
+			rotation.y = angle
+			shape.set_deferred("disabled", absf(angle) > 0.25)
 		return
-	var dir := signf(target - angle)
-	angle += dir * minf(absf(target - angle), dt * 2.6)
+	# Exponential ease-out: the panel swings fast, then settles softly.
+	angle = lerpf(angle, target, minf(1.0, dt * 4.2))
 	rotation.y = angle
 	shape.set_deferred("disabled", absf(angle) > 0.25)
 

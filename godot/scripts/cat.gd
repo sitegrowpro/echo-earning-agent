@@ -136,13 +136,13 @@ func update(dt: float) -> void:
 			var step: Vector2 = d.normalized() * minf(d.length(), 0.85 * dt)
 			global_position.x += step.x
 			global_position.z += step.y
-			rotation.y = atan2(d.x, d.y)
+			rotation.y = lerp_angle(rotation.y, atan2(d.x, d.y), minf(1.0, dt * 6.0))
 	if danger and Vector2(goal.x - global_position.x, goal.z - global_position.z).length() > 0.2:
 		var dd := Vector2(goal.x - global_position.x, goal.z - global_position.z)
 		var st: Vector2 = dd.normalized() * minf(dd.length(), 1.6 * dt)
 		global_position.x += st.x
 		global_position.z += st.y
-		rotation.y = atan2(dd.x, dd.y)
+		rotation.y = lerp_angle(rotation.y, atan2(dd.x, dd.y), minf(1.0, dt * 6.0))
 	# Idle tail sway + occasional meow.
 	if tail:
 		tail.rotation.z = sin(Time.get_ticks_msec() * 0.003) * 0.25

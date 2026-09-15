@@ -60,8 +60,6 @@ func look_at_spot(from_pos: Vector3, to_pos: Vector3) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if frozen or hidden != "" or sitting:
-		pass
 	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		return
 	if frozen:
@@ -123,8 +121,9 @@ func _physics_process(dt: float) -> void:
 	dir.y = 0.0
 	if dir.length() > 1.0:
 		dir = dir.normalized()
-	velocity.x = dir.x * speed
-	velocity.z = dir.z * speed
+	# Crisp but not instant: 12/s keeps control tight while removing the snap.
+	velocity.x = lerpf(velocity.x, dir.x * speed, minf(1.0, dt * 12.0))
+	velocity.z = lerpf(velocity.z, dir.z * speed, minf(1.0, dt * 12.0))
 	if not is_on_floor():
 		velocity.y -= CFG.GRAVITY * dt
 	else:

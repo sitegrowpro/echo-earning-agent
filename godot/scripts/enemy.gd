@@ -13,6 +13,7 @@ var lose_t := 0.0
 var search_t := 0.0
 var speed_mul := 1.0
 var wp := 0
+var walk_t := 0.0
 var mesh_root: Node3D
 var waypoints := [
 	Vector3(1.8, 0, -0.5),
@@ -145,15 +146,23 @@ func step_toward(tx: float, tz: float, speed: float, dt: float) -> bool:
 		velocity.x = 0.0
 		velocity.z = 0.0
 		return true
-	velocity.x = dx / d * speed
-	velocity.z = dz / d * speed
+	var want_x := dx / d * speed
+	var want_z := dz / d * speed
+	var k := minf(1.0, dt * 7.0)
+	velocity.x = lerpf(velocity.x, want_x, k)
+	velocity.z = lerpf(velocity.z, want_z, k)
 	if not is_on_floor():
 		velocity.y -= 20.0 * dt
 	else:
 		velocity.y = -0.5
 	move_and_slide()
-	face = atan2(dx, dz)
+	# He turns his whole body toward his path — never snaps.
+	face = lerp_angle(face, atan2(dx, dz), minf(1.0, dt * 5.0))
 	rotation.y = face
+	# Heavy gait: bob + weight sway, scaled by pace.
+	walk_t += dt * (2.2 + speed * 0.9)
+	mesh_root.position.y = absf(sin(walk_t)) * 0.035
+	mesh_root.rotation.z = sin(walk_t) * 0.02
 	return d < 0.4
 
 
