@@ -19,7 +19,7 @@ var stops := [
 	{"eye": Vector3(2.5, 1.62, -0.5), "look": Vector3(-4.9, 1.3, -1.4), "file": "shot_07_hall.png"},
 	{"eye": Vector3(1.6, 1.62, 4.6), "look": Vector3(7.4, 1.0, 2.6), "file": "shot_08_phone.png"},
 	{"eye": Vector3(0, 1.62, 12.4), "look": Vector3(0, 1.8, 5.5), "file": "shot_09_street.png"},
-	{"eye": Vector3(-2.0, 1.62, 2.6), "look": Vector3(-4.5, 1.4, 5.5), "file": "shot_10_daniel.png"},
+	{"eye": Vector3(2.5, 1.62, 7.6), "look": Vector3(0.0, 1.3, 7.2), "file": "shot_10_daniel.png"},
 ]
 
 
@@ -43,7 +43,7 @@ func _process(_delta: float) -> bool:
 		main.call("story_click")
 		main.get("story").call("toggle_door", "laundry")
 		main.get("story").call("_tv_use")
-		main.get("enemy").call("perch", {"x": -4.5, "z": 6.4, "face": PI})
+		main.get("enemy").call("perch", {"x": 0.0, "z": 7.2, "face": PI})
 		main.get("player").set("frozen", true)
 		print("[SHOT] card dismissed; laundry open; TV on; Daniel perched; touring")
 	elif stage == 2 and frames >= 220 + (stop_i + 1) * 35:
