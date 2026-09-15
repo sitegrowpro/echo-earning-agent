@@ -85,6 +85,7 @@ This doc is the single source of truth for "what makes F2F *feel* like F2F".
 | Hunter footfalls | DONE — pace-scaled positional steps; chase steps are loud |
 | Hide-look clamp | DONE — craning limited to a cone while hidden/seated |
 | Locked jiggle + pet dip | DONE — knob rattle on locked doors; Biscuit dips his head |
+| Cinematic night exterior | DONE — moon key + blue fog + hero streetlamp + lit windows (Pass 1 rebuild) |
 
 ## 6. How it was coded (dev process + code architecture)
 

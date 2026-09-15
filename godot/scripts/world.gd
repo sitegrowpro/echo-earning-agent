@@ -38,6 +38,7 @@ var room_lights := {}
 var power := true
 var porch_on := true
 var porch_light: OmniLight3D
+var window_glows: Array = []
 var tv_on := false
 var tv_screen_mat: StandardMaterial3D
 var tv_glow: OmniLight3D
@@ -218,11 +219,17 @@ func window_glass(cx: float, cy: float, cz: float, w: float, h: float, horiz: bo
 	if horiz:
 		box(w - 0.1, h - 0.1, 0.03, g, Vector3(cx, cy, cz))
 		box(w - 0.1, 0.05, 0.05, fm, Vector3(cx, cy, cz))
+		var wgm := glow_mat(Color(1.0, 0.8, 0.55), 1.4)
+		box(w - 0.25, h - 0.25, 0.02, wgm, Vector3(cx, cy, cz))
+		window_glows.append(wgm)
 		box(0.05, h - 0.1, 0.05, fm, Vector3(cx, cy, cz))
 		box(w + 0.1, 0.07, 0.3, mat(Color(0.42, 0.36, 0.27), 0.8), Vector3(cx, cy - h * 0.5, cz))
 	else:
 		box(0.03, h - 0.1, w - 0.1, g, Vector3(cx, cy, cz))
 		box(0.05, 0.05, w - 0.1, fm, Vector3(cx, cy, cz))
+		var wgm := glow_mat(Color(1.0, 0.8, 0.55), 1.4)
+		box(0.02, h - 0.25, w - 0.25, wgm, Vector3(cx, cy, cz))
+		window_glows.append(wgm)
 		box(0.05, h - 0.1, 0.05, fm, Vector3(cx, cy, cz))
 		box(0.3, 0.07, w + 0.1, mat(Color(0.42, 0.36, 0.27), 0.8), Vector3(cx, cy - h * 0.5, cz))
 
@@ -263,6 +270,8 @@ func apply_lights() -> void:
 			(l as OmniLight3D).visible = power and bool(r["on"])
 	if porch_light:
 		porch_light.visible = power and porch_on
+	for gm in window_glows:
+		(gm as StandardMaterial3D).emission_energy_multiplier = 1.4 if power else 0.0
 
 
 # ---------- door light-seep (F2F hallway slivers) ----------
@@ -335,7 +344,7 @@ func set_market_mood(inside: bool) -> void:
 		env.fog_enabled = false
 	else:
 		env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-		env.ambient_light_energy = 0.22
+		env.ambient_light_energy = 0.5
 		env.fog_enabled = true
 
 
@@ -352,8 +361,8 @@ func flash_lightning() -> void:
 	t.tween_interval(0.09)
 	t.tween_callback(func(): moon.light_energy = 2.2)
 	t.tween_interval(0.25)
-	t.tween_property(moon, "light_energy", 0.25, 0.6)
-	t.parallel().tween_property(env, "ambient_light_energy", 0.22, 0.6)
+	t.tween_property(moon, "light_energy", 0.5, 0.6)
+	t.parallel().tween_property(env, "ambient_light_energy", 0.5, 0.6)
 	t.tween_callback(func(): moon.light_color = Color(0.56, 0.66, 1.0))
 
 
@@ -441,9 +450,9 @@ func _build_env() -> void:
 	# This is what windows and the open door frame (the F2F look).
 	sky_mat = ProceduralSkyMaterial.new()
 	sky_mat.sky_top_color = Color(0.012, 0.025, 0.085)
-	sky_mat.sky_horizon_color = Color(0.30, 0.13, 0.09)
+	sky_mat.sky_horizon_color = Color(0.05, 0.08, 0.15)
 	sky_mat.ground_bottom_color = Color(0.004, 0.004, 0.01)
-	sky_mat.ground_horizon_color = Color(0.09, 0.06, 0.07)
+	sky_mat.ground_horizon_color = Color(0.02, 0.03, 0.06)
 	sky_mat.sun_angle_max = 30.0
 	sky_mat.sun_curve = 0.08
 	var sky := Sky.new()
@@ -451,10 +460,10 @@ func _build_env() -> void:
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_energy = 0.22
+	env.ambient_light_energy = 0.5
 	# Filmic + bloom: lamps, TV and windows bleed like a camcorder at night.
 	env.tonemap_mode = Environment.TONE_MAPPER_ACES
-	env.tonemap_exposure = 1.05
+	env.tonemap_exposure = 1.25
 	env.glow_enabled = true
 	env.glow_intensity = 0.6
 	env.glow_strength = 1.1
@@ -463,14 +472,14 @@ func _build_env() -> void:
 	env.fog_enabled = true
 	env.fog_mode = Environment.FOG_MODE_EXPONENTIAL
 	env.fog_density = 0.012
-	env.fog_light_color = Color(0.015, 0.02, 0.045)
+	env.fog_light_color = Color(0.09, 0.12, 0.20)
 	env.fog_sky_affect = 0.35
 	we.environment = env
 	add_child(we)
 	moon = DirectionalLight3D.new()
 	moon.light_color = Color(0.56, 0.66, 1.0)
-	moon.light_energy = 0.25
-	moon.shadow_enabled = false
+	moon.light_energy = 0.5
+	moon.shadow_enabled = true
 	moon.rotation_degrees = Vector3(-50, -30, 0)
 	add_child(moon)
 
@@ -1013,7 +1022,7 @@ func _light_rig() -> void:
 	_omni("laundry", Color(1.0, 0.97, 0.85), 1.8, 7.0, Vector3(7.2, 2.3, -3.5))
 	porch_light = OmniLight3D.new()
 	porch_light.light_color = Color(1.0, 0.85, 0.63)
-	porch_light.light_energy = 3.0
+	porch_light.light_energy = 4.0
 	porch_light.omni_range = 14.0
 	porch_light.shadow_enabled = true
 	porch_light.position = Vector3(0, 2.9, 6.8)
@@ -1033,7 +1042,7 @@ func _outside() -> void:
 	var gm := PlaneMesh.new()
 	gm.size = Vector2(90, 60)
 	gnd.mesh = gm
-	gnd.material_override = TEX.mat_for("grass", Color(0.09, 0.11, 0.1), 1.0)
+	gnd.material_override = TEX.mat_for("grass", Color(0.17, 0.20, 0.18), 1.0)
 	gnd.position = Vector3(0, -0.02, 4)
 	add_child(gnd)
 	var path := MeshInstance3D.new()
@@ -1047,7 +1056,7 @@ func _outside() -> void:
 	var rm := PlaneMesh.new()
 	rm.size = Vector2(90, 3.4)
 	road.mesh = rm
-	road.material_override = TEX.mat_for("asphalt", Color(0.06, 0.06, 0.07), 1.0)
+	road.material_override = TEX.mat_for("asphalt", Color(0.13, 0.13, 0.15), 1.0)
 	road.position = Vector3(0, 0.0, 15)
 	add_child(road)
 	var deck := TEX.mat_for("deck", Color(0.38, 0.29, 0.22), 0.9)
@@ -1072,10 +1081,32 @@ func _outside() -> void:
 	add_child(head)
 	var sl := OmniLight3D.new()
 	sl.light_color = Color(1.0, 0.91, 0.64)
-	sl.light_energy = 4.0
-	sl.omni_range = 20.0
+	sl.light_energy = 8.0
+	sl.omni_range = 26.0
 	sl.position = Vector3(8, 5.0, 12.5)
 	add_child(sl)
+	var spot := SpotLight3D.new()
+	spot.light_color = Color(1.0, 0.9, 0.7)
+	spot.light_energy = 6.0
+	spot.spot_range = 13.0
+	spot.spot_angle = 38.0
+	spot.position = Vector3(8, 5.1, 12.5)
+	spot.rotation.x = -PI / 2.0
+	add_child(spot)
+	var cone := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.25
+	cm.bottom_radius = 2.4
+	cm.height = 4.6
+	cone.mesh = cm
+	var cmat := StandardMaterial3D.new()
+	cmat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	cmat.albedo_color = Color(1.0, 0.9, 0.7, 0.10)
+	cmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	cmat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	cone.material_override = cmat
+	cone.position = Vector3(8, 2.7, 12.5)
+	add_child(cone)
 	# neighbor house (escape A)
 	box(7, 3.6, 5.5, TEX.mat_for("brick", Color(0.38, 0.24, 0.22), 1.0), Vector3(-17, 1.8, 10), 0.0, true)
 	box(7.6, 0.4, 6.1, mat(Color(0.06, 0.06, 0.08), 1.0), Vector3(-17, 3.8, 10))
