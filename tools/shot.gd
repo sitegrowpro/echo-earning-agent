@@ -46,20 +46,22 @@ func _process(_delta: float) -> bool:
 		print("[SHOT] card dismissed; laundry open; TV on; touring")
 	elif stage == 2 and frames >= 220 + (stop_i + 1) * 35:
 		stop_i += 1
-		if stop_i >= stops.size():
-			print("[SHOT] DONE")
-			return true
+		# Capture the PREVIOUS stop: its teleport has had a full slot to render.
+		if stop_i >= 1 and stop_i - 1 < stops.size():
+			var ps: Dictionary = stops[stop_i - 1]
+			_shot("/tmp/" + String(ps["file"]))
+			print("[SHOT] stop ", stop_i + 1, " saved")
 		if stop_i == 6:
 			main.get("phone").call("toggle")
 			print("[SHOT] phone opened")
 		if stop_i == 7:
 			main.get("phone").call("toggle")
 			print("[SHOT] phone closed")
-		var s: Dictionary = stops[stop_i]
-		main.get("player").call("look_at_spot", s["eye"], s["look"])
-		_shot("/tmp/" + String(s["file"]))
-		print("[SHOT] stop ", stop_i + 2, " saved")
-		if stop_i >= stops.size() - 1:
+		# Teleport to THIS stop (captured next slot).
+		if stop_i < stops.size():
+			var s: Dictionary = stops[stop_i]
+			main.get("player").call("look_at_spot", s["eye"], s["look"])
+		else:
 			print("[SHOT] DONE")
 			return true
 	return false

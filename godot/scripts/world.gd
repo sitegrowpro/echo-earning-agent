@@ -593,8 +593,8 @@ func _furnish() -> void:
 	box(0.35, 0.12, 0.28, mat(Color(0.64, 0.24, 0.24), 0.8), Vector3(-2.7, 0.8, -5.1))
 	box(1.3, 2.0, 0.6, wood_d, Vector3(-2.7, 1.0, -2.0), 0.0, true)
 	box(0.04, 1.7, 0.5, mat(Color(0.2, 0.15, 0.1), 0.7), Vector3(-3.36, 1.0, -2.0))
-	_poster(Vector3(-5.2, 1.7, -5.38), Color(0.14, 0.25, 0.42))
-	_poster(Vector3(-4.3, 1.7, -5.38), Color(0.42, 0.14, 0.14))
+	_poster(Vector3(-3.5, 1.7, -5.38), Color(0.14, 0.25, 0.42))
+	_poster(Vector3(-2.9, 1.7, -5.38), Color(0.42, 0.14, 0.14))
 	# MASTER BEDROOM (locked)
 	box(1.9, 0.55, 2.2, mat(Color(0.36, 0.29, 0.43), 1.0), Vector3(0.6, 0.32, -4.2), 0.0, true)
 	box(1.9, 0.18, 2.2, mat(Color(0.6, 0.55, 0.69), 1.0), Vector3(0.6, 0.65, -4.2))
@@ -643,7 +643,7 @@ func _furnish() -> void:
 	tour.text = "★ KING OF POP ★\nWORLD TOUR '88"
 	tour.font_size = 72
 	tour.modulate = Color(0.95, 0.75, 0.3)
-	tour.position = Vector3(-6.1, 1.75, -5.36)
+	tour.position = Vector3(-7.1, 1.75, -5.36)
 	tour.pixel_size = 0.004
 	add_child(tour)
 
@@ -1085,9 +1085,9 @@ func _furnish2() -> void:
 	box(0.04, 1.1, 0.7, mat(Color(0.1, 0.13, 0.16), 0.05, 0.9), Vector3(-1.86, 1.6, -3.5))
 	art_props["carkeys"] = box(0.13, 0.02, 0.06, brass, Vector3(3.3, 0.87, -5.1))
 	# ---- bath: vanity bar, shelf + bottles, TP ----
-	var vb := glow_mat(Color(0.9, 0.95, 1.0), 1.8)
+	var vb := glow_mat(Color(0.9, 0.95, 1.0), 1.4)
 	box(0.5, 0.08, 0.1, vb, Vector3(5.2, 2.15, -1.62))
-	_shade("bath", vb, 1.8)
+	_shade("bath", vb, 1.4)
 	box(0.25, 0.04, 0.7, white, Vector3(6.28, 1.5, -3.0))
 	_cyl(0.035, 0.035, 0.14, mat(Color(0.2, 0.5, 0.7), 0.6), Vector3(6.28, 1.59, -3.2))
 	_cyl(0.035, 0.035, 0.14, mat(Color(0.7, 0.4, 0.2), 0.6), Vector3(6.28, 1.59, -3.0))
@@ -1214,7 +1214,7 @@ func _light_rig() -> void:
 	_omni("guest", Color(1.0, 0.85, 0.63), 1.6, 7.0, Vector3(-4.5, 2.0, -3.5))
 	_omni("guest", Color(0.81, 0.88, 1.0), 0.9, 4.0, Vector3(-3.58, 1.3, -4.93))
 	_omni("master", Color(1.0, 0.91, 0.77), 1.8, 9.0, Vector3(1, 2.4, -3.5))
-	_omni("bath", Color(0.84, 0.93, 1.0), 1.6, 6.0, Vector3(5.2, 2.3, -3.5))
+	_omni("bath", Color(0.84, 0.93, 1.0), 1.1, 6.0, Vector3(5.2, 2.3, -3.5))
 	_omni("laundry", Color(1.0, 0.97, 0.85), 1.8, 7.0, Vector3(7.2, 2.3, -3.5))
 	porch_light = OmniLight3D.new()
 	porch_light.light_color = Color(1.0, 0.85, 0.63)
