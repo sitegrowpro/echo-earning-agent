@@ -46,6 +46,9 @@ func _process(_delta: float) -> bool:
 		main.get("story").call("_tv_use")
 		Input.action_press("move_forward")
 		print("[SHOT] card dismissed; front open; TV on; walking in")
+	if stage == 2 and frames >= 140 and frames % 10 == 0 and frames < 180:
+		var q: Vector3 = (main.get("player") as Node3D).global_position
+		print("[SHOT] probe f", frames, " pos=", q)
 	elif stage == 2 and frames >= 180:
 		stage = 3
 		Input.action_release("move_forward")
