@@ -317,6 +317,15 @@ func _build_bank() -> void:
 	_put_tone(b, 55.0, 0.9, "sine", 0.0, 0.28, 35.0, 5.0)
 	_put_tone(b, 52.0, 0.7, "sine", 0.42, 0.28, 35.0, 5.0)
 	bank["heart"] = _wav(b)
+	# wall clock (single ticks, scheduled in story.update like the heartbeat)
+	b = _empty(0.09)
+	_put_tone(b, 2100.0, 0.32, "square", 0.0, 0.025, 0.0, 9.0)
+	_put_noise(b, 0.08, 0.0, 0.02, 4000.0, true, 9.0)
+	bank["tick"] = _wav(b)
+	b = _empty(0.09)
+	_put_tone(b, 1700.0, 0.32, "square", 0.0, 0.025, 0.0, 9.0)
+	_put_noise(b, 0.08, 0.0, 0.02, 4000.0, true, 9.0)
+	bank["tock"] = _wav(b)
 	# MJ easter egg: an ORIGINAL 8-second funk groove (E minor pocket).
 	b = _mj_groove()
 	_fade(b, 0.1, 0.6)
@@ -469,6 +478,10 @@ func set_whisper(on: bool) -> void:
 func set_heart(on: bool, fast := false) -> void:
 	heart_on = on
 	heart_fast = fast
+
+
+func tick_at(pos: Vector3, alt: bool) -> void:
+	_play3d("tock" if alt else "tick", pos, -6.0, 1.0)
 
 
 func footstep(run: bool, crouch: bool) -> void:

@@ -67,7 +67,7 @@ This doc is the single source of truth for "what makes F2F *feel* like F2F".
 | Phone-as-second-screen | DONE (3 threads, calls, photos, 911) |
 | Chores → dread → survive + 4 endings | DONE (7 chapters, choices matter) |
 | Mic-as-input (voice activity) | DONE (real mic stealth + mute) |
-| Silence events | HALF — rain stops ✓ → **ticking clock that stops, hum death** |
+| Silence events | MOSTLY — rain stops ✓ + clock dies at ch3 ✓ (hum death still future) |
 | House gaslighting (moved objects) | TODO — **dread director micro-events** |
 | Attention → survival | TODO — **notes-found rewards (back-window warning)** |
 | True-story framing card | DONE — fullscreen card on New Night ("as told by Jamie K.") |

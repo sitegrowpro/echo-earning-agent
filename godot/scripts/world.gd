@@ -17,6 +17,8 @@ const X0 := -8.0
 const X1 := 8.0
 const ZN := -5.5
 const ZS := 5.5
+# Wall clock: living-room south wall, between the window and the front door.
+const CLOCK_POS := Vector3(-1.5, 2.0, 5.36)
 # Light-seep: rooms on each side of every door (front opens to the porch).
 const DOOR_ROOMS := {
 	"front": ["living", "porch"], "guest": ["hall", "guest"],
@@ -27,6 +29,8 @@ const DOOR_ROOMS := {
 var doors := {}
 var door_seep := {} # id -> {"mat": StandardMaterial3D, "rooms": Array}
 var _seep_sig := ""
+var clock_sec: Node3D
+var clock_sec_a := 0.0
 var room_lights := {}
 var power := true
 var porch_on := true
@@ -414,6 +418,7 @@ func build() -> void:
 	add_door("bath", 4.75, -1.5, 0.84, 1.92, {"label": "Bathroom door", "open": true})
 	add_door("laundry", 6.825, -1.5, 0.79, 1.92, {"label": "Laundry door"})
 	_furnish()
+	_build_clock()
 	_light_rig()
 	_outside()
 
@@ -625,6 +630,60 @@ func _omni(room: String, color: Color, energy: float, dist: float, pos: Vector3)
 	l.position = pos
 	add_child(l)
 	room_light(room, l)
+
+
+func _build_clock() -> void:
+	# Round wall clock; the second hand steps once per audible tick (story calls
+	# clock_tick in sync with the sound) and freezes forever when the clock dies.
+	var rim_mat := mat(Color(0.12, 0.1, 0.09), 0.6)
+	var face_mat := mat(Color(0.82, 0.8, 0.72), 0.5)
+	var hand_mat := mat(Color(0.08, 0.08, 0.08), 0.5)
+	var rim := MeshInstance3D.new()
+	var rcm := CylinderMesh.new()
+	rcm.top_radius = 0.24
+	rcm.bottom_radius = 0.24
+	rcm.height = 0.06
+	rim.mesh = rcm
+	rim.material_override = rim_mat
+	rim.rotation.x = PI * 0.5
+	rim.position = CLOCK_POS
+	add_child(rim)
+	var face := MeshInstance3D.new()
+	var fcm := CylinderMesh.new()
+	fcm.top_radius = 0.2
+	fcm.bottom_radius = 0.2
+	fcm.height = 0.02
+	face.mesh = fcm
+	face.material_override = face_mat
+	face.rotation.x = PI * 0.5
+	face.position = CLOCK_POS + Vector3(0, 0, -0.025)
+	add_child(face)
+	for h in [{"len": 0.09, "wid": 0.03, "ang": 2.25}, {"len": 0.15, "wid": 0.02, "ang": -0.85}]:
+		var hm := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		bm.size = Vector3(float(h["wid"]), float(h["len"]), 0.008)
+		hm.mesh = bm
+		hm.material_override = hand_mat
+		hm.position = CLOCK_POS + Vector3(0, 0, -0.04)
+		hm.rotation.z = float(h["ang"])
+		add_child(hm)
+	clock_sec = Node3D.new()
+	clock_sec.position = CLOCK_POS + Vector3(0, 0, -0.045)
+	add_child(clock_sec)
+	var sh := MeshInstance3D.new()
+	var sbm := BoxMesh.new()
+	sbm.size = Vector3(0.012, 0.17, 0.006)
+	sh.mesh = sbm
+	sh.material_override = mat(Color(0.6, 0.12, 0.1), 0.5)
+	sh.position = Vector3(0, 0.06, 0)
+	clock_sec.add_child(sh)
+
+
+func clock_tick() -> void:
+	if clock_sec == null:
+		return
+	clock_sec_a -= TAU / 60.0
+	clock_sec.rotation.z = clock_sec_a
 
 
 func _light_rig() -> void:

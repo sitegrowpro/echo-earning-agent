@@ -65,6 +65,9 @@ var note_open := false
 var peep_open := false
 var call_open := false
 var story_open := false
+var tick_on := false
+var tick_t := 0.0
+var tick_alt := false
 var hide_warned := false
 var flash_is_on := false
 var _whisp_t := 0.0
@@ -130,6 +133,9 @@ func reset_state() -> void:
 	flash_is_on = false
 	_whisp_t = 0.0
 	_rain2 = false
+	tick_on = true
+	tick_t = 0.5
+	tick_alt = false
 	eggs = []
 	bolt_t = 12.0
 	mic_cool = 0.0
@@ -464,6 +470,8 @@ func _ch2_reply(worried: bool) -> void:
 
 
 func _setup3() -> void:
+	# The clock stops. Nobody mentions it. (F2F silence-event #1.)
+	tick_on = false
 	obj("peep", "Look through the peephole")
 	obj("door", "Deal with whoever is at the door (DO NOT OPEN IT)")
 	obj("millersreply", "Reply to Mrs. Miller")
@@ -944,6 +952,13 @@ func _vinyl() -> void:
 # ---------- per-frame ----------
 func update(dt: float) -> void:
 	clock_min += dt / 4.0
+	if tick_on and player.global_position.x < 60.0:
+		tick_t -= dt
+		if tick_t <= 0.0:
+			tick_t = 1.0
+			tick_alt = not tick_alt
+			audio.tick_at(world.CLOCK_POS, tick_alt)
+			world.clock_tick()
 	var s := clock_str()
 	ui.vhs(s)
 	phone.call("set_clock", s)
