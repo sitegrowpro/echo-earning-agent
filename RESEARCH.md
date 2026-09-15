@@ -69,7 +69,8 @@ This doc is the single source of truth for "what makes F2F *feel* like F2F".
 | Mic-as-input (voice activity) | DONE (real mic stealth + mute) |
 | Silence events | MOSTLY — rain stops ✓ + clock dies at ch3 ✓ (hum death still future) |
 | House gaslighting (moved objects) | DONE — director: laundry door opens itself, porch light dies, knock from inside |
-| Attention → survival | TODO — **notes-found rewards (back-window warning)** |
+| Attention → survival | DONE — master note = fast window climb; fridge note = warn-Millers option (police −30s); bath note = closet warning |
+| Closet-check death rule | DONE — searching enemy finds closet/pcloset hiders within 7m (bed stays safe) |
 | True-story framing card | DONE — fullscreen card on New Night ("as told by Jamie K.") |
 | Door light-seep | DONE — emissive thresholds, either-side-lit + flicker-aware |
 | Bottom-subtitle dialog | DONE — bottom subtitle bar, small-caps speaker + choices |

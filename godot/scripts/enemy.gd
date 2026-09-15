@@ -194,6 +194,9 @@ func update_enemy(dt: float, player: CharacterBody3D, story: RefCounted) -> Stri
 			search_t = 0.0
 	elif state == "search":
 		search_t += dt
+		var h := String(player.get("hidden"))
+		if (h == "closet" or h == "pcloset") and dist < 7.0:
+			story.call("closet_found")
 		face += dt * 1.4
 		rotation.y = face
 		velocity.x = 0.0

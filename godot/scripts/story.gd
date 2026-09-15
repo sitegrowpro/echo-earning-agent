@@ -13,7 +13,7 @@ const NOTES := {
 	"photo": {"title": "Framed photo (back)", "body": "In neat pen: \"Dana, Martin & Biscuit. Summer '23. Our perfect family.\"\n\nThe photo shows three figures on this very porch.\n\nAt the far edge of the frame there's a fourth shape. Tall. Blurred. Like someone who stepped in at the last second — or was cropped out."},
 	"doodle": {"title": "Essay margin", "body": "College essay draft — \"Describe a place that shaped you.\" Half a page.\n\nIn the margin you've doodled the Millers' house. And by the fence, a tall figure with no face.\n\nYou don't remember drawing that."},
 	"master": {"title": "Note on the master bed — Martin", "body": "D —\n\nCalled the locksmith AGAIN about the bedroom window latch. It DOESN'T lock. I've told you four times. Anyone could get in through there.\n\nWedge a chair under it until it's fixed. I'm serious this time.\n\n— M."},
-	"bath": {"title": "Old sitter's emergency card", "body": "A laminated card, yellowed: \"SITTER EMERGENCY NUMBERS — the Millers.\"\n\nOn the back, in different handwriting, dated last spring:\n\n\"quit. not doing this house again. third night in a row he just STOOD in the yard watching the windows. dana laughed it off. i'm done. — K.\""},
+	"bath": {"title": "Old sitter's emergency card", "body": "A laminated card, yellowed: \"SITTER EMERGENCY NUMBERS — the Millers.\"\n\nOn the back, in different handwriting, dated last spring:\n\n\"quit. not doing this house again. third night in a row he just STOOD in the yard watching the windows. dana laughed it off. i'm done. — K.\"\n\nP.S. — if he gets INSIDE: he ALWAYS checks the closets first. Watched him do it twice. Under the bed. TRUST me. — K.\""},
 	"manual": {"title": "Breaker box manual", "body": "HOLLOW CREEK ELECTRIC — Model FB-3\n\n\"If all breakers trip at once, flip each switch LEFT then RIGHT, one at a time. Wait for the click.\n\nWARNING: simultaneous trips usually mean a surge... or manual interference at the meter.\"\n\nSomeone has circled \"manual interference\" in red."},
 	"priya_note": {"title": "Note slipped under the door", "body": "In Priya's handwriting, shaky:\n\n\"jamie i drove by and there was a guy standing by the side of the house just STARING at the windows. i honked and he looked RIGHT at me and smiled. i'm going home. DO NOT open the door tonight. call me\"\n\nThe ink is smeared, like it was written fast."},
 	"grocery": {"title": "Dana's grocery list (fridge)", "body": "FRESHMART RUN — please!! 🙏\n\n☐ Milk (2%!!)\n☐ Eggs\n☐ Bread\n☐ Biscuit's cat food (the EXPENSIVE one, he knows the difference)\n☐ AA batteries (storm!!)\n☐ Mint chip ice cream (for you, obviously)\n\nTake the $50 from the cookie jar. Keep the change, sweetie. — Dana"},
@@ -517,22 +517,35 @@ func _knock_sequence() -> void:
 	if not is_done("door") and not bool(flags.get("talking", false)):
 		flags["talking"] = true
 		audio.knock_at(Vector3(0, 1.5, 5.5), "heavy2")
-		say("??? (through the door)", "\"...hey. Hey. I'm Daniel — the Millers' son. Locked myself out like an idiot. Can you let me in? It'll just take a second.\"", [
-			{"text": "\"The Millers don't HAVE a son. Leave.\"", "cb": func(): stranger_talk("lie")},
-			{"text": "\"...How do you know my name is Jamie?\"", "cb": func(): stranger_talk("ask")},
-			{"text": "(Say nothing. Step away from the door.)", "cb": func(): stranger_talk("silent")},
-		])
+		say("??? (through the door)", "\"...hey. Hey. I'm Daniel — the Millers' son. Locked myself out like an idiot. Can you let me in? It'll just take a second.\"", _daniel_opts())
 
 
 func talk_through_door() -> void:
 	if bool(flags.get("talking", false)) or is_done("door"):
 		return
 	flags["talking"] = true
-	say("??? (through the door)", "\"...hey. Hey. I'm Daniel — the Millers' son. Locked myself out like an idiot. Can you let me in? It'll just take a second.\"", [
+	say("??? (through the door)", "\"...hey. Hey. I'm Daniel — the Millers' son. Locked myself out like an idiot. Can you let me in? It'll just take a second.\"", _daniel_opts())
+
+
+func _daniel_opts() -> Array:
+	var opts := [
 		{"text": "\"The Millers don't HAVE a son. Leave.\"", "cb": func(): stranger_talk("lie")},
 		{"text": "\"...How do you know my name is Jamie?\"", "cb": func(): stranger_talk("ask")},
 		{"text": "(Say nothing. Step away from the door.)", "cb": func(): stranger_talk("silent")},
-	])
+	]
+	if notes_found.has("fridge"):
+		opts.append({"text": "(Text the MILLERS right now — like Dana's note said.)", "cb": func(): _warn_millers_ch3()})
+	return opts
+
+
+func _warn_millers_ch3() -> void:
+	flags["millers_warned_ch3"] = true
+	choices.append("Texted the Millers about Daniel (ch3)")
+	phone.call("send", "millers", "SOMEONE IS AT THE DOOR SAYING HES YOUR SON. Your note said text you!!")
+	audio.knock_at(Vector3(0, 1.5, 5.5), "soft3")
+	sub("\"...hello? You still there?\"", 4.0)
+	phone.call("incoming", "millers", ["WHAT. Jamie we DON'T HAVE A SON.", "Do NOT open that door. Calling the neighbors NOW."], 1.4, script_token)
+	after_stranger()
 
 
 func stranger_talk(how: String) -> void:
@@ -696,8 +709,12 @@ func _call911_end(accepted: bool) -> void:
 	player.set("frozen", false)
 	ui.call_close()
 	if accepted:
-		sub("911: \"Stay on the line. Officers are en route. Hide somewhere with a LOCK — and stay QUIET.\"", 7.0)
-		police_t = 0.0
+		if bool(flags.get("millers_warned_ch3", false)):
+			sub("911: \"Hollow Creek? We already have a car on your street — someone called ahead. Stay QUIET.\"", 7.0)
+			police_t = 30.0
+		else:
+			sub("911: \"Stay on the line. Officers are en route. Hide somewhere with a LOCK — and stay QUIET.\"", 7.0)
+			police_t = 0.0
 		toast("🚔 Police incoming. HIDE and stay quiet.")
 		choices.append("Called 911")
 		phone.call("clear_replies")
@@ -1142,6 +1159,24 @@ func flicker(room: String, dur: float) -> void:
 	flicker_t = dur
 
 
+func closet_found() -> void:
+	if finished or bool(flags.get("closet_doom", false)):
+		return
+	flags["closet_doom"] = true
+	var t := script_token
+	audio.sting()
+	ui.flash()
+	sub("He stops. Turns. Walks straight toward your closet —", 2.5)
+	enemy.call("yank_to_hiding", player)
+	await tree.create_timer(1.4, false).timeout
+	flags["closet_doom"] = false
+	if t != script_token or finished:
+		return
+	var h := String(player.get("hidden"))
+	if h == "closet" or h == "pcloset":
+		ui.jumpscare(func(): finish("D", "He checked the closet first. The old sitter's note tried to warn you."))
+
+
 func on_spotted() -> void:
 	spotted += 1
 	audio.sting()
@@ -1247,6 +1282,9 @@ func hide(where: String) -> void:
 	player.call("look_at_spot", h["pos"], h["look"])
 	audio.door_creak(true)
 	ui.flash_hide("Under the bed. Don't move. Don't breathe." if where == "bed" else "Inside the closet. Darkness is your only friend.")
+	if (where == "closet" or where == "pcloset") and chapter >= 5 and not bool(flags.get("closet_warned", false)):
+		flags["closet_warned"] = true
+		toast("⚠️ This closet feels exposed. He'd look here first.")
 	if flash_is_on and not hide_warned:
 		hide_warned = true
 		toast("⚠️ YOUR FLASHLIGHT IS ON. Press F. NOW.")
@@ -1443,7 +1481,7 @@ func register(I) -> void:
 		"on_use": func(_c): _take_carkeys()})
 	I.add({"id": "bedwindow", "area": I.halo(Vector3(-5.5, 1.4, -5.35), 0.7),
 		"prompt": func(_c): return "CLIMB OUT the window (hold)" if chapter >= 6 else "Guest window (Dana: NEVER open at night)",
-		"hold": func(_c): return 3.0 if chapter >= 6 else 0.0,
+		"hold": func(_c): return (1.5 if notes_found.has("master") else 3.0) if chapter >= 6 else 0.0,
 		"on_use": func(_c): _climb_window()})
 	I.add({"id": "neighbordoor", "area": I.halo(Vector3(-18.2, 1.3, 7.3), 1.2),
 		"prompt": func(_c): return "BANG on the neighbor's door (hold)" if chapter == 6 else "",
@@ -1648,6 +1686,8 @@ func _climb_window() -> void:
 	if chapter < 6:
 		sub("Dana's rule #1: windows stay shut at night. ...Rules might change tonight.", 4.0)
 		return
+	if notes_found.has("master"):
+		toast("🔓 Martin's note was right — the latch never locked. Through in seconds.")
 	world.escape_win_body.get_child(0).set_deferred("disabled", true)
 	player.set("hidden", "")
 	player.set("frozen", false)
