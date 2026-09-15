@@ -10,14 +10,14 @@ extends RefCounted
 const TILE_METERS := {
 	"planks": 2.0, "tile": 1.0, "carpet": 2.0, "drywall": 2.0,
 	"concrete": 2.0, "asphalt": 4.0, "grass": 4.0, "deck": 2.0,
-	"ceiling": 1.2, "brick": 2.0,
+	"ceiling": 1.2, "brick": 2.0, "stucco": 2.0,
 }
 
 const PHOTO := {
 	"drywall": "drywall", "planks": "woodfloor", "deck": "woodfloor",
 	"tile": "tile", "ceiling": "ceiling", "carpet": "carpet",
 	"concrete": "sidewalk", "asphalt": "asphalt", "grass": "grass",
-	"brick": "brick",
+	"brick": "brick", "stucco": "drywall",
 }
 
 

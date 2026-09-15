@@ -1216,6 +1216,13 @@ func toggle_door(id: String) -> void:
 			return
 	if id == "front":
 		if chapter == 0 and not bool(flags.get("deadbolt", false)):
+			if player.global_position.z > 5.5:
+				if bool(d.get("is_open")):
+					toast("Get inside first.")
+				else:
+					d.call("toggle")
+					audio.door_creak(true)
+				return
 			d.set("is_open", false)
 			d.set("target", 0.0)
 			flags["deadbolt"] = true
@@ -1424,6 +1431,8 @@ func finish(id: String, custom := "") -> void:
 func _door_prompt(id: String, label: String) -> String:
 	var d = world.doors.get(id)
 	if id == "front" and chapter == 0 and not bool(flags.get("deadbolt", false)):
+		if player.global_position.z > 5.5:
+			return "Open the front door" if not bool(d.get("is_open")) else "Get inside"
 		return "Lock the front door"
 	if id == "front" and chapter == 1 and bool(flags.get("market_trip", false)) and not is_done("market"):
 		return "🚶 Walk to FreshMart"

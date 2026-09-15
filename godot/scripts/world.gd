@@ -344,7 +344,7 @@ func set_market_mood(inside: bool) -> void:
 		env.fog_enabled = false
 	else:
 		env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-		env.ambient_light_energy = 0.5
+		env.ambient_light_energy = 0.4
 		env.fog_enabled = true
 
 
@@ -362,14 +362,14 @@ func flash_lightning() -> void:
 	t.tween_callback(func(): moon.light_energy = 2.2)
 	t.tween_interval(0.25)
 	t.tween_property(moon, "light_energy", 0.5, 0.6)
-	t.parallel().tween_property(env, "ambient_light_energy", 0.5, 0.6)
+	t.parallel().tween_property(env, "ambient_light_energy", 0.4, 0.6)
 	t.tween_callback(func(): moon.light_color = Color(0.56, 0.66, 1.0))
 
 
 func build() -> void:
 	_build_env()
 	var wall_in := TEX.mat_for("drywall", Color(0.72, 0.67, 0.56), 0.9)
-	var wall_out := TEX.mat_for("concrete", Color(0.43, 0.42, 0.39), 0.95)
+	var wall_out := TEX.mat_for("stucco", Color(0.45, 0.43, 0.38), 0.95)
 	var wood := TEX.mat_for("planks", Color(0.48, 0.36, 0.24), 0.7)
 	var tile := TEX.mat_for("tile", Color(0.6, 0.63, 0.64), 0.4)
 	var carpet := TEX.mat_for("carpet", Color(0.3, 0.27, 0.35), 1.0)
@@ -474,10 +474,10 @@ func _build_env() -> void:
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_energy = 0.5
+	env.ambient_light_energy = 0.4
 	# Filmic + bloom: lamps, TV and windows bleed like a camcorder at night.
 	env.tonemap_mode = Environment.TONE_MAPPER_ACES
-	env.tonemap_exposure = 1.25
+	env.tonemap_exposure = 1.15
 	env.glow_enabled = true
 	env.glow_intensity = 0.6
 	env.glow_strength = 1.1
@@ -1037,8 +1037,8 @@ func _light_rig() -> void:
 	_omni("laundry", Color(1.0, 0.97, 0.85), 1.8, 7.0, Vector3(7.2, 2.3, -3.5))
 	porch_light = OmniLight3D.new()
 	porch_light.light_color = Color(1.0, 0.85, 0.63)
-	porch_light.light_energy = 4.0
-	porch_light.omni_range = 14.0
+	porch_light.light_energy = 2.5
+	porch_light.omni_range = 10.0
 	porch_light.shadow_enabled = true
 	porch_light.position = Vector3(0, 2.9, 6.8)
 	add_child(porch_light)
