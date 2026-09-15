@@ -40,6 +40,8 @@ var power := true
 var porch_on := true
 var porch_light: OmniLight3D
 var window_glows: Array = []
+var window_slabs: Array = []
+var _slabs_out := true
 var tv_on := false
 var tv_screen_mat: StandardMaterial3D
 var tv_glow: OmniLight3D
@@ -221,7 +223,7 @@ func window_glass(cx: float, cy: float, cz: float, w: float, h: float, horiz: bo
 		box(w - 0.1, h - 0.1, 0.03, g, Vector3(cx, cy, cz))
 		box(w - 0.1, 0.05, 0.05, fm, Vector3(cx, cy, cz))
 		var wgm := glow_mat(Color(1.0, 0.8, 0.55), 1.4)
-		box(w - 0.25, h - 0.25, 0.02, wgm, Vector3(cx, cy, cz))
+		window_slabs.append(box(w - 0.25, h - 0.25, 0.02, wgm, Vector3(cx, cy, cz)))
 		window_glows.append(wgm)
 		box(0.05, h - 0.1, 0.05, fm, Vector3(cx, cy, cz))
 		box(w + 0.1, 0.07, 0.3, mat(Color(0.42, 0.36, 0.27), 0.8), Vector3(cx, cy - h * 0.5, cz))
@@ -229,10 +231,18 @@ func window_glass(cx: float, cy: float, cz: float, w: float, h: float, horiz: bo
 		box(0.03, h - 0.1, w - 0.1, g, Vector3(cx, cy, cz))
 		box(0.05, 0.05, w - 0.1, fm, Vector3(cx, cy, cz))
 		var wgm := glow_mat(Color(1.0, 0.8, 0.55), 1.4)
-		box(0.02, h - 0.25, w - 0.25, wgm, Vector3(cx, cy, cz))
+		window_slabs.append(box(0.02, h - 0.25, w - 0.25, wgm, Vector3(cx, cy, cz)))
 		window_glows.append(wgm)
 		box(0.05, h - 0.1, 0.05, fm, Vector3(cx, cy, cz))
 		box(0.3, 0.07, w + 0.1, mat(Color(0.42, 0.36, 0.27), 0.8), Vector3(cx, cy - h * 0.5, cz))
+
+
+func set_slabs_outside(out: bool) -> void:
+	if out == _slabs_out:
+		return
+	_slabs_out = out
+	for s in window_slabs:
+		(s as Node3D).visible = out
 
 
 func add_door(id: String, x: float, z: float, w: float, swing: float, opts: Dictionary) -> void:

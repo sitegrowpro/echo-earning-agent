@@ -203,6 +203,7 @@ func _physics_process(dt: float) -> void:
 		if not story.finished:
 			story.on_room(room)
 	player.indoor = room != "porch" and room != "yard" and room != "street"
+	world.set_slabs_outside(not player.indoor)
 	story.update(dt)
 	var res: String = enemy.update_enemy(dt, player, story)
 	if res == "caught" and not story.finished:
