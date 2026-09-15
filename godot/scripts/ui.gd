@@ -64,6 +64,7 @@ var call_root: PanelContainer
 var call_name: Label
 var call_accept: Button
 var call_decline: Button
+var story_root: ColorRect
 # menu / pause / ending
 var menu_root: PanelContainer
 var continue_btn: Button
@@ -183,6 +184,7 @@ func _build_all() -> void:
 	_build_menu()
 	_build_pause()
 	_build_ending()
+	_build_story()
 	_build_overlays()
 	hud.visible = false
 
@@ -378,16 +380,18 @@ func _on_thread(t: String) -> void:
 
 
 func _build_dialog() -> void:
-	dialog_panel = _panel(Color(0.02, 0.02, 0.04, 0.94))
-	_anchor(dialog_panel, 0.5, 0.78)
+	# F2F subtitle bar: bottom-anchored, near-transparent, minimal chrome.
+	dialog_panel = _panel(Color(0.0, 0.0, 0.0, 0.62))
+	_anchor(dialog_panel, 0.5, 0.82)
+	dialog_panel.custom_minimum_size = Vector2(780, 0)
 	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 10)
+	v.add_theme_constant_override("separation", 6)
 	dialog_speaker = _label("", 12, RED)
-	dialog_text = _label("", 17)
+	dialog_text = _label("", 18)
 	dialog_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	dialog_text.custom_minimum_size = Vector2(640, 0)
+	dialog_text.custom_minimum_size = Vector2(740, 0)
 	dialog_opts = VBoxContainer.new()
-	dialog_opts.add_theme_constant_override("separation", 8)
+	dialog_opts.add_theme_constant_override("separation", 4)
 	v.add_child(dialog_speaker)
 	v.add_child(dialog_text)
 	v.add_child(dialog_opts)
@@ -772,13 +776,13 @@ func chapter_card(kicker: String, card_name: String, sub: String) -> void:
 
 
 func show_dialog(sp: String, text: String, opts: Array) -> void:
-	dialog_speaker.text = sp
+	dialog_speaker.text = sp.to_upper()
 	dialog_text.text = text
 	for c in dialog_opts.get_children():
 		c.queue_free()
 	for i in opts.size():
 		var o: Dictionary = opts[i]
-		var b := _button("%d. %s" % [i + 1, String(o["text"])], 15)
+		var b := _button("%d. %s" % [i + 1, String(o["text"]).to_upper()], 15)
 		var cb: Callable = o["cb"]
 		b.pressed.connect(func(): _on_dialog_opt(cb))
 		dialog_opts.add_child(b)
@@ -802,6 +806,54 @@ func _on_dialog_opt(cb: Callable) -> void:
 func close_dialog() -> void:
 	dialog_panel.visible = false
 	game.update_mouse()
+
+
+func _build_story() -> void:
+	story_root = ColorRect.new()
+	story_root.color = Color(0, 0, 0, 1)
+	story_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	story_root.visible = false
+	var cc := CenterContainer.new()
+	cc.set_anchors_preset(Control.PRESET_FULL_RECT)
+	cc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var v := VBoxContainer.new()
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_theme_constant_override("separation", 14)
+	v.custom_minimum_size = Vector2(620, 0)
+	var kick := _label("AS TOLD BY JAMIE K. · FALL 2024", 13, RED)
+	kick.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var t1 := _label("The following is based on a true story.", 22)
+	t1.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var t2 := _label("One night. One storm. One housesit for the Millers.\nReconstructed from texts, phone calls, and a 911 recording.", 16, DIMC)
+	t2.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var t3 := _label("Names have been changed.", 14, DIMC)
+	t3.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var foot := _label("[E] / CLICK TO BEGIN THE NIGHT", 15, PAPER)
+	foot.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(kick)
+	v.add_child(t1)
+	v.add_child(t2)
+	v.add_child(t3)
+	v.add_child(foot)
+	cc.add_child(v)
+	story_root.add_child(cc)
+	story_root.gui_input.connect(_on_story_click)
+	add_child(story_root)
+
+
+func true_story_card() -> void:
+	story_root.visible = true
+	game.update_mouse()
+
+
+func close_story() -> void:
+	story_root.visible = false
+	game.update_mouse()
+
+
+func _on_story_click(ev: InputEvent) -> void:
+	if ev is InputEventMouseButton and ev.pressed:
+		game.story_click()
 
 
 func note_show(title: String, body: String) -> void:

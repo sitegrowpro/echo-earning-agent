@@ -70,9 +70,9 @@ This doc is the single source of truth for "what makes F2F *feel* like F2F".
 | Silence events | HALF — rain stops ✓ → **ticking clock that stops, hum death** |
 | House gaslighting (moved objects) | TODO — **dread director micro-events** |
 | Attention → survival | TODO — **notes-found rewards (back-window warning)** |
-| True-story framing card | TODO — **intro card: "as told by Jamie K."** |
+| True-story framing card | DONE — fullscreen card on New Night ("as told by Jamie K.") |
 | Door light-seep | TODO — **emissive strips tied to room lights** |
-| Bottom-subtitle dialog | TODO — **restyle dialog panel** |
+| Bottom-subtitle dialog | DONE — bottom subtitle bar, small-caps speaker + choices |
 | Geometry detail (fixtures/clutter) | TODO — **pass 2: lamps, baseboards, fans, curtains, distant houses** |
 | Camera zoom + look-at on NPC talk | TODO — recreation code shows talk = zoom camera + IK look-at + typewriter |
 | Subliminal glimpse scares | TODO — black figure at frame edge for a fraction of a second |

@@ -140,6 +140,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if story.peep_open and (event.is_action_pressed("interact") or event.is_action_pressed("pause_game")):
 		story.close_peep()
 		return
+	if story.story_open and (event.is_action_pressed("interact") or event.is_action_pressed("pause_game")):
+		story.close_story()
+		return
 	if ui.dialog_panel.visible:
 		if event.is_action_pressed("reply_1"):
 			ui.press_dialog(0)
@@ -338,6 +341,9 @@ func _start(fresh: bool) -> void:
 	if fresh:
 		Save.clear_save()
 		story.new_game()
+		# "Based on a true story" framing card, F2F-style: shown once per run.
+		story.story_open = true
+		ui.true_story_card()
 	else:
 		var s := Save.load_game()
 		if s.is_empty():
@@ -455,6 +461,11 @@ func _rewind5() -> void:
 func note_click() -> void:
 	if story.note_open:
 		story.close_note()
+
+
+func story_click() -> void:
+	if story.story_open:
+		story.close_story()
 
 
 func peep_click() -> void:

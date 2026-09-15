@@ -64,6 +64,7 @@ var dialog_open := false
 var note_open := false
 var peep_open := false
 var call_open := false
+var story_open := false
 var hide_warned := false
 var flash_is_on := false
 var _whisp_t := 0.0
@@ -124,6 +125,7 @@ func reset_state() -> void:
 	note_open = false
 	peep_open = false
 	call_open = false
+	story_open = false
 	hide_warned = false
 	flash_is_on = false
 	_whisp_t = 0.0
@@ -141,7 +143,7 @@ func reset_state() -> void:
 
 
 func ui_busy() -> bool:
-	return dialog_open or note_open or peep_open or call_open or finished
+	return dialog_open or note_open or peep_open or call_open or story_open or finished
 
 
 # ---------- helpers ----------
@@ -216,6 +218,11 @@ func close_note() -> void:
 	note_open = false
 	player.set("frozen", false)
 	ui.note_close()
+
+
+func close_story() -> void:
+	story_open = false
+	ui.close_story()
 
 
 func clock_str() -> String:
