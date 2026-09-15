@@ -1,7 +1,8 @@
 [SHOT] main instanced
 [SHOT] saved /tmp/shot_01_menu.png err=0
 [SHOT] menu captured; starting new game
-[SHOT] card dismissed; laundry open; TV on; Daniel perched; touring
+[SHOT] card dismissed; front open; TV on; Daniel perched; walking in
+[SHOT] walk-in final pos=(0.0, 0.179672, 5.84106) verdict=WALKIN-FAIL
 [SHOT] saved /tmp/shot_02_spawn.png err=0
 [SHOT] stop 2 saved
 [SHOT] saved /tmp/shot_03_living.png err=0
