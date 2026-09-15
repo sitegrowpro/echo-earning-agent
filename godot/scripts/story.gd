@@ -281,6 +281,7 @@ func load_data(s: Dictionary) -> void:
 	player.global_position = Vector3(float(pos[0]), 0.0, float(pos[1]))
 	player.call("set_look", float(s.get("yaw", 0.0)), 0.0)
 	goto_chapter(int(s.get("chapter", 0)))
+	tick_on = chapter < 3
 	for id in (s.get("objectives_done", []) as Array):
 		for o in objectives:
 			if o["id"] == id:
@@ -470,8 +471,6 @@ func _ch2_reply(worried: bool) -> void:
 
 
 func _setup3() -> void:
-	# The clock stops. Nobody mentions it. (F2F silence-event #1.)
-	tick_on = false
 	obj("peep", "Look through the peephole")
 	obj("door", "Deal with whoever is at the door (DO NOT OPEN IT)")
 	obj("millersreply", "Reply to Mrs. Miller")
@@ -494,6 +493,13 @@ func _ch3_seq() -> void:
 
 func _knock_sequence() -> void:
 	var t := script_token
+	# The clock stops dead. A breath of true silence. Then the knock.
+	tick_on = false
+	flags["clock_dead"] = true
+	sub("The clock stops ticking.", 3.0)
+	await tree.create_timer(1.6, false).timeout
+	if t != script_token:
+		return
 	audio.knock_at(Vector3(0, 1.5, 5.5), "soft3")
 	enemy.call("perch", WorldScript.PERCHES["porch"])
 	stranger_out = true
@@ -1106,6 +1112,29 @@ func on_room(room: String) -> void:
 	if room == "master" and chapter >= 5 and not bool(flags.get("master_enter", false)):
 		flags["master_enter"] = true
 		sub("The back window gapes open. Glass on the carpet. Curtains breathing in the wind.", 6.0)
+	# Dread director: the house gaslights you before he arrives. No cues, no
+	# explanations — you simply find things wrong.
+	if (room == "living" or room == "kitchen") and chapter == 1 and not bool(flags.get("dread_e1", false)):
+		flags["dread_e1"] = true
+		var ld = world.doors.get("laundry")
+		if ld != null and not bool(ld.get("is_open")):
+			ld.call("toggle") # started the night shut; now it stands open
+	if room == "living" and chapter == 2 and not bool(flags.get("dread_e2", false)):
+		flags["dread_e2"] = true
+		if world.porch_on:
+			world.porch_on = false
+			world.apply_lights()
+			sub("The porch light is out. You definitely left that on.", 4.5)
+	if room == "hall" and chapter == 4 and not bool(flags.get("dread_e4", false)):
+		flags["dread_e4"] = true
+		audio.knock_at(Vector3(1.4, 1.5, -2.2), "one")
+		sub("A single knock. From inside the house. From behind you.", 4.5)
+	if room == "hall" and chapter == 5 and not bool(flags.get("dread_e5", false)):
+		flags["dread_e5"] = true
+		world.spawn_glimpse(Vector3(-7.0, 0, -0.5), 0.3)
+	if room == "yard" and chapter == 6 and not bool(flags.get("dread_e6", false)):
+		flags["dread_e6"] = true
+		world.spawn_glimpse(Vector3(8.0, 0, 11.5), 0.4)
 
 
 func flicker(room: String, dur: float) -> void:
@@ -1281,6 +1310,7 @@ func finish(id: String, custom := "") -> void:
 	script_token += 1
 	audio.set_heart(false)
 	audio.set_tv(false)
+	tick_on = false
 	var mins := int((Time.get_ticks_msec() - start_msec) / 60000.0)
 	var texts := {
 		"A": ["You slam into the neighbor's porch screaming. Lights explode on up and down the street. Behind you, at the edge of the lawn, a tall figure STOPS — watches — and then simply... isn't there anymore.\n\nThe police find wet footprints through the MILLERS' house. All the way to the front door. Stopping where you stood.\n\nDana cries and hugs you for a full minute. You never housesit again.", "The police find no one. But every officer who walks that hallway goes quiet at the master window."],

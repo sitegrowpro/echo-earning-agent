@@ -31,6 +31,7 @@ var door_seep := {} # id -> {"mat": StandardMaterial3D, "rooms": Array}
 var _seep_sig := ""
 var clock_sec: Node3D
 var clock_sec_a := 0.0
+var glimpse: MeshInstance3D
 var room_lights := {}
 var power := true
 var porch_on := true
@@ -684,6 +685,36 @@ func clock_tick() -> void:
 		return
 	clock_sec_a -= TAU / 60.0
 	clock_sec.rotation.z = clock_sec_a
+
+
+func spawn_glimpse(pos: Vector3, dur := 0.3) -> void:
+	if glimpse != null and is_instance_valid(glimpse):
+		glimpse.queue_free()
+		glimpse = null
+	var g := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3(0.55, 1.9, 0.32)
+	g.mesh = bm
+	g.material_override = mat(Color(0.0, 0.0, 0.0), 1.0)
+	g.position = pos + Vector3(0, 0.95, 0)
+	add_child(g)
+	glimpse = g
+	await get_tree().create_timer(dur, false).timeout
+	if glimpse != null and is_instance_valid(glimpse):
+		glimpse.queue_free()
+		glimpse = null
+
+
+func reset_dread_props() -> void:
+	if not porch_on:
+		porch_on = true
+		apply_lights()
+	clock_sec_a = 0.0
+	if clock_sec != null:
+		clock_sec.rotation.z = 0.0
+	if glimpse != null and is_instance_valid(glimpse):
+		glimpse.queue_free()
+		glimpse = null
 
 
 func _light_rig() -> void:

@@ -293,6 +293,7 @@ func _reset_run() -> void:
 	audio.set_heart(false)
 	audio.set_hum(false)
 	audio.set_whisper(false)
+	world.reset_dread_props()
 	audio.mj_stop()
 	mic.reset_run()
 	market.reset_run()

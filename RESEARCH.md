@@ -68,14 +68,14 @@ This doc is the single source of truth for "what makes F2F *feel* like F2F".
 | Chores → dread → survive + 4 endings | DONE (7 chapters, choices matter) |
 | Mic-as-input (voice activity) | DONE (real mic stealth + mute) |
 | Silence events | MOSTLY — rain stops ✓ + clock dies at ch3 ✓ (hum death still future) |
-| House gaslighting (moved objects) | TODO — **dread director micro-events** |
+| House gaslighting (moved objects) | DONE — director: laundry door opens itself, porch light dies, knock from inside |
 | Attention → survival | TODO — **notes-found rewards (back-window warning)** |
 | True-story framing card | DONE — fullscreen card on New Night ("as told by Jamie K.") |
 | Door light-seep | DONE — emissive thresholds, either-side-lit + flicker-aware |
 | Bottom-subtitle dialog | DONE — bottom subtitle bar, small-caps speaker + choices |
 | Geometry detail (fixtures/clutter) | TODO — **pass 2: lamps, baseboards, fans, curtains, distant houses** |
 | Camera zoom + look-at on NPC talk | DONE — FOV punch-in (72→52) on every dialog + note |
-| Subliminal glimpse scares | TODO — black figure at frame edge for a fraction of a second |
+| Subliminal glimpse scares | DONE — 0.3s hall figure (ch5) + yard figure (ch6) |
 | Checkpoint-only autosave | DIFFERS — F2F has no manual saves; death → checkpoint. Consider aligning |
 
 ## 6. How it was coded (dev process + code architecture)
