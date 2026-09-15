@@ -24,13 +24,17 @@ func _process(_delta: float) -> bool:
 		_shot("/tmp/shot_menu.png")
 		print("[SHOT] menu captured; starting new game")
 		main.call("start_new")
-	elif stage == 1 and frames >= 200:
+	elif stage == 1 and frames >= 140:
 		stage = 2
+		print("[SHOT] dismissing story card")
+		main.call("story_click")
+	elif stage == 2 and frames >= 220:
+		stage = 3
 		_shot("/tmp/shot_spawn.png")
 		print("[SHOT] spawn captured at pos=", (main.get("player") as Node3D).global_position, "; walking forward")
 		Input.action_press("move_forward")
-	elif stage == 2 and frames >= 340:
-		stage = 3
+	elif stage == 3 and frames >= 360:
+		stage = 4
 		Input.action_release("move_forward")
 		_shot("/tmp/shot_walked.png")
 		print("[SHOT] walked-final pos=", (main.get("player") as Node3D).global_position)
