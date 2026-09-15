@@ -7,7 +7,7 @@ shader_type canvas_item;
 uniform sampler2D screen_texture : hint_screen_texture, repeat_disable, filter_linear;
 uniform float scan_strength : hint_range(0.0, 0.5) = 0.14;
 uniform float grain_amount : hint_range(0.0, 0.3) = 0.06;
-uniform float vignette_strength : hint_range(0.0, 1.0) = 0.55;
+uniform float vignette_strength : hint_range(0.0, 1.0) = 0.38;
 uniform float track_strength : hint_range(0.0, 1.0) = 0.6;
 uniform float dread : hint_range(0.0, 1.0) = 0.3;
 uniform float barrel : hint_range(0.0, 0.3) = 0.10;
@@ -53,7 +53,7 @@ void fragment() {
 	float luma = dot(col, vec3(0.299, 0.587, 0.114));
 	col = mix(col, vec3(luma), 0.12);
 	// Vignette closing in with dread + lamp flicker.
-	float vig = smoothstep(0.92 - dread * 0.18, 0.28, length(cc));
+	float vig = smoothstep(1.02 - dread * 0.15, 0.36, length(cc));
 	col *= mix(1.0, vig, vignette_strength);
 	float flick = 0.965 + 0.035 * sin(TIME * 57.0) + dread * 0.03 * sin(TIME * 3.1);
 	// CRT edge mask for overscan pushed outside the frame.

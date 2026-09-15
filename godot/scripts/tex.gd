@@ -55,7 +55,7 @@ static func get_tex(kind: String) -> ImageTexture:
 		"carpet":
 			img = _speckle(64, 0.85, 0.10, 0.10, 303)
 		"drywall":
-			img = _blotch(64, 0.95, 0.06, 404)
+			img = _blotch(64, 0.95, 0.09, 404)
 		"concrete":
 			img = _speckle(64, 0.80, 0.12, 0.06, 505)
 		"asphalt":
@@ -92,7 +92,7 @@ static func _planks(size: int, plank_h: int, gap_px: int, seed_v: int) -> Image:
 		for x in size:
 			var v := tone + n.get_noise_2d(float(x) * 0.22, float(row) * 2.7) * 0.09
 			if y % plank_h < gap_px:
-				v = 0.45
+				v = 0.38
 			elif x == (row * 47 + 20) % size:
 				v *= 0.82 # plank-end seam, fixed position so it tiles
 			img.set_pixel(x, y, Color(v, v, v))
