@@ -25,6 +25,7 @@ var indoor := true
 var bounds_min := Vector2(-26.0, -7.6)
 var bounds_max := Vector2(26.0, 16.4)
 var fov_kick := 0.0
+var fov_target := 72.0 # 72 roam / 52 talk-zoom (story.say drives it)
 
 @onready var camera: Camera3D = $Camera3D
 @onready var body: CollisionShape3D = $Body
@@ -103,7 +104,7 @@ func _physics_process(dt: float) -> void:
 		move_and_slide()
 		noise = maxf(0.0, noise - CFG.NOISE_DECAY * dt)
 		fov_kick = lerpf(fov_kick, 0.0, minf(1.0, dt * 6.0))
-		camera.fov = 72.0 + fov_kick
+		camera.fov = lerpf(camera.fov, fov_target + fov_kick, minf(1.0, dt * 8.0))
 		return
 	if Input.is_action_just_pressed("crouch"):
 		crouch = not crouch
@@ -150,7 +151,7 @@ func _physics_process(dt: float) -> void:
 			noise = minf(100.0, noise + n)
 	camera.position = Vector3(0, eye_cur + bob_y, 0)
 	fov_kick = lerpf(fov_kick, 6.0 if want_sprint else 0.0, minf(1.0, dt * 5.0))
-	camera.fov = 72.0 + fov_kick
+	camera.fov = lerpf(camera.fov, fov_target + fov_kick, minf(1.0, dt * 8.0))
 	noise = maxf(0.0, noise - CFG.NOISE_DECAY * dt * (0.4 if moving else 1.0))
 
 

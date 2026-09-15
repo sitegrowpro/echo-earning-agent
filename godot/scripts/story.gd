@@ -188,6 +188,7 @@ func render_obj() -> void:
 func say(sp: String, text: String, opts: Array) -> void:
 	dialog_open = true
 	player.set("frozen", true)
+	player.set("fov_target", 52.0) # F2F talk-zoom: punch in on the speaker
 	var wrapped: Array = []
 	for o in opts:
 		var cb: Callable = o["cb"]
@@ -198,6 +199,7 @@ func say(sp: String, text: String, opts: Array) -> void:
 func _close_say(cb: Callable) -> void:
 	dialog_open = false
 	player.set("frozen", false)
+	player.set("fov_target", 72.0)
 	ui.close_dialog()
 	cb.call()
 
@@ -210,6 +212,7 @@ func read_note(id: String) -> void:
 		toast("📄 Note (%d/%d)" % [notes_found.size(), NOTES.size()])
 	note_open = true
 	player.set("frozen", true)
+	player.set("fov_target", 52.0) # lean in to read
 	audio.ui_click()
 	ui.note_show(String(NOTES[id]["title"]), String(NOTES[id]["body"]))
 
@@ -217,6 +220,7 @@ func read_note(id: String) -> void:
 func close_note() -> void:
 	note_open = false
 	player.set("frozen", false)
+	player.set("fov_target", 72.0)
 	ui.note_close()
 
 

@@ -74,7 +74,7 @@ This doc is the single source of truth for "what makes F2F *feel* like F2F".
 | Door light-seep | TODO — **emissive strips tied to room lights** |
 | Bottom-subtitle dialog | DONE — bottom subtitle bar, small-caps speaker + choices |
 | Geometry detail (fixtures/clutter) | TODO — **pass 2: lamps, baseboards, fans, curtains, distant houses** |
-| Camera zoom + look-at on NPC talk | TODO — recreation code shows talk = zoom camera + IK look-at + typewriter |
+| Camera zoom + look-at on NPC talk | DONE — FOV punch-in (72→52) on every dialog + note |
 | Subliminal glimpse scares | TODO — black figure at frame edge for a fraction of a second |
 | Checkpoint-only autosave | DIFFERS — F2F has no manual saves; death → checkpoint. Consider aligning |
 
