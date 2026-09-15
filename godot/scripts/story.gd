@@ -520,6 +520,7 @@ func _knock_sequence() -> void:
 	if not is_done("door") and not bool(flags.get("talking", false)):
 		flags["talking"] = true
 		audio.knock_at(Vector3(0, 1.5, 5.5), "heavy2")
+		audio.voice("daniel_01")
 		say("??? (through the door)", "\"...hey. Hey. I'm Daniel — the Millers' son. Locked myself out like an idiot. Can you let me in? It'll just take a second.\"", _daniel_opts())
 
 
@@ -527,6 +528,7 @@ func talk_through_door() -> void:
 	if bool(flags.get("talking", false)) or is_done("door"):
 		return
 	flags["talking"] = true
+	audio.voice("daniel_01")
 	say("??? (through the door)", "\"...hey. Hey. I'm Daniel — the Millers' son. Locked myself out like an idiot. Can you let me in? It'll just take a second.\"", _daniel_opts())
 
 
@@ -546,6 +548,7 @@ func _warn_millers_ch3() -> void:
 	choices.append("Texted the Millers about Daniel (ch3)")
 	phone.call("send", "millers", "SOMEONE IS AT THE DOOR SAYING HES YOUR SON. Your note said text you!!")
 	audio.knock_at(Vector3(0, 1.5, 5.5), "soft3")
+	audio.voice("daniel_05")
 	sub("\"...hello? You still there?\"", 4.0)
 	phone.call("incoming", "millers", ["WHAT. Jamie we DON'T HAVE A SON.", "Do NOT open that door. Calling the neighbors NOW."], 1.4, script_token)
 	after_stranger()
@@ -555,17 +558,20 @@ func stranger_talk(how: String) -> void:
 	choices.append("Stranger talk: " + how)
 	if how == "lie":
 		enemy.set("aggression", int(enemy.get("aggression")) + 1)
+		audio.voice("daniel_02")
 		say("???", "\"...Dana always forgets me. Let me IN, Jamie.\"", [
 			{"text": "(Back away. Say nothing more.)", "cb": func(): after_stranger()},
 		])
 	elif how == "ask":
 		audio.knock_at(Vector3(0, 1.5, 5.5), "one")
 		enemy.set("aggression", int(enemy.get("aggression")) + 1)
+		audio.voice("daniel_03")
 		say("???", "\"Dana talks about you all the time. Her favorite housesitter... Jamie.\"", [
 			{"text": "(He knows your name. Back away.)", "cb": func(): after_stranger()},
 		])
 	else:
 		audio.knock_at(Vector3(0, 1.5, 5.5), "soft3")
+		audio.voice("daniel_04")
 		sub("Silence. Then, very quietly: \"...okay. Okay. I'll come back later, then, Jamie.\"", 6.0)
 		after_stranger()
 
@@ -716,9 +722,11 @@ func _call911_end(accepted: bool) -> void:
 	if accepted:
 		if bool(flags.get("millers_warned_ch3", false)):
 			sub("911: \"Hollow Creek? We already have a car on your street — someone called ahead. Stay QUIET.\"", 7.0)
+			audio.voice("op_01")
 			police_t = 30.0
 		else:
 			sub("911: \"Stay on the line. Officers are en route. Hide somewhere with a LOCK — and stay QUIET.\"", 7.0)
+			audio.voice("op_02")
 			police_t = 0.0
 		toast("🚔 Police incoming. HIDE and stay quiet.")
 		choices.append("Called 911")
