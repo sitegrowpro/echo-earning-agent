@@ -1,6 +1,7 @@
 [SHOT] main instanced
 [SHOT] saved /tmp/shot_menu.png err=0
 [SHOT] menu captured; starting new game
+[SHOT] dismissing story card
 [SHOT] saved /tmp/shot_spawn.png err=0
 [SHOT] spawn captured at pos=(0.0, 0.179841, 7.4); walking forward
 [SHOT] saved /tmp/shot_walked.png err=0
