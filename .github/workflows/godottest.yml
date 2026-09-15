@@ -3,6 +3,8 @@ name: godot-test
 # Trigger: gh workflow run godot-test --ref <branch>
 on:
   workflow_dispatch:
+  push:
+    branches: [arena/01a0a065-echo-earning-agent]
 
 jobs:
   test:
