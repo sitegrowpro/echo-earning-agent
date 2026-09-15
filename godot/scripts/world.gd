@@ -263,7 +263,6 @@ func apply_lights() -> void:
 			(l as OmniLight3D).visible = power and bool(r["on"])
 	if porch_light:
 		porch_light.visible = power and porch_on
-	_apply_flicker_end()
 
 
 # ---------- door light-seep (F2F hallway slivers) ----------
@@ -315,10 +314,6 @@ func _process(dt: float) -> void:
 		var glow := _room_glow(room)
 		for s in (shade_mats[room] as Array):
 			(s["mat"] as StandardMaterial3D).emission_energy_multiplier = float(s["base"]) if glow else 0.0
-
-
-func _apply_flicker_end() -> void:
-	pass
 
 
 func set_tv(on: bool) -> void:
@@ -529,7 +524,7 @@ func _furnish() -> void:
 	for i in 3:
 		box(0.34, 0.28, 2.1, mat(book_cols[i], 1.0), Vector3(-7.7, 0.6 + i * 0.5, 2.6))
 	box(0.35, 1.6, 0.35, mat(Color(0.13, 0.13, 0.15), 0.6), Vector3(-7.3, 0.8, 4.9), 0.0, true)
-	box(0.55, 0.4, 0.55, glow_mat(Color(1.0, 0.9, 0.64), 0.4), Vector3(-7.3, 1.75, 4.9))
+	_cyl(0.18, 0.3, 0.42, mat(Color(0.87, 0.82, 0.7), 0.9), Vector3(-7.3, 1.76, 4.9))
 	box(0.9, 0.75, 0.45, wood_d, Vector3(-7.6, 0.37, 0.95), 0.0, true)
 	# KITCHEN
 	box(0.7, 0.9, 3.4, mat(Color(0.81, 0.78, 0.72), 0.6), Vector3(7.55, 0.45, 3.3), 0.0, true)
@@ -601,7 +596,6 @@ func _furnish() -> void:
 	box(0.65, 0.95, 0.65, white, Vector3(6.95, 0.47, -5.0), 0.0, true)
 	box(0.65, 0.95, 0.65, white, Vector3(7.6, 0.47, -5.0), 0.0, true)
 	box(0.35, 1.8, 1.4, mat(Color(0.33, 0.33, 0.38), 0.8), Vector3(7.8, 0.9, -3.4), 0.0, true)
-	box(0.3, 0.25, 0.4, mat(Color(0.85, 0.73, 0.24), 0.6), Vector3(7.8, 1.25, -3.6))
 	box(0.12, 0.6, 0.45, mat(Color(0.23, 0.25, 0.27), 0.5, 0.4), Vector3(7.9, 1.55, -2.6))
 	box(0.04, 0.4, 0.3, mat(Color(0.76, 0.07, 0.12), 0.5), Vector3(7.83, 1.55, -2.6))
 	# LIVING — Martin's record shelf + turntable (he has TASTE).

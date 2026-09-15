@@ -484,6 +484,7 @@ func _ch3_seq() -> void:
 		return
 	audio.stop_rain()
 	world.set_rain(false)
+	audio.set_hum(false)
 	sub("The rain stops. The house goes very, very quiet.", 4.0)
 	await tree.create_timer(5.0, false).timeout
 	if t != script_token:
@@ -620,6 +621,7 @@ func _ch4_seq() -> void:
 		return
 	audio.power_down()
 	world.set_power(false)
+	audio.set_hum(false)
 	sub("The lights die. The fridge sighs into silence. Only the storm's echo remains.", 5.0)
 	toast("⚡ POWER OUT")
 	audio.knock_at(Vector3(8.0, 1.5, 3.0), "one")
@@ -1668,6 +1670,7 @@ func _fuse() -> void:
 	if fuse_n >= 3:
 		world.set_power(true)
 		audio.power_up()
+		audio.set_hum(true)
 		done("fuse")
 		sub("CLICK. The house gasps back to life. Light floods the hallway — and for one frame, a TALL SHADOW shrinks off the wall.", 6.0)
 		flicker("hall", 1.5)

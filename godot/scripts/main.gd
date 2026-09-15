@@ -267,7 +267,6 @@ func _exit_market_now() -> void:
 	story.market_exit()
 	world.set_market_mood(false)
 	audio.set_rain_level(1.0)
-	audio.set_hum(false)
 	player.bounds_min = Vector2(-26.0, -7.6)
 	player.bounds_max = Vector2(26.0, 16.4)
 	player.global_position = Vector3(0, 0, 7.4)
@@ -364,6 +363,7 @@ func _start(fresh: bool) -> void:
 				for gid in (story.flags.get("groceries", []) as Array):
 					market.take_item(gid)
 				enter_market(true)
+	audio.set_hum(world.power or bool(story.flags.get("in_market", false)))
 	ui.refresh_continue()
 	update_mouse()
 
@@ -403,6 +403,7 @@ func quit_to_menu() -> void:
 	if (state == "playing" or state == "paused") and not story.finished:
 		Save.save_game(story.serialize())
 	state = "menu"
+	audio.set_hum(false)
 	get_tree().paused = false
 	phone.toggle(0)
 	ui.show_menu()
@@ -420,6 +421,7 @@ func on_ending(id: String) -> void:
 	audio.set_heart(false)
 	audio.set_whisper(false)
 	audio.mj_stop()
+	audio.set_hum(false)
 	ui.refresh_endings_list()
 	ui.refresh_continue()
 

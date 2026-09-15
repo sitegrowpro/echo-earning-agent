@@ -67,7 +67,7 @@ This doc is the single source of truth for "what makes F2F *feel* like F2F".
 | Phone-as-second-screen | DONE (3 threads, calls, photos, 911) |
 | Chores → dread → survive + 4 endings | DONE (7 chapters, choices matter) |
 | Mic-as-input (voice activity) | DONE (real mic stealth + mute) |
-| Silence events | MOSTLY — rain stops ✓ + clock dies at ch3 ✓ (hum death still future) |
+| Silence events | DONE — rain + hum stop, clock dies at ch3; hum tracks power/market/ending everywhere |
 | House gaslighting (moved objects) | DONE — director: laundry door opens itself, porch light dies, knock from inside |
 | Attention → survival | DONE — master note = fast window climb; fridge note = warn-Millers option (police −30s); bath note = closet warning |
 | Closet-check death rule | DONE — searching enemy finds closet/pcloset hiders within 7m (bed stays safe) |
