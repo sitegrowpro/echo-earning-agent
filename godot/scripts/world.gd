@@ -335,7 +335,7 @@ func set_market_mood(inside: bool) -> void:
 		env.fog_enabled = false
 	else:
 		env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-		env.ambient_light_energy = 0.35
+		env.ambient_light_energy = 0.22
 		env.fog_enabled = true
 
 
@@ -353,7 +353,7 @@ func flash_lightning() -> void:
 	t.tween_callback(func(): moon.light_energy = 2.2)
 	t.tween_interval(0.25)
 	t.tween_property(moon, "light_energy", 0.25, 0.6)
-	t.parallel().tween_property(env, "ambient_light_energy", 0.35, 0.6)
+	t.parallel().tween_property(env, "ambient_light_energy", 0.22, 0.6)
 	t.tween_callback(func(): moon.light_color = Color(0.56, 0.66, 1.0))
 
 
@@ -451,7 +451,7 @@ func _build_env() -> void:
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_energy = 0.35
+	env.ambient_light_energy = 0.22
 	# Filmic + bloom: lamps, TV and windows bleed like a camcorder at night.
 	env.tonemap_mode = Environment.TONE_MAPPER_ACES
 	env.tonemap_exposure = 1.05
@@ -462,8 +462,8 @@ func _build_env() -> void:
 	env.ssao_enabled = true
 	env.fog_enabled = true
 	env.fog_mode = Environment.FOG_MODE_EXPONENTIAL
-	env.fog_density = 0.028
-	env.fog_light_color = Color(0.05, 0.07, 0.12)
+	env.fog_density = 0.012
+	env.fog_light_color = Color(0.015, 0.02, 0.045)
 	env.fog_sky_affect = 0.35
 	we.environment = env
 	add_child(we)
@@ -906,11 +906,12 @@ func _poster(pos: Vector3, c: Color) -> void:
 	add_child(p)
 
 
-func _omni(room: String, color: Color, energy: float, dist: float, pos: Vector3) -> void:
+func _omni(room: String, color: Color, energy: float, dist: float, pos: Vector3, shadow := false) -> void:
 	var l := OmniLight3D.new()
 	l.light_color = color
 	l.light_energy = energy
 	l.omni_range = dist
+	l.shadow_enabled = shadow
 	l.position = pos
 	add_child(l)
 	room_light(room, l)
@@ -1001,10 +1002,10 @@ func reset_dread_props() -> void:
 
 
 func _light_rig() -> void:
-	_omni("living", Color(1.0, 0.85, 0.63), 2.2, 11.0, Vector3(-4, 2.3, 3))
+	_omni("living", Color(1.0, 0.85, 0.63), 2.2, 11.0, Vector3(-4, 2.3, 3), true)
 	_omni("living", Color(1.0, 0.9, 0.64), 1.2, 6.0, Vector3(-7.3, 1.9, 4.9))
-	_omni("kitchen", Color(1.0, 0.95, 0.85), 2.2, 11.0, Vector3(4, 2.4, 3))
-	_omni("hall", Color(1.0, 0.91, 0.77), 1.8, 9.0, Vector3(0, 2.4, -0.5))
+	_omni("kitchen", Color(1.0, 0.95, 0.85), 2.2, 11.0, Vector3(4, 2.4, 3), true)
+	_omni("hall", Color(1.0, 0.91, 0.77), 1.8, 9.0, Vector3(0, 2.4, -0.5), true)
 	_omni("guest", Color(1.0, 0.85, 0.63), 1.6, 7.0, Vector3(-4.5, 2.0, -3.5))
 	_omni("guest", Color(0.81, 0.88, 1.0), 0.9, 4.0, Vector3(-3.58, 1.3, -4.93))
 	_omni("master", Color(1.0, 0.91, 0.77), 1.8, 9.0, Vector3(1, 2.4, -3.5))

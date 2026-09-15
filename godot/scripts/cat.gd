@@ -107,7 +107,7 @@ func reset_run() -> void:
 func update(dt: float) -> void:
 	if story.get("finished"):
 		return
-	if bool(story.get("in_market")):
+	if bool((story.get("flags") as Dictionary).get("in_market", false)):
 		return
 	hiss_cool = maxf(0.0, hiss_cool - dt)
 	pet_cool = maxf(0.0, pet_cool - dt)
