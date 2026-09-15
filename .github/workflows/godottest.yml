@@ -53,13 +53,19 @@ jobs:
           grep -E "ERROR|SCRIPT ERROR|WARNING" /tmp/boot.log | sort | uniq -c | sort -rn | head -40 > testshots/boot_errors.txt || echo "no errors" > testshots/boot_errors.txt
           cat testshots/boot_summary.txt testshots/boot_errors.txt
 
-      - name: Xvfb screenshots (menu + spawn + walk)
+      - name: Xvfb screenshots (tour, incremental copy)
         timeout-minutes: 14
         run: |
-          timeout 780 xvfb-run --auto-servernum --server-args="-screen 0 1280x720x24" /tmp/godot --path godot --resolution 1280x720 --rendering-driver opengl3 --audio-driver Dummy -s "$GITHUB_WORKSPACE/tools/shot.gd" > /tmp/run.log 2>&1; echo "exit=$?"
-          cp /tmp/shot_*.png testshots/ 2>/dev/null || true
-          grep -E "SHOT|ERROR" /tmp/run.log | head -30 > testshots/shot_lines.txt || true
-          grep -E "ERROR|SCRIPT ERROR" /tmp/run.log | sort | uniq -c | sort -rn | head -30 > testshots/run_errors.txt || echo none > testshots/run_errors.txt
+          rm -f /tmp/shot_*.png
+          timeout 780 xvfb-run --auto-servernum --server-args="-screen 0 960x540x24" /tmp/godot --path godot --resolution 960x540 --rendering-driver opengl3 --audio-driver Dummy -s "$GITHUB_WORKSPACE/tools/shot.gd" > /tmp/run.log 2>&1 & GPID=$!
+          for i in $(seq 1 40); do
+            sleep 20
+            cp /tmp/shot_*.png testshots/ 2>/dev/null || true
+            grep -E "SHOT|ERROR" /tmp/run.log | head -40 > testshots/shot_lines.txt || true
+            grep -E "ERROR|SCRIPT ERROR" /tmp/run.log | sort | uniq -c | sort -rn | head -30 > testshots/run_errors.txt || true
+            kill -0 $GPID 2>/dev/null || break
+          done
+          wait $GPID; echo "exit=$?"
           ls -la testshots/
           test -f testshots/shot_01_menu.png && test -f testshots/shot_09_street.png && test $(ls testshots/shot_*.png | wc -l) -ge 9
 
