@@ -74,6 +74,76 @@ This doc is the single source of truth for "what makes F2F *feel* like F2F".
 | Door light-seep | TODO — **emissive strips tied to room lights** |
 | Bottom-subtitle dialog | TODO — **restyle dialog panel** |
 | Geometry detail (fixtures/clutter) | TODO — **pass 2: lamps, baseboards, fans, curtains, distant houses** |
+| Camera zoom + look-at on NPC talk | TODO — recreation code shows talk = zoom camera + IK look-at + typewriter |
+| Subliminal glimpse scares | TODO — black figure at frame edge for a fraction of a second |
+| Checkpoint-only autosave | DIFFERS — F2F has no manual saves; death → checkpoint. Consider aligning |
+
+## 6. How it was coded (dev process + code architecture)
+
+### The developer
+- Mukul Negi / Rayll: gamedev since age 13 (2015), lo-fi art lover, solo in his
+  bedroom — "there is no team (yet)". Only other credit: composer Nathan Hall.
+  [4](https://www.sportskeeda.com/esports/news-rayll-creating-fears-fathom-series)
+- Almost shelved episode 1; believes devs can't judge their own games → playtest.
+  Stayed motivated watching YouTube let's-plays.
+  [1](https://in.ign.com/fears-to-fathom-home-alone/197767/news/games-made-in-india-rayll-studios-founder-talks-about-fears-to-fathom-the-hit-horror-video-game)
+- Stories crowdsourced via an email address ON THE TITLE SCREEN (132 submissions;
+  ep1 inspired by Mr. Nightmare's real-horror channel). Relatability = the hook:
+  "home invasion is such a common fear that can happen to anyone."
+  [3](https://www.inverse.com/input/gaming/mukul-negi-rayll-fears-to-fathom-home-alone-norwood-hitchhike)
+
+### His stated design rules (direct quotes, Sportskeeda interview)
+- **Never monsters:** "I doubt you'll ever see some monsters chasing you in a
+  Fears to Fathom game, as I feel it breaks the reality factor." Human threat only.
+- **Subliminal glimpses:** the core scare is "a black human figure at the corner
+  of the frame" for a fraction of a second — "something I wasn't meant to see."
+- **VHS = liminal feeling:** "mostly subliminal... it really resonated with the
+  liminal feeling I wanted it to give off."
+- **Future = more isolation** (+ a co-op episode, which became Scratch Creek).
+
+### The interaction/dialog code pattern (from a real recreation project)
+The community's F2F recreation codes every NPC talk the same way — this is the
+canonical shape, and ours already matches it except the camera zoom:
+[repo](https://github.com/BATPANn/FearsToFathom-DialogSystem-Part-5)
+1. Per-frame raycast from camera center (~5m) → tag check → prompt text ("Talk To Him")
+2. `E` → disable FPS controller, enable NPC zoom camera, NPC look-at IK at player
+3. Typewriter subtitle lines + talk sound, click/E to advance
+4. Choice buttons → one coroutine per choice → restore controller/camera
+- General consensus: raycast + `IInteractable` interface (Interact/Select/Deselect),
+  interactables on their own collision channel; big objects may use trigger volumes.
+  [2](https://www.reddit.com/r/unity/comments/1hav9wc/handle_interactions_between_playerobjects/)
+
+### Objective/event architecture (standard pattern behind these games)
+- Central **Quest/Objective manager** (singleton): AddQuest / UpdateObjective /
+  CompleteQuest; trigger volumes, pickups and dialogue call into it; UI listens
+  to its update events. Quest state kept as plain data, not objects.
+  [1](https://medium.com/object-oriented-worlds/implementing-quest-systems-in-ue5-blueprints-47ea0ac00599)
+- Our `main.gd` (chapter machine + `story` flags + triggers calling in) is exactly
+  this pattern in Godot form. No re-architecture needed.
+
+### Choice → ending design (Scratch Creek + ep1/ep2 guides)
+- **Navigation choices → safe alternate endings** (follow GPS vs flipped sign).
+- **Dialogue choices → NPC disposition → death branches** ("be socially aware of
+  your answers towards NPCs").
+- **Brutally specific survival rules**, fair-if-attentive: hide under the bed,
+  NOT the wardrobe (intruder checks wardrobe first); don't open the bathroom door;
+  coffin room, not church; unhook the trailer or the car dies.
+  [2](https://fearstofathomscratchcreek.com/completion/fears-to-fathom-scratch-creek-all-endings)
+  [5](https://steamcommunity.com/sharedfiles/filedetails/?id=3018507801)
+- **Trigger-gated progression:** police won't arrive until you trigger the door;
+  sirens = safe; serene music = win state. Event flags, not timers.
+- **The killer hears your real microphone** (ep2 motel) — mic-as-input is canon F2F.
+- **Co-op rules** (Scratch Creek): screen darkening + audio cues when apart;
+  simultaneous interactions; voted choices with a default on disagreement.
+
+### Saves: checkpoint autosave only, no manual saves
+- Early episodes: death = restart from the beginning. Later episodes: checkpoint
+  autosave, still no manual save, ~1–2 hour single-sitting episodes.
+  [1](https://www.reddit.com/r/FearsToFathom/comments/1ounnkz/can_you_really_not_save_in_fears_to_fathom/)
+  [2](https://steamcommunity.com/app/2506160/discussions/0/3884977132832256161/)
+- Implication for us: chapter-boundary autosave + death → checkpoint is the
+  authentic structure; manual save-anywhere softens stakes (keep as accessibility
+  option, default to F2F rules).
 
 ## 5. Build order (risk-managed, testable in slices)
 
@@ -82,7 +152,8 @@ This doc is the single source of truth for "what makes F2F *feel* like F2F".
 - **P2b — Surfaces:** `tex.gd` procedural 64–128px textures (wood/tile/carpet/
   drywall/asphalt/grass/deck/ceiling), NEAREST filtering, uv1 tiling.
 - **P2c — Dread systems:** light-seep door strips, ticking clock + stop event,
-  dread-director micro-events (5 scripted object changes), notes→warning reward,
+  dread-director micro-events (5 scripted object changes + subliminal frame-edge
+  glimpses), camera zoom on NPC talk, notes→warning reward,
   true-story intro card, dialog restyle to bottom subtitles.
 - **P2d — Geometry:** lamp fixtures, baseboards, ceiling fans, curtains + blinds,
   kitchen/bathroom/laundry dressing, distant houses with lit windows, wet streaks.
