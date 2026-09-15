@@ -2,6 +2,10 @@
 [SHOT] saved /tmp/shot_01_menu.png err=0
 [SHOT] menu captured; starting new game
 [SHOT] card dismissed; front open; TV on; walking in
+[SHOT] probe f140 pos=(0.0, 0.179841, 7.4)
+[SHOT] probe f150 pos=(0.0, 0.179672, 5.84106)
+[SHOT] probe f160 pos=(0.0, 0.179672, 5.84106)
+[SHOT] probe f170 pos=(0.0, 0.179672, 5.84106)
 [SHOT] walk-in final pos=(0.0, 0.179672, 5.84106) verdict=WALKIN-FAIL
 [SHOT] saved /tmp/shot_02_spawn.png err=0
 [SHOT] stop 2 saved
