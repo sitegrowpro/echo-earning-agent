@@ -46,6 +46,15 @@ func _process(_delta: float) -> bool:
 		main.get("story").call("_tv_use")
 		Input.action_press("move_forward")
 		print("[SHOT] card dismissed; front open; TV on; walking in")
+		var door_c := Vector3(0, 1.0, 5.5)
+		for b in main.find_children("*", "CollisionObject3D", true, false):
+			var co := b as CollisionObject3D
+			var bp := (b as Node3D).global_position
+			if (bp - door_c).length() < 4.5:
+				var sh := ""
+				for c in (b as Node).find_children("*", "CollisionShape3D", true, false):
+					sh += " shape_dis=" + str((c as CollisionShape3D).disabled)
+				print("[SHOT] body ", (b as Node).name, " pos=", bp, " layer=", co.collision_layer, " mask=", co.collision_mask, sh)
 	if stage == 2 and frames >= 140 and frames % 10 == 0 and frames < 180:
 		var q: Vector3 = (main.get("player") as Node3D).global_position
 		print("[SHOT] probe f", frames, " pos=", q)
