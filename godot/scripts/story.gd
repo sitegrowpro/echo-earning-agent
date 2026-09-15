@@ -1327,13 +1327,13 @@ func throw_distraction() -> void:
 	var yaw: float = float(player.get("yaw"))
 	var dir := Vector3(-sin(yaw), 0, -cos(yaw))
 	var start: Vector3 = player.global_position + Vector3(0, 1.4, 0)
-	var land := player.global_position + dir * 5.0
+	var land: Vector3 = player.global_position + dir * 5.0
 	var bmin: Vector2 = player.get("bounds_min")
 	var bmax: Vector2 = player.get("bounds_max")
 	land.x = clampf(land.x, bmin.x + 0.3, bmax.x - 0.3)
 	land.z = clampf(land.z, bmin.y + 0.3, bmax.y - 0.3)
 	land.y = 0.06
-	var can := world.box(0.09, 0.12, 0.09, world.mat(Color(0.7, 0.7, 0.72), 0.4, 0.6), start)
+	var can: Node3D = world.box(0.09, 0.12, 0.09, world.mat(Color(0.7, 0.7, 0.72), 0.4, 0.6), start)
 	var tw := tree.create_tween()
 	tw.set_parallel(true)
 	tw.tween_property(can, "position:x", land.x, 0.45)
@@ -1430,20 +1430,20 @@ func _door_prompt(id: String, label: String) -> String:
 	return ("Close " if bool(d.get("is_open")) else "Open ") + label
 
 
-func _door_def(I, id: String, x: float, z: float, label: String) -> void:
-	I.add({"id": "door-" + id, "area": I.halo(Vector3(x, 1.2, z), 0.7),
+func _door_def(inter, id: String, x: float, z: float, label: String) -> void:
+	inter.add({"id": "door-" + id, "area": inter.halo(Vector3(x, 1.2, z), 0.7),
 		"prompt": func(_c): return _door_prompt(id, label),
 		"on_use": func(_c): toggle_door(id)})
 
 
-func _note_def(I, id: String, pos: Vector3, flag: String = "") -> void:
-	I.add({"id": "note-" + id, "area": I.halo(pos, 0.55),
+func _note_def(inter, id: String, pos: Vector3, flag: String = "") -> void:
+	inter.add({"id": "note-" + id, "area": inter.halo(pos, 0.55),
 		"prompt": func(_c): return "" if (flag != "" and not bool(flags.get(flag, false))) or note_open else "Read",
 		"on_use": func(_c): read_note(id)})
 
 
-func _sw_def(I, room: String, pos: Vector3, label: String) -> void:
-	I.add({"id": "sw-" + room, "area": I.halo(pos, 0.32),
+func _sw_def(inter, room: String, pos: Vector3, label: String) -> void:
+	inter.add({"id": "sw-" + room, "area": inter.halo(pos, 0.32),
 		"prompt": func(_c): return _sw_prompt(room, label),
 		"on_use": func(_c): _sw_use(room)})
 
@@ -1462,104 +1462,104 @@ func _sw_use(room: String) -> void:
 	audio.ui_click()
 
 
-func register(I) -> void:
-	_door_def(I, "front", 0.0, 5.5, "front door")
-	_door_def(I, "guest", -5.5, -1.5, "guest room door")
-	_door_def(I, "master", 1.5, -1.5, "master bedroom door")
-	_door_def(I, "bath", 5.2, -1.5, "bathroom door")
-	_door_def(I, "laundry", 7.25, -1.5, "laundry door")
-	I.add({"id": "peephole", "area": I.halo(Vector3(0, 1.6, 5.3), 0.4),
+func register(inter) -> void:
+	_door_def(inter, "front", 0.0, 5.5, "front door")
+	_door_def(inter, "guest", -5.5, -1.5, "guest room door")
+	_door_def(inter, "master", 1.5, -1.5, "master bedroom door")
+	_door_def(inter, "bath", 5.2, -1.5, "bathroom door")
+	_door_def(inter, "laundry", 7.25, -1.5, "laundry door")
+	inter.add({"id": "peephole", "area": inter.halo(Vector3(0, 1.6, 5.3), 0.4),
 		"prompt": func(c): return "Look through peephole" if (c["player"] as CharacterBody3D).global_position.z < 5.4 else "",
 		"on_use": func(_c): peep()})
-	I.add({"id": "biscuit", "area": I.halo(Vector3(6.4, 0.4, 4.9), 0.6),
+	inter.add({"id": "biscuit", "area": inter.halo(Vector3(6.4, 0.4, 4.9), 0.6),
 		"prompt": func(_c): return "Feed Biscuit (ONE scoop)" if chapter == 1 and not is_done("biscuit") else "",
 		"hold": func(_c): return 3.0,
 		"on_use": func(_c): _feed_biscuit()})
-	I.add({"id": "mailtake", "area": I.halo(Vector3(2.2, 1.25, 9.0), 0.6),
+	inter.add({"id": "mailtake", "area": inter.halo(Vector3(2.2, 1.25, 9.0), 0.6),
 		"prompt": func(_c): return "Take the mail" if chapter == 1 and not bool(flags.get("mail_taken", false)) else "",
 		"on_use": func(_c): _take_mail()})
-	I.add({"id": "trashbag", "area": I.halo(Vector3(4.9, 0.5, 2.6), 0.6),
+	inter.add({"id": "trashbag", "area": inter.halo(Vector3(4.9, 0.5, 2.6), 0.6),
 		"prompt": func(_c): return "Grab the trash bag" if chapter == 1 and not is_done("trash") and not bool(items.get("trash", false)) else "",
 		"on_use": func(_c): _take_trash()})
-	I.add({"id": "trashbin", "area": I.halo(Vector3(-2.6, 0.8, 6.3), 0.8),
+	inter.add({"id": "trashbin", "area": inter.halo(Vector3(-2.6, 0.8, 6.3), 0.8),
 		"prompt": func(_c): return "Dump the trash" if bool(items.get("trash", false)) and not is_done("trash") else "",
 		"on_use": func(_c): _dump_trash()})
-	I.add({"id": "thermo", "area": I.halo(Vector3(-1, 1.5, -1.3), 0.4),
+	inter.add({"id": "thermo", "area": inter.halo(Vector3(-1, 1.5, -1.3), 0.4),
 		"prompt": func(_c): return "Turn thermostat down (78°?!)" if chapter == 1 and not is_done("thermo") else "Thermostat (72° — perfect)",
 		"on_use": func(_c): _thermo()})
-	I.add({"id": "essay", "area": I.halo(Vector3(-3.0, 0.95, -5.0), 0.6),
+	inter.add({"id": "essay", "area": inter.halo(Vector3(-3.0, 0.95, -5.0), 0.6),
 		"prompt": func(_c): return "Write essay (page %d/3)" % (essay_pages + 1) if chapter == 1 and not is_done("essay") else "",
 		"hold": func(_c): return CFG.HOMEWORK_HOLD,
 		"on_use": func(_c): _essay_page()})
-	I.add({"id": "fridge", "area": I.halo(Vector3(7.0, 1.2, 1.0), 0.7),
+	inter.add({"id": "fridge", "area": inter.halo(Vector3(7.0, 1.2, 1.0), 0.7),
 		"prompt": func(_c): return _fridge_prompt(),
 		"on_use": func(_c): _fridge_use()})
-	I.add({"id": "micro", "area": I.halo(Vector3(7.2, 1.25, 1.9), 0.6),
+	inter.add({"id": "micro", "area": inter.halo(Vector3(7.2, 1.25, 1.9), 0.6),
 		"prompt": func(_c): return _micro_prompt(),
 		"on_use": func(_c): _micro_use()})
-	I.add({"id": "tv", "area": I.halo(Vector3(-2, 0.95, 1.0), 0.8),
+	inter.add({"id": "tv", "area": inter.halo(Vector3(-2, 0.95, 1.0), 0.8),
 		"prompt": func(_c): return "Turn TV off" if world.tv_on else "Turn TV on",
 		"on_use": func(_c): _tv_use()})
-	I.add({"id": "couch", "area": I.halo(Vector3(-2, 0.8, 3.3), 0.9),
+	inter.add({"id": "couch", "area": inter.halo(Vector3(-2, 0.8, 3.3), 0.9),
 		"prompt": func(_c): return _couch_prompt(),
 		"hold": func(_c): return 3.0 if (bool(player.get("sitting")) and String(items.get("food", "")) == "hot") else 0.0,
 		"on_use": func(_c): _couch_use()})
-	I.add({"id": "drawer", "area": I.halo(Vector3(4.2, 0.75, 2.8), 0.6),
+	inter.add({"id": "drawer", "area": inter.halo(Vector3(4.2, 0.75, 2.8), 0.6),
 		"prompt": func(_c): return _drawer_prompt(),
 		"on_use": func(_c): _drawer_use()})
-	I.add({"id": "flashlight", "area": I.halo(Vector3(7.8, 1.3, -3.6), 0.6),
+	inter.add({"id": "flashlight", "area": inter.halo(Vector3(7.8, 1.3, -3.6), 0.6),
 		"prompt": func(_c): return "Take the flashlight" if not bool(items.get("flash", false)) else "",
 		"on_use": func(_c): _take_flash()})
-	I.add({"id": "fuse", "area": I.halo(Vector3(7.8, 1.55, -2.6), 0.6),
+	inter.add({"id": "fuse", "area": inter.halo(Vector3(7.8, 1.55, -2.6), 0.6),
 		"prompt": func(_c): return "Reset breaker %d/3 (hold)" % (fuse_n + 1) if chapter == 4 and not is_done("fuse") else "Breaker box (humming normally)",
 		"hold": func(_c): return 2.5 if chapter == 4 and not is_done("fuse") else 0.0,
 		"on_use": func(_c): _fuse()})
-	I.add({"id": "hidebed", "area": I.halo(Vector3(-6.4, 0.5, -3.3), 0.7),
+	inter.add({"id": "hidebed", "area": inter.halo(Vector3(-6.4, 0.5, -3.3), 0.7),
 		"prompt": func(_c): return "Crawl out" if String(player.get("hidden")) == "bed" else "Hide under the bed",
 		"on_use": func(_c): hide("bed")})
-	I.add({"id": "hidecloset", "area": I.halo(Vector3(-2.7, 1.2, -2.0), 0.7),
+	inter.add({"id": "hidecloset", "area": inter.halo(Vector3(-2.7, 1.2, -2.0), 0.7),
 		"prompt": func(_c): return "Step out" if String(player.get("hidden")) == "closet" else "Hide in the closet",
 		"on_use": func(_c): hide("closet")})
-	I.add({"id": "hidepcloset", "area": I.halo(Vector3(3.2, 1.2, -2.0), 0.7),
+	inter.add({"id": "hidepcloset", "area": inter.halo(Vector3(3.2, 1.2, -2.0), 0.7),
 		"prompt": func(_c): return "Step out" if String(player.get("hidden")) == "pcloset" else "Hide in the master closet",
 		"on_use": func(_c): hide("pcloset")})
-	I.add({"id": "carkeys", "area": I.halo(Vector3(3.3, 1.0, -5.1), 0.6),
+	inter.add({"id": "carkeys", "area": inter.halo(Vector3(3.3, 1.0, -5.1), 0.6),
 		"prompt": func(_c): return "Take the CAR KEYS" if chapter >= 5 and not bool(items.get("car_keys", false)) else "",
 		"on_use": func(_c): _take_carkeys()})
-	I.add({"id": "bedwindow", "area": I.halo(Vector3(-5.5, 1.4, -5.35), 0.7),
+	inter.add({"id": "bedwindow", "area": inter.halo(Vector3(-5.5, 1.4, -5.35), 0.7),
 		"prompt": func(_c): return "CLIMB OUT the window (hold)" if chapter >= 6 else "Guest window (Dana: NEVER open at night)",
 		"hold": func(_c): return (1.5 if notes_found.has("master") else 3.0) if chapter >= 6 else 0.0,
 		"on_use": func(_c): _climb_window()})
-	I.add({"id": "neighbordoor", "area": I.halo(Vector3(-18.2, 1.3, 7.3), 1.2),
+	inter.add({"id": "neighbordoor", "area": inter.halo(Vector3(-18.2, 1.3, 7.3), 1.2),
 		"prompt": func(_c): return "BANG on the neighbor's door (hold)" if chapter == 6 else "",
 		"hold": func(_c): return 1.5,
 		"on_use": func(_c): _neighbor()})
-	_note_def(I, "mail", Vector3(2.2, 1.25, 9.0), "mail_taken")
-	_note_def(I, "fridge", Vector3(7.0, 1.55, 1.0))
-	_note_def(I, "photo", Vector3(-7.6, 0.95, 0.95))
-	_note_def(I, "doodle", Vector3(-2.7, 0.9, -5.1))
-	_note_def(I, "master", Vector3(0.6, 0.95, -4.2), "master_open")
-	_note_def(I, "bath", Vector3(5.2, 1.1, -2.0))
-	_note_def(I, "manual", Vector3(7.8, 0.95, -3.0))
-	_note_def(I, "priya_note", Vector3(0, 0.35, 5.15), "priya_note")
-	_sw_def(I, "living", Vector3(-3.4, 1.45, 0.32), "Living room")
-	_sw_def(I, "kitchen", Vector3(3.4, 1.45, 0.32), "Kitchen")
-	_sw_def(I, "hall", Vector3(0, 1.45, -1.32), "Hallway")
-	_sw_def(I, "guest", Vector3(-5.0, 1.45, -1.32), "Guest room")
-	_sw_def(I, "master", Vector3(2.0, 1.45, -1.32), "Master bedroom")
-	_sw_def(I, "bath", Vector3(5.9, 1.45, -1.32), "Bathroom")
-	_sw_def(I, "laundry", Vector3(6.9, 1.45, -1.32), "Laundry")
-	I.add({"id": "mirror", "area": I.halo(Vector3(5.2, 1.6, -1.9), 0.5),
+	_note_def(inter, "mail", Vector3(2.2, 1.25, 9.0), "mail_taken")
+	_note_def(inter, "fridge", Vector3(7.0, 1.55, 1.0))
+	_note_def(inter, "photo", Vector3(-7.6, 0.95, 0.95))
+	_note_def(inter, "doodle", Vector3(-2.7, 0.9, -5.1))
+	_note_def(inter, "master", Vector3(0.6, 0.95, -4.2), "master_open")
+	_note_def(inter, "bath", Vector3(5.2, 1.1, -2.0))
+	_note_def(inter, "manual", Vector3(7.8, 0.95, -3.0))
+	_note_def(inter, "priya_note", Vector3(0, 0.35, 5.15), "priya_note")
+	_sw_def(inter, "living", Vector3(-3.4, 1.45, 0.32), "Living room")
+	_sw_def(inter, "kitchen", Vector3(3.4, 1.45, 0.32), "Kitchen")
+	_sw_def(inter, "hall", Vector3(0, 1.45, -1.32), "Hallway")
+	_sw_def(inter, "guest", Vector3(-5.0, 1.45, -1.32), "Guest room")
+	_sw_def(inter, "master", Vector3(2.0, 1.45, -1.32), "Master bedroom")
+	_sw_def(inter, "bath", Vector3(5.9, 1.45, -1.32), "Bathroom")
+	_sw_def(inter, "laundry", Vector3(6.9, 1.45, -1.32), "Laundry")
+	inter.add({"id": "mirror", "area": inter.halo(Vector3(5.2, 1.6, -1.9), 0.5),
 		"prompt": func(_c): return "Look in the mirror",
 		"on_use": func(_c): _mirror()})
-	I.add({"id": "vinyl", "area": I.halo(Vector3(-7.45, 1.25, 2.5), 0.6),
+	inter.add({"id": "vinyl", "area": inter.halo(Vector3(-7.45, 1.25, 2.5), 0.6),
 		"prompt": func(_c): return "Drop the needle (\"MIDNIGHT — the 1982 pressing\")",
 		"on_use": func(_c): _vinyl()})
-	pet_def = {"id": "petcat", "area": I.halo(Vector3(5.6, 0.45, 4.4), 0.7),
+	pet_def = {"id": "petcat", "area": inter.halo(Vector3(5.6, 0.45, 4.4), 0.7),
 		"prompt": func(_c): return "Pet Biscuit" if not bool(flags.get("in_market", false)) else "",
 		"on_use": func(_c): cat.pet()}
-	I.add(pet_def)
-	_note_def(I, "grocery", Vector3(6.55, 1.45, 0.55), "grocery_note")
+	inter.add(pet_def)
+	_note_def(inter, "grocery", Vector3(6.55, 1.45, 0.55), "grocery_note")
 
 
 func _feed_biscuit() -> void:
