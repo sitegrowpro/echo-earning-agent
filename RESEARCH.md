@@ -74,7 +74,7 @@ This doc is the single source of truth for "what makes F2F *feel* like F2F".
 | True-story framing card | DONE — fullscreen card on New Night ("as told by Jamie K.") |
 | Door light-seep | DONE — emissive thresholds, either-side-lit + flicker-aware |
 | Bottom-subtitle dialog | DONE — bottom subtitle bar, small-caps speaker + choices |
-| Geometry detail (fixtures/clutter) | TODO — **pass 2: lamps, baseboards, fans, curtains, distant houses** |
+| Geometry detail (fixtures/clutter) | DONE — 7 ceiling fixtures + 2 fans + desk lamp, curtains/blinds, baseboards, room dressing, 4 distant houses |
 | Camera zoom + look-at on NPC talk | DONE — FOV punch-in (72→52) on every dialog + note |
 | Subliminal glimpse scares | DONE — 0.3s hall figure (ch5) + yard figure (ch6) |
 | Checkpoint-only autosave | DONE — chapter-entry + quit saves only; death retries the true checkpoint |

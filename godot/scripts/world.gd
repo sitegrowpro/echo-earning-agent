@@ -29,6 +29,8 @@ const DOOR_ROOMS := {
 var doors := {}
 var door_seep := {} # id -> {"mat": StandardMaterial3D, "rooms": Array}
 var _seep_sig := ""
+var shade_mats := {}
+var fan_hubs: Array[Node3D] = []
 var clock_sec: Node3D
 var clock_sec_a := 0.0
 var glimpse: MeshInstance3D
@@ -285,7 +287,10 @@ func _room_glow(room: String) -> bool:
 	return false
 
 
-func _process(_dt: float) -> void:
+func _process(dt: float) -> void:
+	if power:
+		for f in fan_hubs:
+			f.rotate_y(dt * 2.8)
 	if door_seep.is_empty():
 		return
 	# Signature-gated: recompute strip energies only when light/door state changes.
@@ -299,11 +304,17 @@ func _process(_dt: float) -> void:
 		var shut := not bool((doors[id] as AnimatableBody3D).get("is_open"))
 		states[id] = lit and shut
 		sig += "%s%d" % [id, 1 if states[id] else 0]
+	for room in shade_mats.keys():
+		sig += "%s%d" % [room, 1 if _room_glow(room) else 0]
 	if sig == _seep_sig:
 		return
 	_seep_sig = sig
 	for id in states.keys():
 		((door_seep[id] as Dictionary)["mat"] as StandardMaterial3D).emission_energy_multiplier = 2.4 if bool(states[id]) else 0.0
+	for room in shade_mats.keys():
+		var glow := _room_glow(room)
+		for s in (shade_mats[room] as Array):
+			(s["mat"] as StandardMaterial3D).emission_energy_multiplier = float(s["base"]) if glow else 0.0
 
 
 func _apply_flicker_end() -> void:
@@ -419,6 +430,10 @@ func build() -> void:
 	add_door("bath", 4.75, -1.5, 0.84, 1.92, {"label": "Bathroom door", "open": true})
 	add_door("laundry", 6.825, -1.5, 0.79, 1.92, {"label": "Laundry door"})
 	_furnish()
+	_fixtures()
+	_window_dressing()
+	_dressing()
+	_baseboards()
 	_build_clock()
 	_light_rig()
 	_outside()
@@ -613,6 +628,280 @@ func _furnish() -> void:
 	add_child(tour)
 
 
+func _cyl(rt: float, rb: float, h: float, m: Material, pos: Vector3) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = rt
+	cm.bottom_radius = rb
+	cm.height = h
+	mi.mesh = cm
+	mi.material_override = m
+	mi.position = pos
+	add_child(mi)
+	return mi
+
+
+func _ball(r: float, m: Material, pos: Vector3) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	var sm := SphereMesh.new()
+	sm.radius = r
+	sm.height = r * 2.0
+	mi.mesh = sm
+	mi.material_override = m
+	mi.position = pos
+	add_child(mi)
+	return mi
+
+
+func _shade(room: String, m: StandardMaterial3D, base: float) -> void:
+	# Register an emissive fixture shade so _process can sync it with the
+	# room's real lights (power cuts, switches AND flicker all show).
+	if not shade_mats.has(room):
+		shade_mats[room] = []
+	(shade_mats[room] as Array).append({"mat": m, "base": base})
+
+
+func _fan(c: Vector3, room: String, bulb_c: Color) -> void:
+	var dark := mat(Color(0.16, 0.14, 0.12), 0.6)
+	var blade := mat(Color(0.35, 0.26, 0.17), 0.7)
+	_cyl(0.025, 0.025, 0.35, dark, Vector3(c.x, 2.62, c.z))
+	_cyl(0.11, 0.11, 0.13, dark, Vector3(c.x, 2.42, c.z))
+	var hub := Node3D.new()
+	hub.position = Vector3(c.x, 2.34, c.z)
+	add_child(hub)
+	for i in 4:
+		var a := float(i) * PI * 0.5
+		var mi := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		bm.size = Vector3(0.6, 0.02, 0.13)
+		mi.mesh = bm
+		mi.material_override = blade
+		mi.position = Vector3(cos(a) * 0.4, 0.0, sin(a) * 0.4)
+		mi.rotation.y = -a
+		hub.add_child(mi)
+	fan_hubs.append(hub)
+	_cyl(0.09, 0.05, 0.08, dark, Vector3(c.x, 2.3, c.z))
+	var b := glow_mat(bulb_c, 2.0)
+	_ball(0.05, b, Vector3(c.x, 2.24, c.z))
+	_shade(room, b, 2.0)
+
+
+func _pendant(c: Vector3, room: String, bulb_c: Color, trim: Material, drop: float) -> void:
+	_cyl(0.06, 0.06, 0.05, trim, Vector3(c.x, 2.77, c.z))
+	var y := 2.2 - drop
+	var stem_h := 2.745 - (y + 0.09) + 0.05
+	_cyl(0.015, 0.015, stem_h, trim, Vector3(c.x, (2.745 + y + 0.09) * 0.5, c.z))
+	_cyl(0.06, 0.22, 0.18, trim, Vector3(c.x, y, c.z))
+	var b := glow_mat(bulb_c, 2.2)
+	_ball(0.06, b, Vector3(c.x, y - 0.08, c.z))
+	_shade(room, b, 2.2)
+
+
+func _flush(c: Vector3, room: String, bulb_c: Color, frost: Material) -> void:
+	_cyl(0.17, 0.17, 0.03, frost, Vector3(c.x, 2.77, c.z))
+	var d := glow_mat(bulb_c, 1.8)
+	var dome := _ball(0.14, d, Vector3(c.x, 2.68, c.z))
+	dome.scale.y = 0.7
+	_shade(room, d, 1.8)
+
+
+func _pullchain(c: Vector3, room: String, bulb_c: Color) -> void:
+	var dark := mat(Color(0.12, 0.12, 0.14), 0.6)
+	_cyl(0.008, 0.008, 0.45, dark, Vector3(c.x, 2.57, c.z))
+	_cyl(0.025, 0.025, 0.07, dark, Vector3(c.x, 2.32, c.z))
+	var b := glow_mat(bulb_c, 2.0)
+	_ball(0.055, b, Vector3(c.x, 2.24, c.z))
+	_shade(room, b, 2.0)
+	_cyl(0.004, 0.004, 0.3, dark, Vector3(c.x + 0.06, 2.15, c.z))
+	_ball(0.015, dark, Vector3(c.x + 0.06, 1.99, c.z))
+
+
+func _fixtures() -> void:
+	var mount := mat(Color(0.16, 0.14, 0.12), 0.6)
+	var brass := mat(Color(0.55, 0.42, 0.2), 0.4, 0.6)
+	var frost := mat(Color(0.88, 0.86, 0.78), 0.5)
+	_fan(Vector3(-4, 0, 3), "living", Color(1.0, 0.85, 0.63))
+	_fan(Vector3(1, 0, -3.5), "master", Color(1.0, 0.91, 0.77))
+	_pendant(Vector3(4, 0, 3), "kitchen", Color(1.0, 0.95, 0.85), brass, 0.0)
+	_pendant(Vector3(-4.5, 0, -3.5), "guest", Color(1.0, 0.85, 0.63), mount, 0.25)
+	_flush(Vector3(0, 0, -0.5), "hall", Color(1.0, 0.91, 0.77), frost)
+	_flush(Vector3(5.2, 0, -3.5), "bath", Color(0.84, 0.93, 1.0), frost)
+	_pullchain(Vector3(7.2, 0, -3.5), "laundry", Color(1.0, 0.97, 0.85))
+	# guest desk lamp (the accent light lives at its head)
+	_cyl(0.08, 0.1, 0.04, mount, Vector3(-3.58, 0.77, -5.08))
+	var arm := _cyl(0.015, 0.015, 0.55, mount, Vector3(-3.58, 1.0, -5.03))
+	arm.rotation.x = 0.35
+	_cyl(0.05, 0.12, 0.14, mount, Vector3(-3.58, 1.24, -4.93))
+	var dl := glow_mat(Color(1.0, 0.9, 0.7), 1.6)
+	_ball(0.045, dl, Vector3(-3.58, 1.2, -4.93))
+	_shade("guest", dl, 1.6)
+	# living floor-lamp bulb under the existing shade
+	var fl := glow_mat(Color(1.0, 0.9, 0.64), 1.6)
+	_ball(0.06, fl, Vector3(-7.3, 1.5, 4.9))
+	_shade("living", fl, 1.6)
+
+
+func _curtain(cx: float, z: float, rod_y: float, w: float, panels: Array, short: bool, c: Color) -> void:
+	var rod_m := mat(Color(0.25, 0.18, 0.1), 0.5, 0.3)
+	box(w + 0.9, 0.04, 0.04, rod_m, Vector3(cx, rod_y, z))
+	_ball(0.035, rod_m, Vector3(cx - (w + 0.9) * 0.5, rod_y, z))
+	_ball(0.035, rod_m, Vector3(cx + (w + 0.9) * 0.5, rod_y, z))
+	var h := 1.2 if short else 1.7
+	var y := 1.7 if short else 1.45
+	var fm := mat(c, 1.0)
+	for px in panels:
+		box(0.42, h, 0.09, fm, Vector3(px, y, z))
+
+
+func _blind_h(cx: float, z: float, w: float) -> void:
+	var slat := mat(Color(0.78, 0.77, 0.72), 0.6)
+	box(w, 0.7, 0.03, slat, Vector3(cx, 1.87, z))
+	box(w + 0.02, 0.05, 0.05, slat, Vector3(cx, 1.5, z + 0.01))
+	box(w + 0.15, 0.16, 0.1, mat(Color(0.6, 0.58, 0.52), 0.7), Vector3(cx, 2.3, z + 0.02))
+
+
+func _blind_v(x: float, cz: float, w: float, s: float) -> void:
+	var slat := mat(Color(0.78, 0.77, 0.72), 0.6)
+	box(0.03, 1.2, w, slat, Vector3(x, 1.6, cz))
+	box(0.05, 0.05, w + 0.02, slat, Vector3(x + s * 0.01, 0.98, cz))
+	box(0.1, 0.16, w + 0.25, mat(Color(0.6, 0.58, 0.52), 0.7), Vector3(x + s * 0.04, 2.3, cz))
+
+
+func _window_dressing() -> void:
+	_curtain(-4.5, 5.32, 2.42, 1.9, [-5.7, -3.3], false, Color(0.45, 0.16, 0.14))
+	_curtain(4.5, 5.32, 2.42, 1.9, [3.3, 5.7], false, Color(0.5, 0.44, 0.3))
+	_curtain(-5.5, -5.32, 2.37, 1.5, [-6.5, -4.5], true, Color(0.2, 0.26, 0.4))
+	_curtain(1.5, -5.32, 2.42, 1.5, [0.5, 2.5], true, Color(0.4, 0.3, 0.42))
+	_blind_h(5.2, -5.37, 0.8)
+	_blind_v(-7.97, 3.0, 1.6, 1.0)
+	_blind_v(7.97, 3.0, 1.4, -1.0)
+
+
+func _dressing() -> void:
+	var white := mat(Color(0.85, 0.85, 0.85), 0.6)
+	var steel := mat(Color(0.54, 0.56, 0.58), 0.35, 0.5)
+	var cab := mat(Color(0.78, 0.74, 0.66), 0.6)
+	var dark := mat(Color(0.16, 0.14, 0.12), 0.6)
+	# kitchen uppers + kettle + paper towels
+	box(0.35, 0.8, 1.2, cab, Vector3(7.72, 1.9, 2.6), 0.0, true)
+	box(0.35, 0.8, 1.2, cab, Vector3(7.72, 1.9, 4.0), 0.0, true)
+	_cyl(0.09, 0.11, 0.22, steel, Vector3(7.55, 1.09, 5.0))
+	_cyl(0.06, 0.06, 0.28, white, Vector3(4.9, 1.1, 3.1))
+	# bath: towel bar + towel, mat, shower rod + half-drawn curtain
+	box(0.04, 0.04, 0.7, steel, Vector3(4.12, 1.3, -3.0))
+	box(0.08, 0.55, 0.45, mat(Color(0.7, 0.4, 0.35), 1.0), Vector3(4.15, 1.0, -3.0))
+	box(0.7, 0.02, 0.5, mat(Color(0.35, 0.45, 0.5), 1.0), Vector3(4.6, 0.02, -3.3))
+	box(0.05, 0.05, 1.7, steel, Vector3(4.95, 2.0, -4.5))
+	box(0.04, 1.5, 0.9, mat(Color(0.75, 0.73, 0.65), 0.9), Vector3(4.95, 1.2, -4.85))
+	# laundry: basket, detergent, wall cabinet
+	box(0.5, 0.4, 0.4, mat(Color(0.6, 0.5, 0.35), 0.9), Vector3(7.55, 0.2, -2.2), 0.0, true)
+	box(0.12, 0.25, 0.12, mat(Color(0.85, 0.4, 0.15), 0.6), Vector3(6.85, 1.07, -5.1))
+	box(0.12, 0.25, 0.12, mat(Color(0.2, 0.4, 0.8), 0.6), Vector3(7.6, 1.07, -4.9))
+	box(0.9, 0.6, 0.35, cab, Vector3(7.2, 2.0, -5.2), 0.0, true)
+	# hall: thermostat + family photos
+	box(0.15, 0.2, 0.05, white, Vector3(-1.0, 1.5, 0.37))
+	var photos := [Color(0.3, 0.4, 0.35), Color(0.4, 0.35, 0.3), Color(0.35, 0.3, 0.4)]
+	for i in 3:
+		var fx := 1.2 + float(i) * 0.5
+		box(0.3, 0.4, 0.03, dark, Vector3(fx, 1.7, 0.385))
+		box(0.24, 0.34, 0.035, mat(photos[i], 0.9), Vector3(fx, 1.7, 0.382))
+	# living throw pillows
+	box(0.35, 0.35, 0.15, mat(Color(0.6, 0.5, 0.3), 1.0), Vector3(-2.6, 0.75, 3.5), 0.3)
+	box(0.35, 0.35, 0.15, mat(Color(0.3, 0.45, 0.4), 1.0), Vector3(-1.4, 0.75, 3.5), -0.2)
+	# guest rug + master pillows + rug
+	box(1.6, 0.02, 2.2, mat(Color(0.4, 0.3, 0.25), 1.0), Vector3(-5.0, 0.02, -3.0))
+	box(0.7, 0.15, 0.45, white, Vector3(0.25, 0.78, -4.9))
+	box(0.7, 0.15, 0.45, white, Vector3(0.95, 0.78, -4.9))
+	box(2.0, 0.02, 1.4, mat(Color(0.35, 0.3, 0.4), 1.0), Vector3(0.6, 0.02, -2.6))
+
+
+func _bb_h(z: float, x1: float, x2: float, gaps: Array) -> void:
+	var m := mat(Color(0.8, 0.77, 0.7), 0.7)
+	var edges := [x1]
+	for g in gaps:
+		edges.append(g[0])
+		edges.append(g[1])
+	edges.append(x2)
+	for i in range(0, edges.size(), 2):
+		var a: float = edges[i]
+		var b: float = edges[i + 1]
+		if b - a < 0.05:
+			continue
+		box(b - a, 0.12, 0.03, m, Vector3((a + b) * 0.5, 0.06, z))
+
+
+func _bb_v(x: float, z1: float, z2: float, gaps: Array) -> void:
+	var m := mat(Color(0.8, 0.77, 0.7), 0.7)
+	var edges := [z1]
+	for g in gaps:
+		edges.append(g[0])
+		edges.append(g[1])
+	edges.append(z2)
+	for i in range(0, edges.size(), 2):
+		var a: float = edges[i]
+		var b: float = edges[i + 1]
+		if b - a < 0.05:
+			continue
+		box(0.03, 0.12, b - a, m, Vector3(x, 0.06, (a + b) * 0.5))
+
+
+func _baseboards() -> void:
+	_bb_h(5.385, X0, X1, [[-0.6, 0.6]])
+	_bb_h(-5.385, X0, X1, [])
+	_bb_v(-7.885, ZN, ZS, [])
+	_bb_v(7.885, ZN, ZS, [])
+	_bb_h(0.385, X0, X1, [[-5.35, -3.65], [3.65, 5.35]])
+	_bb_h(0.615, X0, X1, [[-5.35, -3.65], [3.65, 5.35]])
+	var backdoors := [[-6.0, -5.0], [1.0, 2.0], [4.75, 5.65], [6.825, 7.675]]
+	_bb_h(-1.385, X0, X1, backdoors)
+	_bb_h(-1.615, X0, X1, backdoors)
+	_bb_v(-0.115, 0.5, ZS, [[1.95, 4.05]])
+	_bb_v(0.115, 0.5, ZS, [[1.95, 4.05]])
+	_bb_v(-2.115, ZN, -1.5, [])
+	_bb_v(-1.885, ZN, -1.5, [])
+	_bb_v(3.885, ZN, -1.5, [])
+	_bb_v(4.115, ZN, -1.5, [])
+	_bb_v(6.385, ZN, -1.5, [])
+	_bb_v(6.615, ZN, -1.5, [])
+
+
+func _house(pos: Vector3, size: Vector3, wins: Array) -> void:
+	box(size.x, size.y, size.z, mat(Color(0.1, 0.1, 0.12), 1.0), Vector3(pos.x, size.y * 0.5, pos.z), 0.0, true)
+	box(size.x + 0.6, 0.4, size.z + 0.6, mat(Color(0.05, 0.05, 0.07), 1.0), Vector3(pos.x, size.y + 0.2, pos.z))
+	for w in wins:
+		var p := MeshInstance3D.new()
+		var pm := PlaneMesh.new()
+		pm.size = Vector2(1.3, 0.95)
+		p.mesh = pm
+		if bool(w["lit"]):
+			p.material_override = glow_mat(w["tint"], 1.6)
+		else:
+			p.material_override = mat(Color(0.05, 0.07, 0.1), 0.2)
+		p.position = w["pos"]
+		p.rotation.y = float(w["ry"])
+		add_child(p)
+
+
+func _distant() -> void:
+	var warm := Color(1.0, 0.83, 0.54)
+	var cool := Color(0.56, 0.71, 1.0)
+	_house(Vector3(-9, 0, 24), Vector3(6, 3.4, 5), [
+		{"pos": Vector3(-10.2, 1.7, 21.49), "ry": PI, "lit": true, "tint": warm},
+		{"pos": Vector3(-7.8, 1.7, 21.49), "ry": PI, "lit": true, "tint": cool},
+	])
+	_house(Vector3(3, 0, 25.5), Vector3(7, 3.4, 5.5), [
+		{"pos": Vector3(1.5, 1.7, 22.74), "ry": PI, "lit": true, "tint": warm},
+		{"pos": Vector3(4.5, 1.7, 22.74), "ry": PI, "lit": false, "tint": warm},
+	])
+	_house(Vector3(14, 0, 24), Vector3(6, 3.2, 5), [
+		{"pos": Vector3(12.8, 1.7, 21.49), "ry": PI, "lit": false, "tint": warm},
+		{"pos": Vector3(15.2, 1.7, 21.49), "ry": PI, "lit": false, "tint": warm},
+	])
+	_house(Vector3(24, 0, 6), Vector3(5, 3.2, 6), [
+		{"pos": Vector3(21.49, 1.7, 6), "ry": -PI * 0.5, "lit": true, "tint": warm},
+	])
+
+
 func _poster(pos: Vector3, c: Color) -> void:
 	var p := MeshInstance3D.new()
 	var pm := PlaneMesh.new()
@@ -723,7 +1012,7 @@ func _light_rig() -> void:
 	_omni("kitchen", Color(1.0, 0.95, 0.85), 2.2, 11.0, Vector3(4, 2.4, 3))
 	_omni("hall", Color(1.0, 0.91, 0.77), 1.8, 9.0, Vector3(0, 2.4, -0.5))
 	_omni("guest", Color(1.0, 0.85, 0.63), 1.6, 7.0, Vector3(-4.5, 2.0, -3.5))
-	_omni("guest", Color(0.81, 0.88, 1.0), 0.9, 4.0, Vector3(-3.0, 1.3, -5.0))
+	_omni("guest", Color(0.81, 0.88, 1.0), 0.9, 4.0, Vector3(-3.58, 1.3, -4.93))
 	_omni("master", Color(1.0, 0.91, 0.77), 1.8, 9.0, Vector3(1, 2.4, -3.5))
 	_omni("bath", Color(0.84, 0.93, 1.0), 1.6, 6.0, Vector3(5.2, 2.3, -3.5))
 	_omni("laundry", Color(1.0, 0.97, 0.85), 1.8, 7.0, Vector3(7.2, 2.3, -3.5))
@@ -826,6 +1115,7 @@ func _outside() -> void:
 	_make_rain(Vector3(0, 9, -8), Vector3(32, 1, 2.0))    # back yard strip
 	_make_rain(Vector3(-20, 9, 0), Vector3(12, 1, 8))     # west side
 	_make_rain(Vector3(20, 9, 0), Vector3(12, 1, 8))      # east side
+	_distant()
 
 
 func _tree(pos: Vector3, s: float) -> void:
