@@ -69,26 +69,26 @@ static func get_tex(kind: String) -> ImageTexture:
 	return _tex_cache[kind]
 
 
-static func _noise(octaves: int, freq: float, seed: int) -> FastNoiseLite:
+static func _noise(octaves: int, freq: float, seed_v: int) -> FastNoiseLite:
 	var n := FastNoiseLite.new()
 	n.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	n.fractal_octaves = octaves
 	n.frequency = freq
-	n.seed = seed
+	n.seed = seed_v
 	return n
 
 
 static func _row_hash(i: int, salt: int) -> float:
-	return fract(sin(float(i) * 12.9898 + float(salt) * 78.233) * 43758.5453)
+	return fposmod(sin(float(i) * 12.9898 + float(salt) * 78.233) * 43758.5453, 1.0)
 
 
 ## Horizontal wood planks. plank_h must divide `size` so the tile wraps.
-static func _planks(size: int, plank_h: int, gap_px: int, seed: int) -> Image:
+static func _planks(size: int, plank_h: int, gap_px: int, seed_v: int) -> Image:
 	var img := Image.create_empty(size, size, false, Image.FORMAT_RGBA8)
-	var n := _noise(3, 0.9, seed)
+	var n := _noise(3, 0.9, seed_v)
 	for y in size:
-		var row := y / plank_h
-		var tone := 0.92 + (_row_hash(row, seed) - 0.5) * 0.12
+		var row := floori(float(y) / float(plank_h))
+		var tone := 0.92 + (_row_hash(row, seed_v) - 0.5) * 0.12
 		for x in size:
 			var v := tone + n.get_noise_2d(float(x) * 0.22, float(row) * 2.7) * 0.09
 			if y % plank_h < gap_px:
@@ -100,14 +100,14 @@ static func _planks(size: int, plank_h: int, gap_px: int, seed: int) -> Image:
 
 
 ## Ceramic-style grid: cells with grout lines + per-cell jitter.
-static func _tile_grid(size: int, cell: int, seed: int) -> Image:
+static func _tile_grid(size: int, cell: int, seed_v: int) -> Image:
 	var img := Image.create_empty(size, size, false, Image.FORMAT_RGBA8)
-	var n := _noise(2, 1.2, seed)
+	var n := _noise(2, 1.2, seed_v)
 	for y in size:
 		for x in size:
-			var cx := x / cell
-			var cy := y / cell
-			var v := 0.96 + (_row_hash(cx * 31 + cy, seed) - 0.5) * 0.09
+			var cx := floori(float(x) / float(cell))
+			var cy := floori(float(y) / float(cell))
+			var v := 0.96 + (_row_hash(cx * 31 + cy, seed_v) - 0.5) * 0.09
 			v += n.get_noise_2d(float(x), float(y)) * 0.03
 			if x % cell == 0 or y % cell == 0:
 				v = 0.55
@@ -116,9 +116,9 @@ static func _tile_grid(size: int, cell: int, seed: int) -> Image:
 
 
 ## Acoustic ceiling tile: large grid + pin-dot perforations + speckle.
-static func _ceiling_grid(size: int, cell: int, seed: int) -> Image:
+static func _ceiling_grid(size: int, cell: int, seed_v: int) -> Image:
 	var img := Image.create_empty(size, size, false, Image.FORMAT_RGBA8)
-	var n := _noise(2, 1.5, seed)
+	var n := _noise(2, 1.5, seed_v)
 	for y in size:
 		for x in size:
 			var v := 0.97 + n.get_noise_2d(float(x), float(y)) * 0.04
@@ -131,11 +131,11 @@ static func _ceiling_grid(size: int, cell: int, seed: int) -> Image:
 
 
 ## Generic speckle surface (carpet / concrete / asphalt): noise + grain.
-static func _speckle(size: int, base: float, noise_amp: float, grain_amp: float, seed: int) -> Image:
+static func _speckle(size: int, base: float, noise_amp: float, grain_amp: float, seed_v: int) -> Image:
 	var img := Image.create_empty(size, size, false, Image.FORMAT_RGBA8)
-	var n := _noise(3, 0.8, seed)
+	var n := _noise(3, 0.8, seed_v)
 	var rng := RandomNumberGenerator.new()
-	rng.seed = seed
+	rng.seed = seed_v
 	for y in size:
 		for x in size:
 			var v := base + n.get_noise_2d(float(x), float(y)) * noise_amp
@@ -145,9 +145,9 @@ static func _speckle(size: int, base: float, noise_amp: float, grain_amp: float,
 
 
 ## Faint large blotches for painted drywall.
-static func _blotch(size: int, base: float, amp: float, seed: int) -> Image:
+static func _blotch(size: int, base: float, amp: float, seed_v: int) -> Image:
 	var img := Image.create_empty(size, size, false, Image.FORMAT_RGBA8)
-	var n := _noise(2, 0.25, seed)
+	var n := _noise(2, 0.25, seed_v)
 	for y in size:
 		for x in size:
 			var v := base + n.get_noise_2d(float(x), float(y)) * amp
@@ -156,11 +156,11 @@ static func _blotch(size: int, base: float, amp: float, seed: int) -> Image:
 
 
 ## Vertical grass-blade streaks (stretched noise on x, fine on y).
-static func _grass(size: int, seed: int) -> Image:
+static func _grass(size: int, seed_v: int) -> Image:
 	var img := Image.create_empty(size, size, false, Image.FORMAT_RGBA8)
-	var n := _noise(3, 1.0, seed)
+	var n := _noise(3, 1.0, seed_v)
 	var rng := RandomNumberGenerator.new()
-	rng.seed = seed
+	rng.seed = seed_v
 	for y in size:
 		for x in size:
 			var v := 0.85 + n.get_noise_2d(float(x) * 0.55, float(y) * 0.08) * 0.15
@@ -175,8 +175,8 @@ static func _tileable(img: Image) -> Image:
 	var w := img.get_width()
 	var h := img.get_height()
 	var out := Image.create_empty(w, h, false, Image.FORMAT_RGBA8)
-	var hw := w / 2
-	var hh := h / 2
+	var hw := w >> 1
+	var hh := h >> 1
 	for y in h:
 		for x in w:
 			var c := img.get_pixel(x, y)
