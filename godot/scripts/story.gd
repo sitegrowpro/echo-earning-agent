@@ -58,6 +58,7 @@ var police_phase := 0.0
 var stranger_out := false
 var essay_pages := 0
 var fuse_n := 0
+var throw_cd := 0.0
 var flicker_t := 0.0
 var flicker_room := ""
 var dialog_open := false
@@ -122,6 +123,7 @@ func reset_state() -> void:
 	stranger_out = false
 	essay_pages = 0
 	fuse_n = 0
+	throw_cd = 0.0
 	flicker_t = 0.0
 	flicker_room = ""
 	dialog_open = false
@@ -977,6 +979,7 @@ func _vinyl() -> void:
 # ---------- per-frame ----------
 func update(dt: float) -> void:
 	clock_min += dt / 4.0
+	throw_cd = maxf(0.0, throw_cd - dt)
 	if tick_on and player.global_position.x < 60.0:
 		tick_t -= dt
 		if tick_t <= 0.0:
@@ -1199,6 +1202,7 @@ func toggle_door(id: String) -> void:
 			toast("🔑 The key turns. The master bedroom sighs open...")
 		else:
 			audio.locked()
+			d.jiggle()
 			sub("Locked. The Millers' room. (Dana said the door sticks — the key must be around here somewhere...)", 4.0)
 			return
 	if id == "front":
@@ -1306,6 +1310,47 @@ func sit_toggle() -> void:
 		var h: Dictionary = WorldScript.HIDE["couch"]
 		player.call("look_at_spot", h["pos"], h["look"])
 		toast("📺 Sitting. Press E on the couch to stand.")
+
+
+func throw_distraction() -> void:
+	if finished or chapter < 0:
+		return
+	if bool(phone.get("visible")):
+		return
+	if String(player.get("hidden")) != "":
+		toast("Not from in here.")
+		return
+	if throw_cd > 0.0:
+		toast("Nothing left to throw. (%ds)" % int(ceil(throw_cd)))
+		return
+	throw_cd = 8.0
+	var yaw: float = float(player.get("yaw"))
+	var dir := Vector3(-sin(yaw), 0, -cos(yaw))
+	var start: Vector3 = player.global_position + Vector3(0, 1.4, 0)
+	var land := player.global_position + dir * 5.0
+	var bmin: Vector2 = player.get("bounds_min")
+	var bmax: Vector2 = player.get("bounds_max")
+	land.x = clampf(land.x, bmin.x + 0.3, bmax.x - 0.3)
+	land.z = clampf(land.z, bmin.y + 0.3, bmax.y - 0.3)
+	land.y = 0.06
+	var can := world.box(0.09, 0.12, 0.09, world.mat(Color(0.7, 0.7, 0.72), 0.4, 0.6), start)
+	var tw := tree.create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(can, "position:x", land.x, 0.45)
+	tw.tween_property(can, "position:z", land.z, 0.45)
+	tw.tween_property(can, "rotation:x", 7.0, 0.45)
+	tw.tween_property(can, "position:y", start.y + 0.6, 0.4)
+	tw.set_parallel(false)
+	tw.tween_property(can, "position:y", 0.06, 0.2)
+	tw.tween_callback(func(): _throw_land(can, land))
+
+
+func _throw_land(can: Node3D, land: Vector3) -> void:
+	if is_instance_valid(can):
+		can.queue_free()
+	audio.clatter(land + Vector3(0, 0.3, 0))
+	enemy.call("hear_at", land)
+	toast("The can clatters down the hall.")
 
 
 # ---------- peephole ----------

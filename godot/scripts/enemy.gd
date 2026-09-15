@@ -14,6 +14,8 @@ var search_t := 0.0
 var speed_mul := 1.0
 var wp := 0
 var walk_t := 0.0
+var door_wait := 0.0
+var estep_t := 0.0
 var mesh_root: Node3D
 var waypoints := [
 	Vector3(1.8, 0, -0.5),
@@ -161,9 +163,37 @@ func step_toward(tx: float, tz: float, speed: float, dt: float) -> bool:
 	rotation.y = face
 	# Heavy gait: bob + weight sway, scaled by pace.
 	walk_t += dt * (2.2 + speed * 0.9)
-	mesh_root.position.y = absf(sin(walk_t)) * 0.035
 	mesh_root.rotation.z = sin(walk_t) * 0.02
+	# Heavy footfalls you can track through the walls.
+	estep_t -= dt
+	if estep_t <= 0.0:
+		var run := speed > 2.6
+		estep_t = 0.3 if run else 0.5
+		audio.step_at(global_position, run)
 	return d < 0.4
+
+
+func _door_factor(dt: float, story: RefCounted) -> float:
+	door_wait = maxf(0.0, door_wait - dt)
+	if door_wait > 0.0:
+		return 0.12
+	var ahead := global_position + Vector3(sin(face), 0, cos(face)) * 1.1
+	var world = story.get("world")
+	if world == null:
+		return 1.0
+	var doors: Dictionary = (world as Object).get("doors")
+	for id in doors.keys():
+		var d: Object = doors[id]
+		if bool(d.get("is_open")):
+			continue
+		var dp: Vector3 = (d as Node3D).global_position
+		if Vector2(dp.x - ahead.x, dp.z - ahead.z).length() < 1.5:
+			d.set("is_open", true)
+			d.set("target", float(d.get("swing")))
+			audio.door_creak(true)
+			door_wait = 0.9
+			return 0.12
+	return 1.0
 
 
 func update_enemy(dt: float, player: CharacterBody3D, story: RefCounted) -> String:
@@ -193,12 +223,12 @@ func update_enemy(dt: float, player: CharacterBody3D, story: RefCounted) -> Stri
 		target = pp
 	var sp := speed_mul
 	if state == "chase":
-		step_toward(target.x, target.z, float(e["chase"]) * sp, dt)
+		step_toward(target.x, target.z, float(e["chase"]) * sp * _door_factor(dt, story), dt)
 		var d := Vector2(pp.x - global_position.x, pp.z - global_position.z).length()
 		if d < float(e["catch_dist"]) and not hidden_safe:
 			return "caught"
 	elif state == "investigate":
-		if step_toward(target.x, target.z, float(e["investigate"]) * sp, dt):
+		if step_toward(target.x, target.z, float(e["investigate"]) * sp * _door_factor(dt, story), dt):
 			state = "search"
 			search_t = 0.0
 	elif state == "search":
@@ -214,8 +244,10 @@ func update_enemy(dt: float, player: CharacterBody3D, story: RefCounted) -> Stri
 			state = "patrol"
 	elif state == "patrol":
 		var w: Vector3 = waypoints[wp]
-		if step_toward(w.x, w.z, float(e["patrol"]) * sp, dt):
+		if step_toward(w.x, w.z, float(e["patrol"]) * sp * _door_factor(dt, story), dt):
 			wp = (wp + 1) % waypoints.size()
 	if mesh_root:
-		mesh_root.position.y = absf(sin(Time.get_ticks_msec() * 0.004)) * 0.03
+		var bamp := 0.05 if state == "chase" else 0.03
+		var bfr := 0.006 if state == "chase" else 0.004
+		mesh_root.position.y = absf(sin(Time.get_ticks_msec() * bfr)) * bamp
 	return state

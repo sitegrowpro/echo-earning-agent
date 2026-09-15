@@ -484,6 +484,14 @@ func tick_at(pos: Vector3, alt: bool) -> void:
 	_play3d("tock" if alt else "tick", pos, -6.0, 1.0)
 
 
+func step_at(pos: Vector3, run: bool) -> void:
+	_play3d("step_run" if run else "step_walk", pos, -1.0 if run else -6.0, randf_range(0.9, 1.1))
+
+
+func clatter(pos: Vector3) -> void:
+	_play3d("shut", pos, -4.0, 0.7)
+
+
 func footstep_surf(run: bool, crouch: bool, surf: String) -> void:
 	var s := "step_walk"
 	var db := 0.0

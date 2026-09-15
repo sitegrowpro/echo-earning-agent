@@ -85,3 +85,11 @@ func _process(dt: float) -> void:
 func toggle() -> void:
 	is_open = not is_open
 	target = swing if is_open else 0.0
+
+
+func jiggle() -> void:
+	# Locked rattle: the knob turns, the panel shudders, nothing gives.
+	var tw := create_tween()
+	tw.tween_property(self, "rotation:y", 0.07, 0.06)
+	tw.tween_property(self, "rotation:y", -0.05, 0.08)
+	tw.tween_property(self, "rotation:y", angle, 0.09)

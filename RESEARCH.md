@@ -78,6 +78,13 @@ This doc is the single source of truth for "what makes F2F *feel* like F2F".
 | Camera zoom + look-at on NPC talk | DONE — FOV punch-in (72→52) on every dialog + note |
 | Subliminal glimpse scares | DONE — 0.3s hall figure (ch5) + yard figure (ch6) |
 | Checkpoint-only autosave | DONE — chapter-entry + quit saves only; death retries the true checkpoint |
+| Throw-to-distract (G) | DONE — tossed can clatters + pulls the hunter (8s cooldown) |
+| Focus zoom (RMB) | DONE — hold RMB for 60° focus + steadier look |
+| Context stand (SPACE) | DONE — SPACE exits hide/sit/crouch, F2F-style |
+| Hunter opens doors | DONE — closed doors slow him 0.9s while he swings them open |
+| Hunter footfalls | DONE — pace-scaled positional steps; chase steps are loud |
+| Hide-look clamp | DONE — craning limited to a cone while hidden/seated |
+| Locked jiggle + pet dip | DONE — knob rattle on locked doors; Biscuit dips his head |
 
 ## 6. How it was coded (dev process + code architecture)
 

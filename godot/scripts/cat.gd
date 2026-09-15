@@ -17,6 +17,7 @@ var hiss_cool := 0.0
 var pet_cool := 0.0
 var mesh_root: Node3D
 var tail: MeshInstance3D
+var head_mi: MeshInstance3D
 var spots := [
 	Vector3(5.6, 0, 4.4), Vector3(3.0, 0, 2.2), Vector3(-1.5, 0, 3.2),
 	Vector3(-4.5, 0, 1.8), Vector3(-0.5, 0, -0.5), Vector3(4.6, 0, -0.5),
@@ -59,6 +60,7 @@ func _build_mesh() -> void:
 	head.mesh = hm
 	head.material_override = fur
 	head.position = Vector3(0, 0.34, 0.26)
+	head_mi = head
 	mesh_root.add_child(head)
 	var eye_m := StandardMaterial3D.new()
 	eye_m.albedo_color = Color.BLACK
@@ -158,6 +160,10 @@ func pet() -> void:
 		return
 	pet_cool = 6.0
 	audio.purr()
+	if head_mi and is_instance_valid(head_mi):
+		var tw := create_tween()
+		tw.tween_property(head_mi, "position:y", 0.26, 0.18)
+		tw.tween_property(head_mi, "position:y", 0.34, 0.25)
 	ui.toast("🐈 Biscuit purrs like a motorboat. Your hands stop shaking.")
 
 

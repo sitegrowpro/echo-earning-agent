@@ -75,6 +75,7 @@ func _ensure_input() -> void:
 		"interact": [69], "flashlight": [70], "phone": [4194306],
 		"phone_next": [81], "reply_1": [49], "reply_2": [50], "reply_3": [51],
 		"pause_game": [4194305], "mute_mic": [77],
+		"getup": [32], "throw_item": [71],
 	}
 	for a in defs.keys():
 		if not InputMap.has_action(a):
@@ -85,6 +86,12 @@ func _ensure_input() -> void:
 				ev.device = -1
 				ev.physical_keycode = code
 				InputMap.action_add_event(a, ev)
+	if not InputMap.has_action("focus"):
+		InputMap.add_action("focus")
+	if InputMap.action_get_events("focus").is_empty():
+		var mev := InputEventMouseButton.new()
+		mev.button_index = MOUSE_BUTTON_RIGHT
+		InputMap.action_add_event("focus", mev)
 
 
 func is_ui_blocked() -> bool:
@@ -155,6 +162,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 	if story.ui_busy():
 		return
+	if event.is_action_pressed("getup"):
+		_getup()
+		return
+	if event.is_action_pressed("throw_item"):
+		story.throw_distraction()
+		return
 	if event.is_action_pressed("interact"):
 		interact.press()
 	if event.is_action_released("interact"):
@@ -166,6 +179,16 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
 		if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 			update_mouse()
+
+
+func _getup() -> void:
+	var h := String(player.get("hidden"))
+	if h != "":
+		story.hide(h)
+	elif bool(player.get("sitting")):
+		story.sit_toggle()
+	elif bool(player.get("crouch")):
+		player.call("stand_up")
 
 
 func _physics_process(dt: float) -> void:
