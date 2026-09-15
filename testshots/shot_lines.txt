@@ -1,7 +1,7 @@
 [SHOT] main instanced
 [SHOT] saved /tmp/shot_01_menu.png err=0
 [SHOT] menu captured; starting new game
-[SHOT] card dismissed; laundry open; TV on; touring
+[SHOT] card dismissed; laundry open; TV on; Daniel perched; touring
 [SHOT] saved /tmp/shot_02_spawn.png err=0
 [SHOT] stop 2 saved
 [SHOT] saved /tmp/shot_03_living.png err=0
