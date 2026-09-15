@@ -5,8 +5,7 @@
 [SHOT] body @StaticBody3D@5 pos=(0.0, -0.25, 4.4) layer=1 mask=0 shape_dis=false
 [SHOT] body @StaticBody3D@48 pos=(-2.0625, 1.4, 5.5) layer=1 mask=0 shape_dis=false
 [SHOT] body @StaticBody3D@51 pos=(2.0625, 1.4, 5.5) layer=1 mask=0 shape_dis=false
-[SHOT] body @StaticBody3D@193 pos=(0.0, 1.4, 1.225) layer=1 mask=0 shape_dis=false
-[SHOT] body @StaticBody3D@196 pos=(0.0, 1.4, 4.775) layer=1 mask=0 shape_dis=false
+[SHOT] body @StaticBody3D@196 pos=(0.0, 1.4, 3.35) layer=1 mask=0 shape_dis=false
 [SHOT] body @AnimatableBody3D@220 pos=(-0.575, 0.0, 5.5) layer=2 mask=0 shape_dis=false
 [SHOT] body @StaticBody3D@278 pos=(-2.0, 0.35, 3.3) layer=1 mask=0 shape_dis=false
 [SHOT] body @StaticBody3D@281 pos=(-2.0, 0.75, 3.75) layer=1 mask=0 shape_dis=false
@@ -36,5 +35,6 @@
 [SHOT] body @Area3D@1336 pos=(0.0, 0.35, 5.15) layer=4 mask=0 shape_dis=false
 [SHOT] body Player pos=(0.0, 0.179841, 7.4) layer=8 mask=35 shape_dis=false
 [SHOT] probe f140 pos=(0.0, 0.179841, 7.4)
-[SHOT] probe f150 pos=(0.0, 0.179672, 5.84106)
-[SHOT] probe f160 pos=(0.0, 0.179672, 5.84106)
+[SHOT] probe f150 pos=(0.0, 0.000821, 3.979589)
+[SHOT] probe f160 pos=(0.0, -0.000146, 3.940938)
+[SHOT] probe f170 pos=(0.0, -0.000146, 3.940938)
