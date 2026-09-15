@@ -17,8 +17,16 @@ const X0 := -8.0
 const X1 := 8.0
 const ZN := -5.5
 const ZS := 5.5
+# Light-seep: rooms on each side of every door (front opens to the porch).
+const DOOR_ROOMS := {
+	"front": ["living", "porch"], "guest": ["hall", "guest"],
+	"master": ["hall", "master"], "bath": ["hall", "bath"],
+	"laundry": ["hall", "laundry"],
+}
 
 var doors := {}
+var door_seep := {} # id -> {"mat": StandardMaterial3D, "rooms": Array}
+var _seep_sig := ""
 var room_lights := {}
 var power := true
 var porch_on := true
@@ -218,6 +226,7 @@ func add_door(id: String, x: float, z: float, w: float, swing: float, opts: Dict
 	add_child(d)
 	d.setup(id, w, swing, opts.get("open", false), opts.get("locked", false), opts.get("label", id), opts.get("color", Color(0.36, 0.27, 0.19)))
 	doors[id] = d
+	_add_seep(id, x, z, w)
 
 
 # ---------- lights / power ----------
@@ -248,6 +257,48 @@ func apply_lights() -> void:
 	if porch_light:
 		porch_light.visible = power and porch_on
 	_apply_flicker_end()
+
+
+# ---------- door light-seep (F2F hallway slivers) ----------
+func _add_seep(id: String, x: float, z: float, w: float) -> void:
+	if not DOOR_ROOMS.has(id):
+		return
+	var smat := glow_mat(Color(1.0, 0.8, 0.55), 0.0)
+	# Thin emissive threshold strip; added to the WORLD (not the door: the door rotates).
+	box(w - 0.06, 0.03, 0.1, smat, Vector3(x + w * 0.5, 0.015, z))
+	door_seep[id] = {"mat": smat, "rooms": DOOR_ROOMS[id]}
+
+
+func _room_glow(room: String) -> bool:
+	if room == "porch":
+		return porch_light != null and porch_light.visible
+	if not room_lights.has(room):
+		return false
+	for l in ((room_lights[room] as Dictionary)["lights"] as Array):
+		if (l as OmniLight3D).visible:
+			return true
+	return false
+
+
+func _process(_dt: float) -> void:
+	if door_seep.is_empty():
+		return
+	# Signature-gated: recompute strip energies only when light/door state changes.
+	# Reads live light.visible, so power cuts, switches AND flicker events all show.
+	var states := {}
+	var sig := ""
+	for id in door_seep.keys():
+		var e: Dictionary = door_seep[id]
+		var pair: Array = e["rooms"]
+		var lit := _room_glow(String(pair[0])) or _room_glow(String(pair[1]))
+		var shut := not bool((doors[id] as AnimatableBody3D).get("is_open"))
+		states[id] = lit and shut
+		sig += "%s%d" % [id, 1 if states[id] else 0]
+	if sig == _seep_sig:
+		return
+	_seep_sig = sig
+	for id in states.keys():
+		((door_seep[id] as Dictionary)["mat"] as StandardMaterial3D).emission_energy_multiplier = 2.4 if bool(states[id]) else 0.0
 
 
 func _apply_flicker_end() -> void:

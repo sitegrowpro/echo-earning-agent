@@ -71,7 +71,7 @@ This doc is the single source of truth for "what makes F2F *feel* like F2F".
 | House gaslighting (moved objects) | TODO — **dread director micro-events** |
 | Attention → survival | TODO — **notes-found rewards (back-window warning)** |
 | True-story framing card | DONE — fullscreen card on New Night ("as told by Jamie K.") |
-| Door light-seep | TODO — **emissive strips tied to room lights** |
+| Door light-seep | DONE — emissive thresholds, either-side-lit + flicker-aware |
 | Bottom-subtitle dialog | DONE — bottom subtitle bar, small-caps speaker + choices |
 | Geometry detail (fixtures/clutter) | TODO — **pass 2: lamps, baseboards, fans, curtains, distant houses** |
 | Camera zoom + look-at on NPC talk | DONE — FOV punch-in (72→52) on every dialog + note |

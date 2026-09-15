@@ -3,6 +3,8 @@ extends AnimatableBody3D
 ## Collision lives on physics layer 2 (Doors): the player collides, the enemy
 ## ignores it (his mask excludes layer 2) — doors never stop him.
 
+const TEX := preload("res://scripts/tex.gd")
+
 var door_id := ""
 var swing := 1.92
 var angle := 0.0
@@ -21,9 +23,7 @@ func setup(p_id: String, w: float, p_swing: float, p_open: bool, p_locked: bool,
 	label = p_label
 	collision_layer = 2
 	collision_mask = 0
-	var panel_mat := StandardMaterial3D.new()
-	panel_mat.albedo_color = color
-	panel_mat.roughness = 0.65
+	var panel_mat := TEX.mat_for("planks", color.lightened(0.12), 0.65)
 	var inset_mat := StandardMaterial3D.new()
 	inset_mat.albedo_color = color.darkened(0.25)
 	inset_mat.roughness = 0.7
