@@ -42,8 +42,9 @@ func _process(_delta: float) -> bool:
 		main.call("story_click")
 		main.get("story").call("toggle_door", "laundry")
 		main.get("story").call("_tv_use")
+		main.get("enemy").call("perch", {"x": -4.5, "z": 6.4, "face": PI})
 		main.get("player").set("frozen", true)
-		print("[SHOT] card dismissed; laundry open; TV on; touring")
+		print("[SHOT] card dismissed; laundry open; TV on; Daniel perched; touring")
 	elif stage == 2 and frames >= 220 + (stop_i + 1) * 35:
 		stop_i += 1
 		# Capture the PREVIOUS stop: its teleport has had a full slot to render.

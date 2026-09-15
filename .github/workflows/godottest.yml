@@ -67,7 +67,7 @@ jobs:
           done
           wait $GPID; echo "exit=$?"
           ls -la testshots/
-          test -f testshots/shot_01_menu.png && test -f testshots/shot_09_street.png && test $(ls testshots/shot_*.png | wc -l) -ge 9
+          test -f testshots/shot_01_menu.png && test -f testshots/shot_10_daniel.png && test $(ls testshots/shot_*.png | wc -l) -ge 10
 
       - name: Commit evidence back
         if: always()
