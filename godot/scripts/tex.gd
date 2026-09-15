@@ -10,8 +10,16 @@ extends RefCounted
 const TILE_METERS := {
 	"planks": 2.0, "tile": 1.0, "carpet": 2.0, "drywall": 2.0,
 	"concrete": 2.0, "asphalt": 4.0, "grass": 4.0, "deck": 2.0,
-	"ceiling": 1.2,
+	"ceiling": 1.2, "brick": 2.0,
 }
+
+const PHOTO := {
+	"drywall": "drywall", "planks": "woodfloor", "deck": "woodfloor",
+	"tile": "tile", "ceiling": "ceiling", "carpet": "carpet",
+	"concrete": "sidewalk", "asphalt": "asphalt", "grass": "grass",
+	"brick": "brick",
+}
+
 
 static var _tex_cache := {}
 static var _mat_cache := {}
@@ -42,6 +50,11 @@ static func mat_for(kind: String, tint: Color, rough: float, metal := 0.0) -> St
 static func get_tex(kind: String) -> ImageTexture:
 	if _tex_cache.has(kind):
 		return _tex_cache[kind]
+	if PHOTO.has(kind):
+		var pt := _photo(kind)
+		if pt != null:
+			_tex_cache[kind] = pt
+			return pt
 	var img: Image
 	match kind:
 		"planks":
@@ -67,6 +80,26 @@ static func get_tex(kind: String) -> ImageTexture:
 			img.fill(Color(1, 1, 1))
 	_tex_cache[kind] = ImageTexture.create_from_image(img)
 	return _tex_cache[kind]
+
+
+static func _photo(kind: String) -> ImageTexture:
+	var p := "res://assets/tex/" + String(PHOTO[kind]) + ".jpg"
+	if not ResourceLoader.exists(p):
+		return null
+	var t := ResourceLoader.load(p) as Texture2D
+	if t == null:
+		return null
+	var img := t.get_image()
+	img.resize(128, 128)
+	img.adjust_bcs(1.0, 1.0, 0.0)
+	var avg := 0.0
+	for y in 128:
+		for x in 128:
+			avg += img.get_pixel(x, y).r
+	avg /= 16384.0
+	if avg > 0.01:
+		img.adjust_bcs(0.9 / avg, 1.0, 1.0)
+	return ImageTexture.create_from_image(_tileable(img))
 
 
 static func _noise(octaves: int, freq: float, seed_v: int) -> FastNoiseLite:

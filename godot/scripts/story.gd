@@ -659,6 +659,7 @@ func _unknown_call_end(accepted: bool) -> void:
 
 
 func _setup5() -> void:
+	audio.set_drone(true)
 	obj("key", "Find the master bedroom key (kitchen drawer?)")
 	obj("carkeys", "Get the CAR KEYS from the master bedroom")
 	_ch5_seq()
@@ -1395,6 +1396,7 @@ func finish(id: String, custom := "") -> void:
 	script_token += 1
 	audio.set_heart(false)
 	audio.set_tv(false)
+	audio.set_drone(false)
 	tick_on = false
 	var mins := int((Time.get_ticks_msec() - start_msec) / 60000.0)
 	var texts := {

@@ -1077,7 +1077,7 @@ func _outside() -> void:
 	sl.position = Vector3(8, 5.0, 12.5)
 	add_child(sl)
 	# neighbor house (escape A)
-	box(7, 3.6, 5.5, mat(Color(0.14, 0.13, 0.16), 1.0), Vector3(-17, 1.8, 10), 0.0, true)
+	box(7, 3.6, 5.5, TEX.mat_for("brick", Color(0.38, 0.24, 0.22), 1.0), Vector3(-17, 1.8, 10), 0.0, true)
 	box(7.6, 0.4, 6.1, mat(Color(0.06, 0.06, 0.08), 1.0), Vector3(-17, 3.8, 10))
 	var nwin := MeshInstance3D.new()
 	var nw := PlaneMesh.new()

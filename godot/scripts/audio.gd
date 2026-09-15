@@ -15,6 +15,8 @@ var heart_player: AudioStreamPlayer
 var hum_player: AudioStreamPlayer
 var whisper_player: AudioStreamPlayer
 var mj_player: AudioStreamPlayer
+var drone_player: AudioStreamPlayer
+var vox := {}
 var heart_on := false
 var heart_fast := false
 var heart_t := 0.0
@@ -45,6 +47,8 @@ func _ready() -> void:
 	add_child(whisper_player)
 	mj_player = AudioStreamPlayer.new()
 	add_child(mj_player)
+	drone_player = AudioStreamPlayer.new()
+	add_child(drone_player)
 	_build_bank()
 	set_vol(vol)
 
@@ -335,8 +339,12 @@ func _build_bank() -> void:
 	_put_noise(b, 0.5, 0.0, 2.0, 220.0, false, 0.0)
 	_put_tone(b, 59.0, 0.06, "sine", 0.0, 2.0, 0.0, 0.0)
 	bank["room_loop"] = _loop_wav(b)
-	b = _empty(2.0)
-	_put_noise(b, 0.35, 0.0, 2.0, 2500.0, true, 0.0)
+	b = _empty(4.0)
+	_put_noise(b, 0.3, 0.0, 4.0, 2800.0, true, 0.0)
+	_put_noise(b, 0.22, 0.0, 4.0, 700.0, false, 0.0)
+	for i in b.size():
+		var t := float(i) / rate
+		b[i] *= 0.75 + 0.25 * sin(TAU * t / 1.3 + 0.7) * sin(TAU * t / 3.1)
 	bank["rain_loop"] = _loop_wav(b)
 	b = _empty(1.0)
 	_put_noise(b, 0.3, 0.0, 1.0, 400.0, true, 0.0)
@@ -353,6 +361,15 @@ func _build_bank() -> void:
 		var t := float(i) / rate
 		b[i] *= 0.45 + 0.55 * (0.5 + 0.5 * sin(TAU * t / 1.7)) * (0.5 + 0.5 * sin(TAU * t / 0.9 + 1.3))
 	bank["whisper_loop"] = _loop_wav(b)
+	b = _empty(6.0)
+	_put_tone(b, 41.2, 0.5, "sine", 0.0, 6.0, 0.0, 0.0)
+	_put_tone(b, 43.7, 0.4, "sine", 0.0, 6.0, 0.0, 0.0)
+	_put_tone(b, 110.0, 0.12, "saw", 0.0, 6.0, 0.0, 0.0)
+	_put_noise(b, 0.1, 0.0, 6.0, 240.0, false, 0.0)
+	for i in b.size():
+		var t := float(i) / rate
+		b[i] *= 0.6 + 0.4 * (0.5 + 0.5 * sin(TAU * t / 5.3)) * (0.5 + 0.5 * sin(TAU * t / 7.7 + 2.0))
+	bank["drone_loop"] = _loop_wav(b)
 
 
 func _mj_groove() -> PackedFloat32Array:
@@ -601,3 +618,26 @@ func mj_groove() -> void:
 
 func mj_stop() -> void:
 	mj_player.stop()
+
+
+func set_drone(on: bool) -> void:
+	if on and not drone_player.playing:
+		drone_player.stream = bank["drone_loop"]
+		drone_player.volume_db = -16.0
+		drone_player.play()
+	elif not on:
+		drone_player.stop()
+
+
+func voice(id: String, db := 0.0) -> void:
+	if not vox.has(id):
+		var p := "res://assets/vox/%s.mp3" % id
+		if not ResourceLoader.exists(p):
+			return
+		vox[id] = ResourceLoader.load(p)
+	var pl := pool2d[i2d]
+	i2d = (i2d + 1) % pool2d.size()
+	pl.stream = vox[id]
+	pl.volume_db = db
+	pl.pitch_scale = 1.0
+	pl.play()
