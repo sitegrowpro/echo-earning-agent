@@ -43,7 +43,7 @@ func _process(_delta: float) -> bool:
 		main.call("story_click")
 		main.get("story").call("toggle_door", "laundry")
 		main.get("story").call("_tv_use")
-		main.get("enemy").call("perch", {"x": 0.0, "z": 7.2, "face": PI})
+		main.get("enemy").call("perch", {"x": 0.0, "z": 7.2, "face": 1.41})
 		main.get("player").set("frozen", true)
 		print("[SHOT] card dismissed; laundry open; TV on; Daniel perched; touring")
 	elif stage == 2 and frames >= 220 + (stop_i + 1) * 35:

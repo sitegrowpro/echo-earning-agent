@@ -49,10 +49,10 @@ func _build_mesh() -> void:
 	mesh_root = Node3D.new()
 	add_child(mesh_root)
 	var cloth := StandardMaterial3D.new()
-	cloth.albedo_color = Color(0.05, 0.05, 0.06)
+	cloth.albedo_color = Color(0.09, 0.09, 0.1)
 	cloth.roughness = 1.0
 	var skin := StandardMaterial3D.new()
-	skin.albedo_color = Color(0.73, 0.66, 0.56)
+	skin.albedo_color = Color(0.55, 0.52, 0.46)
 	skin.roughness = 0.9
 	_part(0.5, 0.9, 0.3, cloth, Vector3(0, 1.15, 0))
 	_part(0.42, 0.75, 0.26, cloth, Vector3(0, 0.38, 0))
@@ -68,7 +68,7 @@ func _build_mesh() -> void:
 	eye_m.albedo_color = Color.BLACK
 	eye_m.emission_enabled = true
 	eye_m.emission = Color.WHITE
-	eye_m.emission_energy_multiplier = 0.7
+	eye_m.emission_energy_multiplier = 1.2
 	for sx in [-0.06, 0.06]:
 		var e := MeshInstance3D.new()
 		var em := SphereMesh.new()
