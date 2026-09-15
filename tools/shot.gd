@@ -40,20 +40,23 @@ func _process(_delta: float) -> bool:
 		stage = 2
 		stop_i = -1
 		main.call("story_click")
-		(main.get("story") as Node).call("toggle_door", "laundry")
-		(main.get("story") as Node).call("_tv_use")
-		(main.get("player") as Node).set("frozen", true)
+		main.get("story").call("toggle_door", "laundry")
+		main.get("story").call("_tv_use")
+		main.get("player").set("frozen", true)
 		print("[SHOT] card dismissed; laundry open; TV on; touring")
 	elif stage == 2 and frames >= 220 + (stop_i + 1) * 35:
 		stop_i += 1
+		if stop_i >= stops.size():
+			print("[SHOT] DONE")
+			return true
 		if stop_i == 6:
-			(main.get("phone") as Node).call("toggle")
+			main.get("phone").call("toggle")
 			print("[SHOT] phone opened")
 		if stop_i == 7:
-			(main.get("phone") as Node).call("toggle")
+			main.get("phone").call("toggle")
 			print("[SHOT] phone closed")
 		var s: Dictionary = stops[stop_i]
-		(main.get("player") as Node).call("look_at_spot", s["eye"], s["look"])
+		main.get("player").call("look_at_spot", s["eye"], s["look"])
 		_shot("/tmp/" + String(s["file"]))
 		print("[SHOT] stop ", stop_i + 2, " saved")
 		if stop_i >= stops.size() - 1:
