@@ -8,6 +8,7 @@ const MX := 120.0
 const BOUNDS_MIN := Vector2(106.7, -10.3)
 const BOUNDS_MAX := Vector2(133.3, 10.3)
 const SPAWN := Vector3(120.0, 0.0, 8.6)
+const TEX := preload("res://scripts/tex.gd")
 
 const ITEMS := {
 	"milk": {"name": "Milk (2% — Dana specified. Twice.)", "pos": Vector3(118.5, 1.2, -8.7), "prop": Vector3(118.5, 1.05, -8.9), "size": Vector3(0.28, 0.38, 0.28), "color": Color(0.92, 0.94, 0.96)},
@@ -97,12 +98,10 @@ func build() -> void:
 	var fm := PlaneMesh.new()
 	fm.size = Vector2(X1 - X0, Z1 - Z0)
 	fl.mesh = fm
-	fl.material_override = mat(Color(0.78, 0.79, 0.78), 0.35)
+	fl.material_override = TEX.mat_for("tile", Color(0.82, 0.83, 0.82), 0.35)
 	fl.position = Vector3(MX, 0.01, 0)
 	add_child(fl)
-	var tile_lines := mat(Color(0.6, 0.62, 0.6), 0.5)
-	for gx in range(8):
-		box(0.04, 0.005, Z1 - Z0, tile_lines, Vector3(X0 + 2.0 + gx * 3.4, 0.015, 0))
+	# (Grout lines now live in the floor texture; the old geometry strips are gone.)
 	var ce := MeshInstance3D.new()
 	var cm := PlaneMesh.new()
 	cm.size = Vector2(X1 - X0, Z1 - Z0)
@@ -112,7 +111,7 @@ func build() -> void:
 	ce.position = Vector3(MX, 3.4, 0)
 	add_child(ce)
 	# Walls (front has a door hole x 118..122).
-	var wall_m := mat(Color(0.72, 0.78, 0.72), 0.9)
+	var wall_m := TEX.mat_for("drywall", Color(0.75, 0.81, 0.75), 0.9)
 	box(X1 - X0, 3.4, 0.3, wall_m, Vector3(MX, 1.7, Z0 - 0.15), true)
 	box(0.3, 3.4, Z1 - Z0, wall_m, Vector3(X0 - 0.15, 1.7, 0), true)
 	box(0.3, 3.4, Z1 - Z0, wall_m, Vector3(X1 + 0.15, 1.7, 0), true)

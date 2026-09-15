@@ -10,6 +10,7 @@ extends Node3D
 ##   Z  5.5: FRONT DOOR + 2 windows -> PORCH -> yard -> street -> neighbor
 
 const Door := preload("res://scripts/door.gd")
+const TEX := preload("res://scripts/tex.gd")
 const H := 2.8
 const T := 0.2
 const X0 := -8.0
@@ -296,12 +297,12 @@ func flash_lightning() -> void:
 
 func build() -> void:
 	_build_env()
-	var wall_in := mat(Color(0.72, 0.67, 0.56), 0.9)
-	var wall_out := mat(Color(0.43, 0.42, 0.39), 0.95)
-	var wood := mat(Color(0.48, 0.36, 0.24), 0.7)
-	var tile := mat(Color(0.6, 0.63, 0.64), 0.4)
-	var carpet := mat(Color(0.3, 0.27, 0.35), 1.0)
-	var conc := mat(Color(0.36, 0.36, 0.38), 0.95)
+	var wall_in := TEX.mat_for("drywall", Color(0.72, 0.67, 0.56), 0.9)
+	var wall_out := TEX.mat_for("concrete", Color(0.43, 0.42, 0.39), 0.95)
+	var wood := TEX.mat_for("planks", Color(0.48, 0.36, 0.24), 0.7)
+	var tile := TEX.mat_for("tile", Color(0.6, 0.63, 0.64), 0.4)
+	var carpet := TEX.mat_for("carpet", Color(0.3, 0.27, 0.35), 1.0)
+	var conc := TEX.mat_for("concrete", Color(0.36, 0.36, 0.38), 0.95)
 	_floor(X0, 0.5, 0.0, ZS, wood)
 	_floor(0.0, 0.5, X1, ZS, tile)
 	_floor(X0, -1.5, X1, 0.5, wood)
@@ -313,7 +314,9 @@ func build() -> void:
 	var cm := PlaneMesh.new()
 	cm.size = Vector2(X1 - X0 + 1.0, ZS - ZN + 1.0)
 	ceil_mi.mesh = cm
-	ceil_mi.material_override = mat(Color(0.85, 0.82, 0.76), 0.95)
+	ceil_mi.material_override = TEX.mat_for("ceiling", Color(0.85, 0.82, 0.76), 0.95)
+	# PlaneMesh faces +Y; flip it so the ceiling is visible from inside the rooms.
+	ceil_mi.rotation.x = PI
 	ceil_mi.position = Vector3(0, H, 0)
 	add_child(ceil_mi)
 	box(X1 - X0 + 1.6, 0.25, ZS - ZN + 1.6, mat(Color(0.1, 0.1, 0.13), 1.0), Vector3(0, H + 0.2, 0))
@@ -605,14 +608,14 @@ func _outside() -> void:
 	var gm := PlaneMesh.new()
 	gm.size = Vector2(90, 60)
 	gnd.mesh = gm
-	gnd.material_override = mat(Color(0.08, 0.1, 0.09), 1.0)
+	gnd.material_override = TEX.mat_for("grass", Color(0.09, 0.11, 0.1), 1.0)
 	gnd.position = Vector3(0, -0.02, 4)
 	add_child(gnd)
 	var path := MeshInstance3D.new()
 	var phm := PlaneMesh.new()
 	phm.size = Vector2(1.6, 8.5)
 	path.mesh = phm
-	path.material_override = mat(Color(0.25, 0.23, 0.2), 1.0)
+	path.material_override = TEX.mat_for("concrete", Color(0.27, 0.25, 0.22), 1.0)
 	path.position = Vector3(0, 0.0, 9.5)
 	add_child(path)
 	var road := MeshInstance3D.new()
@@ -622,7 +625,7 @@ func _outside() -> void:
 	road.material_override = TEX.mat_for("asphalt", Color(0.06, 0.06, 0.07), 1.0)
 	road.position = Vector3(0, 0.0, 15)
 	add_child(road)
-	var deck := mat(Color(0.35, 0.27, 0.2), 0.9)
+	var deck := TEX.mat_for("deck", Color(0.38, 0.29, 0.22), 0.9)
 	box(6.4, 0.18, 2.6, deck, Vector3(0, 0.09, 6.8))
 	box(0.18, 3.0, 0.18, mat(Color(0.23, 0.18, 0.12), 0.9), Vector3(-2.9, 1.5, 7.9), 0.0, true)
 	box(0.18, 3.0, 0.18, mat(Color(0.23, 0.18, 0.12), 0.9), Vector3(2.9, 1.5, 7.9), 0.0, true)
