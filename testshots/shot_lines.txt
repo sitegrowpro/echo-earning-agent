@@ -20,5 +20,7 @@
 [SHOT] phone closed
 [SHOT] saved /tmp/shot_09_street.png err=0
 [SHOT] stop 9 saved
+[SHOT] saved /tmp/shot_10_daniel.png err=0
+[SHOT] stop 10 saved
 [SHOT] DONE
 ERROR: 4 resources still in use at exit (run with --verbose for details).
