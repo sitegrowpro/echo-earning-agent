@@ -74,10 +74,10 @@ jobs:
         run: |
           git config user.name "arena-testbot"
           git config user.email "arena-testbot@local"
-          git add testshots/ || true
-          git commit -m "[skip ci] test evidence run $GITHUB_RUN_ID" || echo "nothing to commit"
-          for i in 1 2 3; do
+          for i in 1 2 3 4 5; do
             git fetch origin arena/01a0a065-echo-earning-agent || true
-            git rebase origin/arena/01a0a065-echo-earning-agent || git rebase --abort || true
-            git push origin HEAD:arena/01a0a065-echo-earning-agent && break || sleep 10
+            git reset --soft origin/arena/01a0a065-echo-earning-agent || true
+            git add testshots/ || true
+            git commit -m "[skip ci] test evidence run $GITHUB_RUN_ID" 2>/dev/null || true
+            git push origin HEAD:arena/01a0a065-echo-earning-agent && break || sleep 8
           done
