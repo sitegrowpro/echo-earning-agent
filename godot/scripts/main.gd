@@ -380,7 +380,6 @@ func pause_game() -> void:
 	if state != "playing" or story.ui_busy():
 		return
 	state = "paused"
-	autosave()
 	ui.show_pause(true)
 	get_tree().paused = true
 	update_mouse()
@@ -393,12 +392,6 @@ func resume_game() -> void:
 	ui.show_pause(false)
 	get_tree().paused = false
 	update_mouse()
-
-
-func save_now() -> void:
-	Save.save_game(story.serialize())
-	audio.ui_click()
-	ui.toast("💾 Saved.")
 
 
 func autosave() -> void:
@@ -434,29 +427,17 @@ func on_ending(id: String) -> void:
 func again_pressed() -> void:
 	audio.ui_click()
 	if last_ending == "D":
-		_rewind5()
+		_retry_checkpoint()
 	else:
 		_start(true)
 
 
-func _rewind5() -> void:
+func _retry_checkpoint() -> void:
+	# F2F rules: death returns you to the chapter-entry checkpoint — the real
+	# saved state, not a fabricated one. The slot always holds it: every
+	# chapter entry autosaves, and deaths never overwrite or clear it.
 	ui.hide_ending()
-	_reset_run()
-	state = "playing"
-	get_tree().paused = false
-	ui.hud.visible = true
-	story.finished = false
-	story.flags = {"deadbolt": true, "batteries": true, "priya_note": true, "mail_taken": true, "invited_priya": bool(story.flags.get("invited_priya", false))}
-	story.items = {"flash": true, "flash_on": false, "battery": 100.0, "batteries": 1, "master_key": false, "car_keys": false, "food": "", "trash": false}
-	story.micro = {"state": "idle", "t": 0.0}
-	story.news_t = 0.0
-	story.news_seg = 0
-	story.police_t = -1.0
-	story.fuse_n = 3
-	player.global_position = Vector3(-5.5, 0, -3.5)
-	player.call("set_look", 0.3, 0.0)
-	story.goto_chapter(5)
-	update_mouse()
+	_start(false)
 
 
 func note_click() -> void:

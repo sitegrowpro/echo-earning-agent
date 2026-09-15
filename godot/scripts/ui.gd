@@ -623,13 +623,10 @@ func _build_pause() -> void:
 	hb.alignment = BoxContainer.ALIGNMENT_CENTER
 	hb.add_theme_constant_override("separation", 10)
 	var resume_btn := _button("Resume")
-	var save_btn := _button("Save")
 	var quit_btn := _button("Quit to menu")
 	resume_btn.pressed.connect(func(): game.resume_game())
-	save_btn.pressed.connect(func(): game.save_now())
 	quit_btn.pressed.connect(func(): game.quit_to_menu())
 	hb.add_child(resume_btn)
-	hb.add_child(save_btn)
 	hb.add_child(quit_btn)
 	v.add_child(t)
 	v.add_child(pause_obj)
@@ -921,6 +918,7 @@ func room_toast(room_name: String) -> void:
 
 func autosave() -> void:
 	game.autosave()
+	toast("💾 Checkpoint saved.")
 
 
 func fade_swap(cb: Callable, dur := 0.5) -> void:
@@ -965,7 +963,7 @@ func show_ending(id: String, text: String, sub: String, stats: String) -> void:
 	ending_title.add_theme_color_override("font_color", Color(0.5, 0.69, 0.41) if good else RED)
 	ending_text.text = text
 	ending_stats.text = stats
-	again_btn.text = "↺ Rewind to 11:12 PM" if id == "D" else "▶ Play again"
+	again_btn.text = "↻ Retry from checkpoint" if id == "D" else "▶ Play again"
 	game.on_ending(id)
 	ending_root.visible = true
 	game.update_mouse()
