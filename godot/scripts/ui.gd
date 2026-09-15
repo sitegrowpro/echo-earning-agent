@@ -162,7 +162,10 @@ func _anchor(c: Control, x: float, y: float) -> void:
 
 func _build_all() -> void:
 	var vhs_layer := CanvasLayer.new()
-	vhs_layer.layer = 5
+	# Layer 0: below the UI root (default layer 1), above the 3D scene.
+	# The screen-sampling VHS shader captures the 3D frame only; HUD, phone,
+	# dialogs and menus render clean on top (docs: Custom post-processing).
+	vhs_layer.layer = 0
 	add_child(vhs_layer)
 	vhs_rect = ColorRect.new()
 	vhs_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
