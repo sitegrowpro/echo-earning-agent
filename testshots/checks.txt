@@ -1,3 +1,4 @@
+OK: res://scripts/attic.gd
 OK: res://scripts/audio.gd
 OK: res://scripts/cat.gd
 OK: res://scripts/cellar.gd
