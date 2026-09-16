@@ -896,7 +896,7 @@ func _build_rebinds(parent: VBoxContainer) -> void:
 		l.custom_minimum_size = Vector2(220, 0)
 		var b := _button(_key_name(a), 14)
 		b.custom_minimum_size = Vector2(160, 0)
-		var act := a
+		var act: String = a
 		b.pressed.connect(func(): _rebind_start(act))
 		hb.add_child(l)
 		hb.add_child(b)

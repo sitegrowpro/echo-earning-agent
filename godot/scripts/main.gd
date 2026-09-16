@@ -145,7 +145,7 @@ func _pad_defaults() -> void:
 				has_motion = true
 		if has_motion:
 			continue
-		var mv := InputEventJoypadMotion.new()
+		var mv: InputEventJoypadMotion = InputEventJoypadMotion.new()
 		mv.axis = (sticks[a] as Array)[0]
 		mv.axis_value = (sticks[a] as Array)[1]
 		InputMap.action_add_event(a, mv)
@@ -340,7 +340,7 @@ func _physics_process(dt: float) -> void:
 	# R4: Daniel freezes while MODAL ui holds the player — being caught
 	# mid-dialogue was unfair and fired story callbacks after death.
 	# The phone is NOT modal: texting while he hunts stays dangerous.
-	var modal := story.dialog_open or story.note_open or story.peep_open or story.call_open or story.story_open or story.cam_open
+	var modal: bool = story.dialog_open or story.note_open or story.peep_open or story.call_open or story.story_open or story.cam_open
 	var res := ""
 	if not modal and not story.finished:
 		res = enemy.update_enemy(dt, player, story)
