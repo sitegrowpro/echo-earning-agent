@@ -1609,8 +1609,23 @@ func _build_cams() -> void:
 	cam_vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	cam_vp.handle_input_locally = false
 	add_child(cam_vp)
+	var cenv := Environment.new()
+	cenv.background_mode = Environment.BG_COLOR
+	cenv.background_color = Color(0.008, 0.01, 0.025)
+	cenv.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	cenv.ambient_light_color = Color(0.09, 0.11, 0.17)
+	cenv.ambient_light_energy = 0.45
+	cenv.tonemap_mode = Environment.TONE_MAPPER_ACES
+	cenv.tonemap_exposure = 1.15
+	cenv.fog_enabled = true
+	cenv.fog_mode = Environment.FOG_MODE_EXPONENTIAL
+	cenv.fog_density = 0.012
+	cenv.fog_light_color = Color(0.09, 0.12, 0.2)
+	var cwe := WorldEnvironment.new()
+	cwe.environment = cenv
+	cam_vp.add_child(cwe)
 	var defs := [
-		{"pos": Vector3(2.6, 2.7, 7.9), "look": Vector3(-0.3, 1.0, 6.2), "label": "CAM 01 · PORCH"},
+		{"pos": Vector3(-2.6, 2.7, 7.7), "look": Vector3(0.3, 1.0, 6.2), "label": "CAM 01 · PORCH"},
 		{"pos": Vector3(-7.5, 2.5, 0.9), "look": Vector3(-2, 0.8, 3.3), "label": "CAM 02 · LIVING"},
 		{"pos": Vector3(-6.5, 3.2, 12.5), "look": Vector3(1.5, 1.0, 6.5), "label": "CAM 03 · STREET"},
 	]
