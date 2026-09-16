@@ -52,7 +52,7 @@ func _build_mesh() -> void:
 	cloth.albedo_color = Color(0.09, 0.09, 0.1)
 	cloth.roughness = 1.0
 	var skin := StandardMaterial3D.new()
-	skin.albedo_color = Color(0.55, 0.52, 0.46)
+	skin.albedo_color = Color(0.47, 0.44, 0.4)
 	skin.roughness = 0.9
 	var dark := StandardMaterial3D.new()
 	dark.albedo_color = Color(0.02, 0.02, 0.03)
@@ -60,25 +60,25 @@ func _build_mesh() -> void:
 	# Long coat, flared at the hem; shoulders; collar.
 	var coat := MeshInstance3D.new()
 	var cm := CylinderMesh.new()
-	cm.top_radius = 0.22
-	cm.bottom_radius = 0.32
+	cm.top_radius = 0.19
+	cm.bottom_radius = 0.27
 	cm.height = 1.1
 	coat.mesh = cm
 	coat.material_override = cloth
 	coat.position = Vector3(0, 0.75, 0)
 	mesh_root.add_child(coat)
-	_part(0.52, 0.35, 0.3, cloth, Vector3(0, 1.42, 0))
+	_part(0.46, 0.35, 0.28, cloth, Vector3(0, 1.42, 0))
 	_part(0.3, 0.18, 0.26, cloth, Vector3(0, 1.62, 0))
 	# Head + face: brow shadow, socketed glowing eyes, nose, grim mouth.
 	var head := MeshInstance3D.new()
 	var hm := SphereMesh.new()
-	hm.radius = 0.155
-	hm.height = 0.34
+	hm.radius = 0.13
+	hm.height = 0.3
 	head.mesh = hm
 	head.material_override = skin
-	head.position = Vector3(0, 1.82, 0)
+	head.position = Vector3(0, 1.84, 0)
 	mesh_root.add_child(head)
-	_part(0.24, 0.07, 0.05, dark, Vector3(0, 1.875, 0.12))
+	_part(0.22, 0.04, 0.05, dark, Vector3(0, 1.895, 0.105))
 	var sock_m := StandardMaterial3D.new()
 	sock_m.albedo_color = Color(0.01, 0.01, 0.015)
 	sock_m.roughness = 1.0
@@ -86,26 +86,44 @@ func _build_mesh() -> void:
 	eye_m.albedo_color = Color.BLACK
 	eye_m.emission_enabled = true
 	eye_m.emission = Color.WHITE
-	eye_m.emission_energy_multiplier = 1.2
+	eye_m.emission_energy_multiplier = 2.0
 	for sx in [-0.06, 0.06]:
 		var so := MeshInstance3D.new()
 		var som := SphereMesh.new()
-		som.radius = 0.035
-		som.height = 0.07
+		som.radius = 0.04
+		som.height = 0.08
 		so.mesh = som
 		so.material_override = sock_m
-		so.position = Vector3(sx, 1.81, 0.125)
+		so.position = Vector3(sx, 1.83, 0.11)
 		mesh_root.add_child(so)
 		var e := MeshInstance3D.new()
 		var em := SphereMesh.new()
-		em.radius = 0.02
-		em.height = 0.04
+		em.radius = 0.026
+		em.height = 0.052
 		e.mesh = em
 		e.material_override = eye_m
-		e.position = Vector3(sx, 1.81, 0.148)
+		e.position = Vector3(sx, 1.83, 0.132)
 		mesh_root.add_child(e)
-	_part(0.04, 0.08, 0.05, skin, Vector3(0, 1.755, 0.15))
-	_part(0.08, 0.015, 0.02, dark, Vector3(0, 1.695, 0.143))
+	_part(0.03, 0.06, 0.04, skin, Vector3(0, 1.775, 0.128))
+	_part(0.07, 0.01, 0.02, dark, Vector3(0, 1.722, 0.121))
+	var hat := MeshInstance3D.new()
+	var ham := CylinderMesh.new()
+	ham.top_radius = 0.2
+	ham.bottom_radius = 0.2
+	ham.height = 0.03
+	hat.mesh = ham
+	hat.material_override = cloth
+	hat.position = Vector3(0, 1.97, 0)
+	mesh_root.add_child(hat)
+	var dome := MeshInstance3D.new()
+	var dom := CylinderMesh.new()
+	dom.top_radius = 0.11
+	dom.bottom_radius = 0.12
+	dom.height = 0.12
+	dome.mesh = dom
+	dome.material_override = cloth
+	dome.position = Vector3(0, 2.03, 0)
+	mesh_root.add_child(dome)
 	# Thinner arms with pale hands; legs + shoes under the hem.
 	for sx in [-0.31, 0.31]:
 		_part(0.09, 0.8, 0.09, cloth, Vector3(sx, 1.05, 0))

@@ -1364,7 +1364,7 @@ func reset_dread_props() -> void:
 
 
 func _light_rig() -> void:
-	_omni("living", Color(1.0, 0.85, 0.63), 2.2, 11.0, Vector3(-4, 2.62, 3), true)
+	_omni("living", Color(1.0, 0.85, 0.63), 2.2, 11.0, Vector3(-4, 2.1, 3))
 	_omni("living", Color(1.0, 0.9, 0.64), 1.0, 6.0, Vector3(-7.3, 1.9, 4.9))
 	_omni("kitchen", Color(1.0, 0.95, 0.85), 1.8, 11.0, Vector3(4, 2.4, 3), true)
 	_omni("hall", Color(1.0, 0.91, 0.77), 1.5, 9.0, Vector3(0, 2.4, -0.5), true)
