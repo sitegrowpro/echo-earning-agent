@@ -1526,4 +1526,3 @@ func set_dread(x: float) -> void:
 
 func apply_settings_vis() -> void:
 	vhs_rect.visible = bool(game.settings.get("grain", true))
-", true))
