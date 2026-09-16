@@ -397,11 +397,11 @@ func check_advance() -> void:
 			_market_ask()
 		elif is_done("market"):
 			goto_chapter(2)
-	elif chapter == 2 and is_done("dinner") and is_done("news") and is_done("priya"):
+	elif chapter == 2 and is_done("dinner") and is_done("news") and is_done("priya") and is_done("woods"):
 		goto_chapter(3)
 	elif chapter == 3 and is_done("peep") and is_done("door") and is_done("millersreply"):
 		goto_chapter(4)
-	elif chapter == 4 and is_done("flash") and is_done("fuse"):
+	elif chapter == 4 and is_done("flash") and is_done("fuse") and is_done("cellar"):
 		goto_chapter(5)
 	elif chapter == 5 and is_done("key") and is_done("carkeys"):
 		goto_chapter(6)
@@ -509,7 +509,9 @@ func _setup2() -> void:
 	obj("dinner", "Heat the lasagna and eat it on the couch")
 	obj("news", "Watch TV until the news is over")
 	obj("priya", "Reply to Priya")
+	obj("woods", "Get some air past the north-fence gate")
 	sub("Your stomach growls. The fridge hums. Outside, the storm gets louder.", 5.0)
+	sub("The house feels small tonight. The gate in the NORTH fence hangs open — five minutes of cold air.", 5.0)
 	_ch2_texts()
 
 
@@ -532,6 +534,7 @@ func _ch2_after_msgs() -> void:
 		{"text": "\"Wait, what?? Tell me.\"", "cb": func(): _ch2_reply(true)},
 	])
 	toast("✉ Priya is waiting for a reply — TAB to open your phone.")
+	phone.call("incoming", "millers", ["Storm's getting nasty — if the power flickers, the breaker box is in the laundry. You've got this. 💛"], 1.6, script_token)
 
 
 func _ch2_reply(worried: bool) -> void:
@@ -706,6 +709,8 @@ func _ch4_seq() -> void:
 	audio.set_hum(false)
 	sub("The lights die. The fridge sighs into silence. Only the storm's echo remains.", 5.0)
 	toast("⚡ POWER OUT")
+	phone.call("incoming", "millers", ["Power's out?? The furnace pilot probably died too — can you peek at the little window on it? Cellar, kitchen door. Don't touch anything, just look!"], 1.6, t)
+	obj("cellar", "Check the furnace window in the cellar")
 	audio.knock_at(Vector3(8.0, 1.5, 3.0), "one")
 	await tree.create_timer(12.0, false).timeout
 	if t != script_token:
@@ -916,6 +921,8 @@ func cellar_enter() -> void:
 		"prompt": func(_c): return "Stare into the furnace window (hold)" if not eggs.has("furnace") else "The furnace ticks as it cools",
 		"hold": func(_c): return 6.0 if not eggs.has("furnace") else 0.0,
 		"on_use": func(_c): _furnace_stare()})
+	if chapter == 4 and not is_done("cellar"):
+		done("cellar")
 	sub("Concrete, oil, and dust. The furnace ticks. The dark down here feels... occupied.", 5.0)
 
 
@@ -1304,6 +1311,8 @@ func on_room(room: String) -> void:
 	if room == "woods" and not bool(flags.get("woods_enter", false)):
 		flags["woods_enter"] = true
 		sub("Pine needles underfoot. The streetlights don't reach back here. Someone burnt candles at that cross — recently.", 6.0)
+	if room == "woods" and chapter == 2 and not is_done("woods"):
+		done("woods")
 	if room == "yard" and chapter == 6 and not bool(flags.get("yard_run", false)):
 		flags["yard_run"] = true
 		world.spawn_glimpse(Vector3(-8.0, 1.2, 12.0), 0.8)
