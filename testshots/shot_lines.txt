@@ -21,7 +21,7 @@
 [SHOT] phone closed
 [SHOT] saved /tmp/shot_09_street.png err=0
 [SHOT] stop 9 saved
-[SHOT] Daniel perched for finale
+[SHOT] Daniel perched for finale; cams open
 [SHOT] saved /tmp/shot_10_daniel.png err=0
 [SHOT] stop 10 saved
 [SHOT] DONE
