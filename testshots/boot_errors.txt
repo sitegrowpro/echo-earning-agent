@@ -1,5 +1,5 @@
      51 WARNING: Godot 3.x SpatialMaterial remapped parameter not found: normal_map
-      1 WARNING: 10 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+      1 WARNING: 12 ObjectDB instances were leaked at exit (run with `--verbose` for details).
       1 SHADER ERROR: No matching function found for: 'clampf'.
       1 ERROR: Shader compilation failed.
       1 ERROR: 4 resources still in use at exit (run with --verbose for details).
