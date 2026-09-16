@@ -131,7 +131,7 @@ func _pad_defaults() -> void:
 		if has_pad:
 			continue
 		for b in (pads[a] as Array):
-			var ev := InputEventJoypadButton.new()
+			var ev: InputEventJoypadButton = InputEventJoypadButton.new()
 			ev.button_index = b
 			InputMap.action_add_event(a, ev)
 	var sticks := {

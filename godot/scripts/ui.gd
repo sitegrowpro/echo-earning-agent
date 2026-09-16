@@ -931,7 +931,7 @@ func _input(event: InputEvent) -> void:
 	if rebind_capture == "":
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
-		var code := (event as InputEventKey).physical_keycode
+		var code: int = (event as InputEventKey).physical_keycode
 		if code == KEY_ESCAPE or code == 0:
 			refresh_rebinds()
 			return
@@ -1526,3 +1526,4 @@ func set_dread(x: float) -> void:
 
 func apply_settings_vis() -> void:
 	vhs_rect.visible = bool(game.settings.get("grain", true))
+", true))

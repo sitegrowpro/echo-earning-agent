@@ -68,7 +68,7 @@ func _ready() -> void:
 		q.bus = "SFX"
 		add_child(q)
 		pool3d.append(q)
-		var qm := AudioStreamPlayer3D.new()
+		var qm: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
 		qm.max_distance = 60.0
 		qm.bus = "Muffled"
 		add_child(qm)
