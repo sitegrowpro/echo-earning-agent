@@ -32,11 +32,13 @@ func _initialize() -> void:
 
 func _process(_delta: float) -> bool:
 	frames += 1
+	if frames == 25:
+		main.call("warn_click")
 	if stage == 0 and frames >= 60:
 		stage = 1
 		_shot("/tmp/shot_01_menu.png")
 		print("[SHOT] menu captured; starting new game")
-		main.call("start_new")
+		main.call("start_new", true)
 	elif stage == 1 and frames >= 140:
 		stage = 2
 		stop_i = -1

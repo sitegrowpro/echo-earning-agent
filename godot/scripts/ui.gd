@@ -94,6 +94,16 @@ var cam_title: Label
 var cam_night_rect: ColorRect
 var cam_flash_rect: ColorRect
 var cam_night := false
+var warn_root: CenterContainer
+var warn_open := false
+var intro_root: Control
+var intro_cc: CenterContainer
+var intro_kick: Label
+var intro_name: Label
+var intro_sub: Label
+var bar_top: ColorRect
+var bar_bot: ColorRect
+var panel_credits: VBoxContainer
 
 
 func setup(g, s, p) -> void:
@@ -191,6 +201,8 @@ func _build_all() -> void:
 	_build_peephole()
 	_build_call()
 	_build_cam()
+	_build_warn()
+	_build_intro()
 	_build_menu()
 	_build_pause()
 	_build_ending()
@@ -620,8 +632,117 @@ func cam_night_toggle() -> void:
 	cam_title.text = "MILLER SECURITY · " + base + (" · NIGHT" if cam_night else "")
 
 
+func _build_warn() -> void:
+	warn_root = CenterContainer.new()
+	warn_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 1)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	warn_root.add_child(dim)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 14)
+	v.custom_minimum_size = Vector2(560, 0)
+	var t := _label("CONTENT WARNING", 30, RED)
+	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var b := _label("Flashing lights · sudden loud sounds · disturbing content.\nHeadphones recommended. Take breaks.", 15, PAPER)
+	b.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var ok := _button("I understand — [E] / click")
+	ok.pressed.connect(func(): game.warn_click())
+	v.add_child(t)
+	v.add_child(b)
+	v.add_child(ok)
+	warn_root.add_child(v)
+	add_child(warn_root)
+	warn_open = true
+
+
+func warn_close() -> void:
+	warn_root.visible = false
+	warn_open = false
+	game.update_mouse()
+
+
+func _build_intro() -> void:
+	intro_root = Control.new()
+	intro_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	intro_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	intro_root.visible = false
+	bar_top = ColorRect.new()
+	bar_top.color = Color.BLACK
+	bar_top.anchor_right = 1.0
+	bar_top.offset_bottom = 90
+	bar_top.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar_bot = ColorRect.new()
+	bar_bot.color = Color.BLACK
+	bar_bot.anchor_top = 1.0
+	bar_bot.anchor_right = 1.0
+	bar_bot.anchor_bottom = 1.0
+	bar_bot.offset_top = -90
+	bar_bot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	intro_cc = CenterContainer.new()
+	intro_cc.set_anchors_preset(Control.PRESET_FULL_RECT)
+	intro_cc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 8)
+	intro_kick = _label("", 16, RED)
+	intro_kick.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	intro_name = _label("", 54)
+	intro_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	intro_sub = _label("", 15, DIMC)
+	intro_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(intro_kick)
+	v.add_child(intro_name)
+	v.add_child(intro_sub)
+	intro_cc.add_child(v)
+	var skip := _label("[E] / CLICK TO SKIP", 12, Color(0.5, 0.52, 0.55))
+	skip.anchor_left = 0.5
+	skip.anchor_top = 1.0
+	skip.anchor_right = 0.5
+	skip.anchor_bottom = 1.0
+	skip.offset_left = -200
+	skip.offset_right = 200
+	skip.offset_top = -130
+	skip.offset_bottom = -105
+	skip.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	intro_root.add_child(bar_top)
+	intro_root.add_child(bar_bot)
+	intro_root.add_child(intro_cc)
+	intro_root.add_child(skip)
+	add_child(intro_root)
+
+
+func show_intro(on: bool) -> void:
+	intro_root.visible = on
+	if on:
+		intro_kick.text = ""
+		intro_name.text = ""
+		intro_sub.text = ""
+	game.update_mouse()
+
+
+func intro_tick(t: float) -> void:
+	var cards := [
+		{"t0": 0.5, "t1": 6.5, "k": "MOHAMMAD R PRESENTS", "n": "ECHOES IN THE DARK", "s": "episode two · the housesit"},
+		{"t0": 8.5, "t1": 14.5, "k": "SEPTEMBER 14", "n": "7:48 PM", "s": "the storm is coming"},
+		{"t0": 16.5, "t1": 22.5, "k": "MILLER RESIDENCE", "n": "ONE NIGHT", "s": "feed the cat · lock the doors · survive"},
+	]
+	var shown := false
+	for c in cards:
+		var t0: float = c["t0"]
+		var t1: float = c["t1"]
+		if t >= t0 and t <= t1:
+			intro_kick.text = String(c["k"])
+			intro_name.text = String(c["n"])
+			intro_sub.text = String(c["s"])
+			intro_cc.modulate.a = clampf(minf(t - t0, t1 - t) / 1.0, 0.0, 1.0)
+			shown = true
+	if not shown:
+		intro_cc.modulate.a = 0.0
+
+
 func _build_menu() -> void:
-	menu_root = _panel(Color(0.02, 0.02, 0.03, 0.98))
+	menu_root = _panel(Color(0.02, 0.02, 0.03, 0.55))
 	menu_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	var cc := CenterContainer.new()
 	cc.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -637,6 +758,9 @@ func _build_menu() -> void:
 	v.add_child(kicker)
 	v.add_child(title)
 	v.add_child(sub)
+	var by := _label("A GAME BY MOHAMMAD R", 13, Color(0.91, 0.77, 0.42))
+	by.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(by)
 	var new_btn := _button("▶ New Night")
 	continue_btn = _button("Continue")
 	var how_btn := _button("How to play")
@@ -649,12 +773,15 @@ func _build_menu() -> void:
 	how_btn.pressed.connect(func(): _toggle_panel("how"))
 	end_btn.pressed.connect(func(): _toggle_panel("endings"))
 	set_btn.pressed.connect(func(): _toggle_panel("settings"))
+	var cred_btn := _button("Credits")
+	cred_btn.pressed.connect(func(): _toggle_panel("credits"))
 	v.add_child(new_btn)
 	v.add_child(continue_btn)
 	v.add_child(how_btn)
 	v.add_child(end_btn)
 	v.add_child(endings_count)
 	v.add_child(set_btn)
+	v.add_child(cred_btn)
 	panel_how = VBoxContainer.new()
 	var how_text := _label("You are JAMIE, 17, housesitting for the Millers for one stormy night. Feed the cat. Heat the lasagna. Answer your texts. Then survive what knocks.\n\nWASD move · Mouse look · SHIFT sprint (loud!) · C crouch (quiet)\nE interact / hold E for long tasks · F flashlight · TAB phone · security cameras on the hall monitor\n\nRunning, doors and beeps make NOISE. When HE is inside, noise gets you found. Hide UNDER THE BED or in CLOSETS. Turn the flashlight OFF when hiding.\n\n🎙 MICROPHONE STEALTH (Settings): with a mic on, coughing or talking while hiding gets you HEARD. M mutes.\n\n🛒 Mid-shift you'll walk to FreshMart for groceries. Grab everything on Dana's list. Mind the two guys by the dairy case.\n\n🥚 2 hidden easter eggs. 🐈 Pet the cat. Trust the cat.\n\n4 endings. Your choices and noise matter. ~60 minutes.", 14)
 	how_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -676,12 +803,20 @@ func _build_menu() -> void:
 	_add_check_row(panel_settings, "Film grain + VHS effect", "grain")
 	_add_check_row(panel_settings, "Head-bob", "headbob")
 	_add_check_row(panel_settings, "🎙 Microphone stealth (he hears you)", "mic")
+	_add_check_row(panel_settings, "High graphics (turn OFF if the game stutters)", "highq")
 	_add_slider_row(panel_settings, "Mic sensitivity", 0.0, 1.0, 0.05, "micsens")
 	mic_status = _label("", 12, DIMC)
 	mic_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	panel_settings.add_child(mic_status)
 	panel_settings.visible = false
 	v.add_child(panel_settings)
+	panel_credits = VBoxContainer.new()
+	panel_credits.add_child(_label("CREDITS", 13, RED))
+	var credits := _label("MOHAMMAD R — creator · director · writer\nTHE R FAMILY — voice cast (Dana · Priya · Jamie · 911 operator)\n\nMade with Godot 4 · music & sound generated in-game\nThanks for playing — leave the porch light on.", 14)
+	credits.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	panel_credits.add_child(credits)
+	panel_credits.visible = false
+	v.add_child(panel_credits)
 	var foot := _label("Autosaves every chapter · headphones on 🔦", 12, Color(0.33, 0.33, 0.37))
 	foot.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(foot)
@@ -692,8 +827,8 @@ func _build_menu() -> void:
 
 func _toggle_panel(which: String) -> void:
 	game.audio.ui_click()
-	for p in [panel_how, panel_endings, panel_settings]:
-		if (which == "how" and p == panel_how) or (which == "endings" and p == panel_endings) or (which == "settings" and p == panel_settings):
+	for p in [panel_how, panel_endings, panel_settings, panel_credits]:
+		if (which == "how" and p == panel_how) or (which == "endings" and p == panel_endings) or (which == "settings" and p == panel_settings) or (which == "credits" and p == panel_credits):
 			p.visible = not p.visible
 		else:
 			p.visible = false
@@ -1096,7 +1231,7 @@ func show_ending(id: String, text: String, sub: String, stats: String) -> void:
 	ending_title.text = String((CFG.ENDINGS[id] as Dictionary)["name"]) + (" ✓" if good else " ✗")
 	ending_title.add_theme_color_override("font_color", Color(0.5, 0.69, 0.41) if good else RED)
 	ending_text.text = text
-	ending_stats.text = stats
+	ending_stats.text = stats + "\n\nA GAME BY MOHAMMAD R"
 	again_btn.text = "↻ Retry from checkpoint" if id == "D" else "▶ Play again"
 	game.on_ending(id)
 	ending_root.visible = true

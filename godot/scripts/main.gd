@@ -29,6 +29,9 @@ var state := "menu"
 var last_room := ""
 var last_ending := ""
 var shake_t := 0.0
+var intro_t := 0.0
+var intro_on := false
+var menu_t := 0.0
 
 
 func _ready() -> void:
@@ -111,6 +114,17 @@ func _is_echo(event: InputEvent) -> bool:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if ui.warn_open:
+		if event.is_action_pressed("interact") or event.is_action_pressed("pause_game"):
+			warn_click()
+			return
+	if state == "intro":
+		if event.is_action_pressed("interact") or event.is_action_pressed("pause_game") or event.is_action_pressed("getup"):
+			finish_intro()
+			return
+		if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
+			finish_intro()
+			return
 	if state == "paused":
 		if event.is_action_pressed("pause_game") and not _is_echo(event):
 			resume_game()
@@ -207,6 +221,13 @@ func _getup() -> void:
 
 
 func _physics_process(dt: float) -> void:
+	if state == "menu":
+		menu_t += dt
+		_menu_drift()
+		return
+	if state == "intro":
+		_intro_tick(dt)
+		return
 	if state != "playing":
 		return
 	mic.poll(dt, true)
@@ -409,8 +430,79 @@ func _start(fresh: bool) -> void:
 	update_mouse()
 
 
-func start_new() -> void:
-	_start(true)
+func start_new(skip_intro := false) -> void:
+	if skip_intro:
+		_start(true)
+	else:
+		_start_intro()
+
+
+func warn_click() -> void:
+	audio.ui_click()
+	ui.warn_close()
+
+
+func _start_intro() -> void:
+	audio.ui_click()
+	audio.start_ambience()
+	audio.start_rain()
+	audio.start_music()
+	_reset_run()
+	get_tree().paused = false
+	state = "intro"
+	intro_t = 0.0
+	intro_on = true
+	player.set("frozen", true)
+	ui.show_intro(true)
+	last_room = ""
+	update_mouse()
+
+
+func finish_intro() -> void:
+	if state != "intro":
+		return
+	intro_on = false
+	ui.show_intro(false)
+	state = "playing"
+	ui.show_hud()
+	last_room = ""
+	Save.clear_save()
+	story.new_game()
+	story.story_open = true
+	ui.true_story_card()
+	audio.set_hum(world.power or bool(story.flags.get("in_market", false)))
+	ui.refresh_continue()
+	update_mouse()
+
+
+func _menu_drift() -> void:
+	var k := 0.5 + 0.5 * sin(menu_t * TAU / 26.0)
+	var eye := Vector3(lerpf(-7.0, 7.0, k), 2.4, 13.8)
+	player.call("look_at_spot", eye, Vector3(0, 1.6, 5.5))
+
+
+func _intro_tick(dt: float) -> void:
+	intro_t += dt
+	var keys := [
+		{"t": 0.0, "eye": Vector3(0, 3.4, 17.5), "look": Vector3(0, 1.6, 5.5)},
+		{"t": 8.0, "eye": Vector3(-3.5, 2.0, 12.5), "look": Vector3(0, 1.4, 5.5)},
+		{"t": 16.0, "eye": Vector3(0, 1.62, 8.8), "look": Vector3(0, 1.4, 5.5)},
+		{"t": 24.0, "eye": Vector3(0, 1.6, 6.9), "look": Vector3(0, 1.5, 5.5)},
+	]
+	var a: Dictionary = keys[0]
+	var b: Dictionary = keys[keys.size() - 1]
+	for i in keys.size() - 1:
+		if intro_t >= float(keys[i]["t"]) and intro_t <= float(keys[i + 1]["t"]):
+			a = keys[i]
+			b = keys[i + 1]
+	var span: float = maxf(0.01, float(b["t"]) - float(a["t"]))
+	var f: float = clampf((intro_t - float(a["t"])) / span, 0.0, 1.0)
+	var eye: Vector3 = (a["eye"] as Vector3).lerp(b["eye"], f)
+	var look: Vector3 = (a["look"] as Vector3).lerp(b["look"], f)
+	player.call("look_at_spot", eye, look)
+	ui.intro_tick(intro_t)
+	if intro_t >= 25.0:
+		finish_intro()
 
 
 func start_continue() -> void:
@@ -511,6 +603,7 @@ func apply_settings() -> void:
 	mic.enabled = bool(settings.get("mic", true))
 	mic.sensitivity = float(settings.get("micsens", 0.6))
 	ui.apply_settings_vis()
+	world.set_quality(bool(settings.get("highq", true)))
 
 
 func get_endings() -> Dictionary:

@@ -234,6 +234,26 @@ func close_note() -> void:
 	ui.note_close()
 
 
+func _play_machine() -> void:
+	if bool(flags.get("machine_played", false)):
+		return
+	flags["machine_played"] = true
+	audio.microwave_beep(true)
+	sub("ANSWERING MACHINE — message 1 of 2:", 3.0)
+	await tree.create_timer(3.2, false).timeout
+	sub("DANA (fond, fast): \"...jamie honey it's Dana, we're stuck at the airport, don't wait up! Milk's in the fridge, lasagna's in the freezer, 375 for 40 minutes, you remember! Love you, bye!\"", 7.0)
+	await tree.create_timer(7.2, false).timeout
+	audio.microwave_beep(true)
+	sub("ANSWERING MACHINE — message 2 of 2:", 3.0)
+	await tree.create_timer(3.2, false).timeout
+	audio.set_whisper(true)
+	sub("(breathing. slow. close to the receiver. and a smile you can hear: \"nice house.\")", 7.0)
+	await tree.create_timer(7.2, false).timeout
+	audio.set_whisper(false)
+	audio.static_burst()
+	sub("Click. End of messages.", 3.5)
+
+
 func cam_show() -> void:
 	cam_open = true
 	player.set("frozen", true)
@@ -1562,6 +1582,9 @@ func register(inter) -> void:
 	inter.add({"id": "cams", "area": inter.halo(Vector3(-3.5, 1.1, -1.1), 0.7),
 		"prompt": func(_c): return "Check security cameras",
 		"on_use": func(_c): cam_show()})
+	inter.add({"id": "machine", "area": inter.halo(Vector3(-2.55, 0.6, 0.85), 0.9),
+		"prompt": func(_c): return "Play answering machine" if not bool(flags.get("machine_played", false)) else "",
+		"on_use": func(_c): _play_machine()})
 	inter.add({"id": "peephole", "area": inter.halo(Vector3(0, 1.6, 5.3), 0.4),
 		"prompt": func(c): return "Look through peephole" if (c["player"] as CharacterBody3D).global_position.z < 5.4 else "",
 		"on_use": func(_c): peep()})

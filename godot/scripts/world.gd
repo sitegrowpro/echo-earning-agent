@@ -52,6 +52,8 @@ var cams: Array = []
 var cam_labels: Array = []
 var cam_vp: SubViewport
 var cam_idx := 0
+var street_spot: SpotLight3D
+var _shadow_orig := {}
 var escape_win_body: StaticBody3D
 var rain_nodes: Array[CPUParticles3D] = []
 var env: Environment
@@ -355,6 +357,30 @@ func set_tv(on: bool) -> void:
 		tv_screen_mat.emission_energy_multiplier = 1.6 if on else 0.02
 	if tv_glow:
 		tv_glow.visible = on and power
+
+
+func set_quality(high: bool) -> void:
+	if env != null:
+		env.glow_enabled = high
+		(env as Environment).ssao_enabled = high
+	if moon != null:
+		if not _shadow_orig.has(moon):
+			_shadow_orig[moon] = moon.shadow_enabled
+		moon.shadow_enabled = high and bool(_shadow_orig[moon])
+	if porch_light != null:
+		if not _shadow_orig.has(porch_light):
+			_shadow_orig[porch_light] = porch_light.shadow_enabled
+		porch_light.shadow_enabled = high and bool(_shadow_orig[porch_light])
+	if street_spot != null:
+		if not _shadow_orig.has(street_spot):
+			_shadow_orig[street_spot] = street_spot.shadow_enabled
+		street_spot.shadow_enabled = high and bool(_shadow_orig[street_spot])
+	for room in room_lights.keys():
+		for l in ((room_lights[room] as Dictionary)["lights"] as Array):
+			var lo := l as OmniLight3D
+			if not _shadow_orig.has(lo):
+				_shadow_orig[lo] = lo.shadow_enabled
+			lo.shadow_enabled = high and bool(_shadow_orig[lo])
 
 
 func set_alert(on: bool) -> void:
@@ -906,6 +932,9 @@ func _dressing2() -> void:
 	box(0.4, 0.45, 0.4, wood, Vector3(-0.5, 0.22, 3.75), 0.0, true)
 	_cyl(0.045, 0.04, 0.11, mat(Color(0.2, 0.35, 0.5), 0.7), Vector3(-0.5, 0.5, 3.75))
 	_cyl(0.22, 0.24, 0.12, mat(Color(0.4, 0.25, 0.2), 1.0), Vector3(-3.3, 0.06, 2.3))
+	# Answering machine on the TV console (chapter 1 flavor + dread).
+	box(0.22, 0.09, 0.16, mat(Color(0.12, 0.12, 0.14), 0.6), Vector3(-2.55, 0.46, 0.85))
+	_ball(0.015, glow_mat(Color(1.0, 0.1, 0.1), 1.5), Vector3(-2.55, 0.51, 0.8))
 	# KITCHEN: cereal, dish rack + plates, soap, towel, trash can, calendar.
 	box(0.18, 0.28, 0.08, mat(Color(0.75, 0.5, 0.15), 0.8), Vector3(4.75, 1.1, 3.55))
 	box(0.18, 0.26, 0.08, mat(Color(0.3, 0.5, 0.7), 0.8), Vector3(4.75, 1.09, 3.4), 0.15)
@@ -1506,6 +1535,7 @@ func _outside() -> void:
 	spot.spot_range = 13.0
 	spot.spot_angle = 38.0
 	spot.shadow_enabled = true
+	street_spot = spot
 	spot.position = Vector3(8, 5.1, 12.5)
 	spot.rotation.x = -PI / 2.0
 	add_child(spot)
