@@ -134,6 +134,8 @@ func build() -> void:
 	glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	box(3.8, 2.4, 0.08, glass, Vector3(MX, 1.2, Z1 + 0.1), true)
 	label3d("EXIT", Vector3(MX, 2.7, 10.6), 96, Color(1, 0.2, 0.2), 0.003)
+	box(1.2, 0.9, 0.06, mat(Color(0.5, 0.38, 0.22), 0.9), Vector3(118.0, 1.7, 10.95))
+	box(0.32, 0.42, 0.02, mat(Color(0.82, 0.8, 0.72), 0.9), Vector3(118.0, 1.7, 10.9))
 	label3d("FRESHMART · OPEN 24 HRS", Vector3(MX, 2.9, 8.0), 72, Color(0.4, 0.9, 0.5))
 	box(3.6, 0.03, 1.2, mat(Color(0.2, 0.22, 0.25), 1.0), Vector3(MX, 0.03, 9.8))
 	# Front windows glowing against the storm.

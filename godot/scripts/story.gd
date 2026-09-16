@@ -21,6 +21,8 @@ const NOTES := {
 	"cellar": {"title": "Unsent letter — Martin", "body": "Dana —\n\nThird one this month. Same handwriting, same words: 'coming home soon.'\n\nWe never HAD a son. I burned the others. Don't show Jamie. Don't tell the HOA — they already think we're dramatic.\n\n— M.\n\nP.S. The height chart in the shed wasn't us."},
 	"shrine": {"title": "Waterlogged prayer card", "body": "A prayer card, ink half-washed away: '...rest the soul of...' The name is scratched out. Deliberately. With something sharp.\n\nUnder the cross: candle stubs, a dead flashlight, and one child's mitten. The other is nowhere.\n\nOn the back, in pencil: 'I'M SORRY I LEFT.'"},
 	"attic": {"title": "Nursery box — attic", "body": "A moving box labeled 'NURSERY' in marker that isn't Dana's looping hand or Martin's block print.\n\nInside: one folded baby blanket. A height chart torn from a doorframe — the top mark reads 6'4\".\n\nUnderneath, where no one was meant to look: a newer tag that just says 'MINE.'\n\nThe box smells like him. Rain and old pennies."},
+	"garage": {"title": "Workbench list — Martin", "body": "On graph paper, in Martin's block print:\n\n- deadbolt (front) — DONE\n- window latches — locksmith AGAIN??\n- motion light, backyard — DONE\n- Dana's birthday — DON'T FORGET THIS TIME\n- ask police about extra patrols??\n\nThe last line is underlined three times."},
+	"flyer": {"title": "Missing-person flyer (FreshMart board)", "body": "Sun-bleached, corners curling: 'MISSING — HAVE YOU SEEN THIS BOY?'\n\nThe photo is ten years of sun and rain. The name is smeared past reading.\n\nSomeone has written under it in fresh marker: 'HE'S NOT MISSING. HE'S WAITING.'\n\nThe handwriting makes your stomach drop. You've seen it before. On the shed wall."},
 }
 
 const CHAPTERS := [
@@ -101,6 +103,7 @@ var market_defs: Array = []
 var cellar_defs: Array = []
 var attic_defs: Array = []
 var bolt_t := 12.0
+var crow_t := 30.0
 var mic_cool := 0.0
 var mic_warned := false
 var pa_t := 30.0
@@ -161,6 +164,7 @@ func reset_state() -> void:
 	tick_alt = false
 	eggs = []
 	bolt_t = 12.0
+	crow_t = 30.0
 	mic_cool = 0.0
 	mic_warned = false
 	pa_t = 30.0
@@ -561,6 +565,8 @@ func _setup3() -> void:
 	obj("peep", "Look through the peephole")
 	obj("door", "Deal with whoever is at the door (DO NOT OPEN IT)")
 	obj("millersreply", "Reply to Mrs. Miller")
+	if bool(flags.get("stranger_gone", false)):
+		obj("attic", "Search the ATTIC for proof he's lying (laundry ladder?)")
 	_ch3_seq()
 
 
@@ -668,6 +674,7 @@ func after_stranger() -> void:
 	done("door")
 	enemy.call("vanish")
 	stranger_out = false
+	flags["stranger_gone"] = true
 	obj("attic", "Search the ATTIC for proof he's lying (laundry ladder?)")
 	await tree.create_timer(7.0, false).timeout
 	if t != script_token:
@@ -702,6 +709,16 @@ func _ch3_reply(good: bool) -> void:
 	done("millersreply")
 
 
+func _ch4_reply(ask: bool) -> void:
+	phone.call("clear_replies")
+	if ask:
+		phone.call("send", "unknown", "When will it be back on??")
+		phone.call("incoming", "unknown", ["Estimated restoration: UNKNOWN.", "Do not call 911 about the outage. Do not go outside. Do not answer the door.", "Thank you for choosing Hollow Creek Electric. 💡"], 1.6, script_token)
+	else:
+		phone.call("send", "unknown", "Wrong number.")
+		phone.call("incoming", "unknown", ["This is not a wrong number, Jamie."], 1.6, script_token)
+
+
 func _setup4() -> void:
 	obj("flash", "Find the flashlight (laundry shelf?)")
 	obj("fuse", "Reset the breaker box — 3 breakers")
@@ -722,6 +739,11 @@ func _ch4_seq() -> void:
 	toast("⚡ POWER OUT")
 	phone.call("incoming", "millers", ["Power's out?? The furnace pilot probably died too — can you peek at the little window on it? Cellar, kitchen door. Don't touch anything, just look!"], 1.6, t)
 	obj("cellar", "Check the furnace window in the cellar")
+	phone.call("incoming", "unknown", ["Hollow Creek Electric: outage reported in your area. Crews dispatched. Reply STOP to end alerts."], 1.6, t)
+	phone.call("set_replies", [
+		{"text": "\"When will it be back on??\"", "cb": func(): _ch4_reply(true)},
+		{"text": "\"Wrong number.\"", "cb": func(): _ch4_reply(false)},
+	])
 	audio.knock_at(Vector3(8.0, 1.5, 3.0), "one")
 	await tree.create_timer(12.0, false).timeout
 	if t != script_token:
@@ -1002,6 +1024,7 @@ func attic_enter() -> void:
 		"prompt": func(_c): return "Wind the music box (hold)" if not eggs.has("musicbox") else "The music box sits silent",
 		"hold": func(_c): return 5.0 if not eggs.has("musicbox") else 0.0,
 		"on_use": func(_c): _music_use()})
+	obj("attic", "Search the ATTIC for proof he's lying (laundry ladder?)")
 	if chapter == 3 and not is_done("attic"):
 		done("attic")
 	sub("Heat, dust, and mothballs. Rain hammers the roof like fingers. Somebody small lived up here once. Or was supposed to.", 6.0)
@@ -1035,6 +1058,8 @@ func market_enter() -> void:
 	I.add({"id": "m-exit", "area": I.halo(Vector3(120.0, 1.4, 10.4), 1.1),
 		"prompt": func(_c): return "Head HOME with the groceries" if bool(flags.get("paid", false)) else "EXIT (finish shopping first)",
 		"on_use": func(_c): _market_exit_use()})
+	market_defs.append("note-flyer")
+	_note_def(I, "flyer", Vector3(118.0, 1.6, 10.5))
 	if not bool(flags.get("keanu_done", false)):
 		market.set_folks_home(false)
 		market_defs.append("m-john")
@@ -1302,6 +1327,7 @@ func update(dt: float) -> void:
 	_mic_update(dt)
 	_bolt_update(dt)
 	_pa_update(dt)
+	_crow_update(dt)
 	if not world.power:
 		audio.mj_stop()
 	# The pet-Biscuit halo follows the cat around the house.
@@ -1309,6 +1335,18 @@ func update(dt: float) -> void:
 		var area := pet_def.get("area") as Area3D
 		if area and is_instance_valid(area) and cat:
 			area.position = cat.head_pos() if not (bool(flags.get("in_market", false)) or bool(flags.get("in_cellar", false)) or bool(flags.get("in_attic", false))) else Vector3(0, -50, 0)
+
+
+func _crow_update(dt: float) -> void:
+	if finished or chapter < 2:
+		return
+	var lr := String(root.get("last_room"))
+	if lr != "woods" and lr != "backyard":
+		return
+	crow_t -= dt
+	if crow_t <= 0.0:
+		crow_t = randf_range(25.0, 60.0)
+		audio.crow_at(player.global_position + Vector3(randf_range(-8.0, 8.0), 3.0, randf_range(-8.0, 8.0)))
 
 
 func _pa_update(dt: float) -> void:
@@ -1383,6 +1421,11 @@ func on_room(room: String) -> void:
 		world.spawn_glimpse(Vector3(-8.0, 1.2, 12.0), 0.8)
 		audio.sting()
 		sub("Between the houses — standing — GONE. Don't stop. DON'T STOP.", 4.0)
+	if room == "hall" and chapter == 5 and not bool(flags.get("hall5", false)):
+		flags["hall5"] = true
+		world.spawn_glimpse(Vector3(0.0, 1.2, -4.0), 0.7)
+		audio.sting()
+		sub("At the end of the hall — tall — GONE. He was never there. Keep telling yourself that.", 5.0)
 	# Dread director: the house gaslights you before he arrives. No cues, no
 	# explanations — you simply find things wrong.
 	if (room == "living" or room == "kitchen") and chapter == 1 and not bool(flags.get("dread_e1", false)):
@@ -1940,6 +1983,7 @@ func register(inter) -> void:
 	_note_def(inter, "grocery", Vector3(6.55, 1.45, 0.55), "grocery_note")
 	_note_def(inter, "shed", Vector3(-9.4, 0.8, -11.4))
 	_note_def(inter, "shrine", Vector3(-3.2, 1.0, -31.0))
+	_note_def(inter, "garage", Vector3(9.6, 1.1, -3.05))
 
 
 func _feed_biscuit() -> void:

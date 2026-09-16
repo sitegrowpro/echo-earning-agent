@@ -568,6 +568,11 @@ func _build_bank() -> void:
 		_put_tone(b, lull[ni], 0.28, "sine", float(ni) * 0.8, 1.4, 0.0, 6.0)
 		_put_tone(b, lull[ni] * 2.0, 0.07, "sine", float(ni) * 0.8, 1.0, 0.0, 8.0)
 	bank["musicbox"] = _wav(b)
+	b = _empty(1.2) # R6: crow caw for the woods/backyard
+	for ci in 3:
+		_put_tone(b, 720.0, 0.3, "saw", float(ci) * 0.32, 0.2, 420.0, 4.0)
+		_put_noise(b, 0.08, float(ci) * 0.32, 0.18, 2500.0, false, 4.0)
+	bank["crow"] = _wav(b)
 	b = _empty(8.0) # R6: late-game tension layer — dissonant film strings
 	_put_tone(b, 220.0, 0.10, "saw", 0.0, 8.0, 0.0, 0.0)
 	_put_tone(b, 233.08, 0.10, "saw", 0.0, 8.0, 0.0, 0.0)
@@ -821,6 +826,10 @@ func door_shut_at(pos: Vector3) -> void:
 
 func locked() -> void:
 	_play2d("locked", 0.0)
+
+
+func crow_at(pos: Vector3) -> void:
+	_play3d("crow", pos, -4.0)
 
 
 func knock_at(pos: Vector3, kind := "soft3") -> void:
