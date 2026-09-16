@@ -11,13 +11,15 @@ const TILE_METERS := {
 	"planks": 2.0, "tile": 1.0, "carpet": 2.0, "drywall": 2.0,
 	"concrete": 2.0, "asphalt": 4.0, "grass": 4.0, "deck": 2.0,
 	"ceiling": 1.2, "brick": 2.0, "stucco": 2.0,
+	"wallpaper": 2.0, "bathtile": 1.0, "lace": 1.0,
 }
 
 const PHOTO := {
-	"drywall": "drywall", "planks": "woodfloor", "deck": "woodfloor",
+	"drywall": "drywall", "planks": "woodfloor", "deck": "deck",
 	"tile": "tile", "ceiling": "ceiling", "carpet": "carpet",
 	"concrete": "sidewalk", "asphalt": "asphalt", "grass": "grass",
 	"brick": "brick", "stucco": "drywall",
+	"wallpaper": "wallpaper", "bathtile": "bathtile", "lace": "lace",
 }
 
 
@@ -90,16 +92,35 @@ static func _photo(kind: String) -> ImageTexture:
 	if t == null:
 		return null
 	var img := t.get_image()
-	img.resize(128, 128)
+	img.resize(256, 256) # R5: 128 crushed the photographic detail; 256 keeps the PSX soul
 	img.adjust_bcs(1.0, 1.0, 0.0)
 	var avg := 0.0
-	for y in 128:
-		for x in 128:
+	for y in 256:
+		for x in 256:
 			avg += img.get_pixel(x, y).r
-	avg /= 16384.0
+	avg /= 65536.0
 	if avg > 0.01:
 		img.adjust_bcs(0.9 / avg, 1.0, 0.0)
 	return ImageTexture.create_from_image(_tileable(img))
+
+
+## Full-color prop art (posters, photos, rugs): NOT tile-blended, NOT re-leveled.
+static func art(name: String, max_px := 512) -> ImageTexture:
+	var key := "art:" + name
+	if _tex_cache.has(key):
+		return _tex_cache[key]
+	var p := "res://assets/tex/" + name + ".jpg"
+	if not ResourceLoader.exists(p):
+		return null
+	var t := ResourceLoader.load(p) as Texture2D
+	if t == null:
+		return null
+	var img := t.get_image()
+	if img.get_width() > max_px or img.get_height() > max_px:
+		img.resize(max_px, int(max_px * float(img.get_height()) / float(maxi(1, img.get_width()))))
+	var out := ImageTexture.create_from_image(img)
+	_tex_cache[key] = out
+	return out
 
 
 static func _noise(octaves: int, freq: float, seed_v: int) -> FastNoiseLite:

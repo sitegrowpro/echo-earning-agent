@@ -24,6 +24,7 @@ const DOOR_ROOMS := {
 	"front": ["living", "porch"], "guest": ["hall", "guest"],
 	"master": ["hall", "master"], "bath": ["hall", "bath"],
 	"laundry": ["hall", "laundry"],
+	"garage": ["hall", "garage"],
 }
 
 var doors := {}
@@ -258,8 +259,10 @@ func add_door(id: String, x: float, z: float, w: float, swing: float, opts: Dict
 	d.position = Vector3(x, 0, z)
 	add_child(d)
 	d.setup(id, w, swing, opts.get("open", false), opts.get("locked", false), opts.get("label", id), opts.get("color", Color(0.36, 0.27, 0.19)))
+	d.set("base_ry", float(opts.get("ry", 0.0)))
+	d.rotation.y = float(opts.get("ry", 0.0))
 	doors[id] = d
-	_add_seep(id, x, z, w)
+	_add_seep(id, x, z, w, float(opts.get("ry", 0.0)))
 
 
 # ---------- lights / power ----------
@@ -294,12 +297,15 @@ func apply_lights() -> void:
 
 
 # ---------- door light-seep (F2F hallway slivers) ----------
-func _add_seep(id: String, x: float, z: float, w: float) -> void:
+func _add_seep(id: String, x: float, z: float, w: float, ry := 0.0) -> void:
 	if not DOOR_ROOMS.has(id):
 		return
 	var smat := glow_mat(Color(1.0, 0.8, 0.55), 0.0)
 	# Thin emissive threshold strip; added to the WORLD (not the door: the door rotates).
-	box(w - 0.06, 0.03, 0.1, smat, Vector3(x + w * 0.5, 0.015, z))
+	if absf(ry) > 0.01: # R5: seep runs along Z for X-wall doors (garage)
+		box(0.1, 0.03, w - 0.06, smat, Vector3(x, 0.015, z - w * 0.5))
+	else:
+		box(w - 0.06, 0.03, 0.1, smat, Vector3(x + w * 0.5, 0.015, z))
 	door_seep[id] = {"mat": smat, "rooms": DOOR_ROOMS[id]}
 
 
@@ -430,6 +436,7 @@ func build() -> void:
 	var wall_out := TEX.mat_for("stucco", Color(0.45, 0.43, 0.38), 0.95)
 	var wood := TEX.mat_for("planks", Color(0.48, 0.36, 0.24), 0.7)
 	var tile := TEX.mat_for("tile", Color(0.6, 0.63, 0.64), 0.4)
+	var bathtile := TEX.mat_for("bathtile", Color(0.62, 0.68, 0.72), 0.35)
 	var carpet := TEX.mat_for("carpet", Color(0.3, 0.27, 0.35), 1.0)
 	var conc := TEX.mat_for("concrete", Color(0.36, 0.36, 0.38), 0.95)
 	_floor(X0, 0.5, 0.0, ZS, wood)
@@ -437,7 +444,7 @@ func build() -> void:
 	_floor(X0, -1.5, X1, 0.5, wood)
 	_floor(X0, ZN, -2.0, -1.5, carpet)
 	_floor(-2.0, ZN, 4.0, -1.5, carpet)
-	_floor(4.0, ZN, 6.5, -1.5, tile)
+	_floor(4.0, ZN, 6.5, -1.5, bathtile) # R5: the bath gets its own glaze
 	_floor(6.5, ZN, X1, -1.5, conc)
 	var ceil_mi := MeshInstance3D.new()
 	var cm := PlaneMesh.new()
@@ -461,7 +468,7 @@ func build() -> void:
 		{"at": 13.2, "w": 0.8, "y0": 1.5, "y1": 2.25, "kind": "window"},
 	], wall_out)
 	run_v(X0, ZN, ZS, [{"at": 8.5, "w": 1.6, "y0": 0.95, "y1": 2.25, "kind": "window"}], wall_out)
-	run_v(X1, ZN, ZS, [{"at": 8.5, "w": 1.4, "y0": 0.95, "y1": 2.25, "kind": "window"}], wall_out)
+	run_v(X1, ZN, ZS, [{"at": 5.0, "w": 1.0, "kind": "door"}, {"at": 8.5, "w": 1.4, "y0": 0.95, "y1": 2.25, "kind": "window"}], wall_out) # R5: hall-east door into the new garage
 	# interior walls
 	run_h(0.5, X0, X1, [
 		{"at": 3.5, "w": 1.7, "y0": 0.0, "y1": 2.3, "kind": "arch"},
@@ -491,6 +498,7 @@ func build() -> void:
 	add_door("master", 1.0, -1.5, 0.94, 1.92, {"label": "Master bedroom door", "locked": true})
 	add_door("bath", 4.75, -1.5, 0.84, 1.92, {"label": "Bathroom door", "open": true})
 	add_door("laundry", 6.825, -1.5, 0.79, 1.92, {"label": "Laundry door"})
+	add_door("garage", 8.0, 0.0, 0.94, -1.92, {"label": "Garage door", "ry": PI * 0.5}) # R5: pivot at the hole edge, swings into the garage
 	_furnish()
 	_fixtures()
 	_window_dressing()
@@ -498,6 +506,9 @@ func build() -> void:
 	_dressing2()
 	_furnish2()
 	_baseboards()
+	_liners()
+	_garage()
+	_backyard()
 	_build_clock()
 	_light_rig()
 	_outside()
@@ -509,10 +520,10 @@ func _ground_collision() -> void:
 	var sb := StaticBody3D.new()
 	sb.collision_layer = 1
 	sb.collision_mask = 0
-	sb.position = Vector3(0, -0.25, 4.4)
+	sb.position = Vector3(0, -0.25, 1.0)
 	var cs := CollisionShape3D.new()
 	var bs := BoxShape3D.new()
-	bs.size = Vector3(64, 0.5, 32)
+	bs.size = Vector3(64, 0.5, 40) # R5: stretched north — the backyard needs ground too
 	cs.shape = bs
 	sb.add_child(cs)
 	add_child(sb)
@@ -697,14 +708,19 @@ func _furnish() -> void:
 	add_child(rec)
 	box(0.02, 0.32, 0.32, mat(Color(0.75, 0.6, 0.2), 0.6), Vector3(-7.82, 1.24, 2.75))
 	box(0.02, 0.32, 0.32, mat(Color(0.2, 0.3, 0.55), 0.6), Vector3(-7.82, 1.24, 2.42))
-	# GUEST — a faded tour poster somebody loved very much.
-	var tour := Label3D.new()
-	tour.text = "★ KING OF POP ★\nWORLD TOUR '88"
-	tour.font_size = 72
-	tour.modulate = Color(0.95, 0.75, 0.3)
-	tour.position = Vector3(-7.1, 1.75, -5.36)
-	tour.pixel_size = 0.004
-	add_child(tour)
+	# R5: living-room rug + the framed family photo (the note finally has a face).
+	_fabric_plane(Vector3(-4.0, 0.02, 3.0), "rug", 2.6, 3.4)
+	_frame_x(Vector3(-7.88, 1.5, 0.95), "family", 0.5, 0.4)
+	# GUEST — a faded tour poster somebody loved very much. (R5: real art,
+	# correctly sized — the old 2.4 m text banner ran into the side wall.)
+	_poster_art(Vector3(-6.85, 1.62, -5.375), "poster", 0.85, 1.1)
+	var tour_cap: Label3D = Label3D.new()
+	tour_cap.text = "WORLD TOUR '88"
+	tour_cap.font_size = 48
+	tour_cap.modulate = Color(0.95, 0.75, 0.3)
+	tour_cap.position = Vector3(-6.85, 0.98, -5.375)
+	tour_cap.pixel_size = 0.0025
+	add_child(tour_cap)
 
 
 func _cyl(rt: float, rb: float, h: float, m: Material, pos: Vector3) -> MeshInstance3D:
@@ -820,6 +836,144 @@ func _fixtures() -> void:
 	_shade("living", fl, 1.6)
 
 
+func _liners() -> void:
+	# R5: wallpaper + tile accent walls. Every liner sits 1 mm proud of its
+	# face: readable as a surface, never coplanar, never z-fighting.
+	var wp := TEX.mat_for("wallpaper", Color(0.82, 0.78, 0.68), 0.9)
+	var bt := TEX.mat_for("bathtile", Color(0.7, 0.76, 0.8), 0.35)
+	box(0.04, H, 3.7, wp, Vector3(-7.879, H * 0.5, -3.55)) # guest west wall (no holes here)
+	box(0.04, H, 3.7, wp, Vector3(3.879, H * 0.5, -3.55)) # master east wall (no holes here)
+	box(0.8, H, 0.04, bt, Vector3(4.4, H * 0.5, -5.379)) # bath north wall, left of window
+	box(0.9, H, 0.04, bt, Vector3(6.05, H * 0.5, -5.379)) # bath north wall, right of window
+	# Brick foundation skirt: hides the wall/ground seam on all four sides.
+	var br := TEX.mat_for("brick", Color(0.5, 0.42, 0.36), 0.95)
+	box(16.5, 0.55, 0.1, br, Vector3(0, 0.27, -5.56))
+	box(16.5, 0.55, 0.1, br, Vector3(0, 0.27, 5.56))
+	box(0.1, 0.55, 11.2, br, Vector3(-8.06, 0.27, 0))
+	box(0.1, 0.55, 11.2, br, Vector3(8.06, 0.27, 0))
+	# Furnace flue through the roof (the house HAS a furnace — see the thermostat chore).
+	box(0.7, 2.2, 0.7, br, Vector3(5.5, 3.4, -3.0))
+	box(0.9, 0.12, 0.9, mat(Color(0.15, 0.15, 0.16), 0.9), Vector3(5.5, 4.55, -3.0))
+
+
+func _garage() -> void:
+	# R5: attached garage, x 8..13, z -3.5..3.5. One real door (hall side),
+	# one sectional door (dressed wall, never interactive), one window.
+	var go := TEX.mat_for("stucco", Color(0.45, 0.43, 0.38), 0.95)
+	var gf := TEX.mat_for("concrete", Color(0.4, 0.4, 0.42), 0.95)
+	_floor(8.0, -3.5, 13.0, 3.5, gf)
+	run_h(-3.5, 8.0, 13.0, [], go)
+	run_h(3.5, 8.0, 13.0, [], go)
+	run_v(13.0, -3.5, 3.5, [{"at": 3.5, "w": 1.2, "y0": 1.2, "y1": 2.2, "kind": "window"}], go)
+	box(5.4, 0.15, 7.4, TEX.mat_for("ceiling", Color(0.55, 0.55, 0.53), 0.95), Vector3(10.5, H + 0.07, 0))
+	box(5.6, 0.12, 7.6, mat(Color(0.07, 0.07, 0.08), 1.0), Vector3(10.5, H + 0.2, 0))
+	box(3.0, 0.04, 10.0, gf, Vector3(10.5, 0.0, 8.5)) # driveway to the street
+	# The Millers' sedan (decor car: parked, cold, never driven).
+	var car := mat(Color(0.16, 0.2, 0.28), 0.35, 0.4)
+	var glass := mat(Color(0.05, 0.07, 0.1), 0.08, 0.9)
+	box(1.8, 0.55, 4.2, car, Vector3(10.5, 0.55, 0.2), 0.0, true)
+	box(1.6, 0.5, 2.1, glass, Vector3(10.5, 1.05, -0.1))
+	box(1.82, 0.18, 0.3, mat(Color(0.5, 0.5, 0.52), 0.5, 0.6), Vector3(10.5, 0.42, 2.35))
+	box(1.82, 0.18, 0.3, mat(Color(0.5, 0.5, 0.52), 0.5, 0.6), Vector3(10.5, 0.42, -1.95))
+	for wx in [9.75, 11.25]:
+		for wz in [-1.2, 1.6]:
+			var wh := _cyl(0.32, 0.32, 0.22, mat(Color(0.05, 0.05, 0.06), 0.9), Vector3(wx, 0.32, wz))
+			wh.rotation.z = PI * 0.5
+	# Workbench + clutter along the north wall.
+	var wb := mat(Color(0.35, 0.26, 0.16), 0.8)
+	box(2.4, 0.08, 0.7, wb, Vector3(9.6, 0.9, -3.05), 0.0, true)
+	box(0.08, 0.9, 0.7, wb, Vector3(8.5, 0.45, -3.05), 0.0, true)
+	box(0.08, 0.9, 0.7, wb, Vector3(10.7, 0.45, -3.05), 0.0, true)
+	box(1.2, 0.9, 0.06, mat(Color(0.4, 0.3, 0.18), 0.9), Vector3(9.6, 1.7, -3.38))
+	box(0.4, 0.3, 0.3, mat(Color(0.5, 0.32, 0.12), 0.8), Vector3(9.0, 1.09, -3.05))
+	box(0.3, 0.22, 0.25, mat(Color(0.3, 0.35, 0.4), 0.8), Vector3(9.7, 1.05, -3.1))
+	box(0.5, 0.5, 0.5, mat(Color(0.45, 0.36, 0.22), 0.9), Vector3(12.4, 0.25, -2.8), 0.0, true)
+	box(0.45, 0.45, 0.45, mat(Color(0.42, 0.33, 0.2), 0.9), Vector3(12.35, 0.72, -2.75))
+	box(0.6, 0.4, 0.4, mat(Color(0.2, 0.22, 0.25), 0.7), Vector3(12.4, 0.2, 2.9), 0.0, true)
+	box(1.0, 0.012, 0.7, mat(Color(0.03, 0.03, 0.04), 0.3), Vector3(10.5, 0.012, 1.4)) # oil stain
+	for i in 4: # sectional door dressing, both faces (never interactive)
+		var sy := 0.5 + float(i) * 0.5
+		box(3.2, 0.42, 0.06, mat(Color(0.55, 0.53, 0.48), 0.6), Vector3(10.5, sy, 3.38))
+		box(3.2, 0.42, 0.06, mat(Color(0.5, 0.48, 0.44), 0.65), Vector3(10.5, sy, 3.62))
+	box(0.3, 0.06, 0.08, mat(Color(0.2, 0.2, 0.2), 0.5, 0.5), Vector3(10.5, 1.0, 3.34))
+	_pullchain(Vector3(10.5, 0, 0), "garage", Color(1.0, 0.93, 0.75))
+
+
+func _backyard() -> void:
+	# R5: fenced backyard, z -14..-5.5. Shed (his nest), dead tree, patio +
+	# grill, string lights on the porch circuit. The EAST side stays open:
+	# escape B runs around the garage, and no fence exists for the AI to hug.
+	var fm := mat(Color(0.3, 0.24, 0.16), 0.9)
+	for px in [-11.0, -8.5, -6.0, -3.5, -1.0, 1.5, 4.0, 6.5, 9.0, 11.5]:
+		box(2.4, 1.8, 0.08, fm, Vector3(px, 0.9, -14.0), 0.0, true)
+	for pz in [-13.0, -10.5, -8.0, -5.5, -3.0, -0.5, 2.0, 4.5]:
+		box(0.08, 1.8, 2.4, fm, Vector3(-12.0, 0.9, pz), 0.0, true)
+	for pz in [-13.0, -10.5, -8.0, -5.5]:
+		box(0.08, 1.8, 2.4, fm, Vector3(13.0, 0.9, pz), 0.0, true)
+	for px in [-12.0, -9.6, -7.2, -4.8, -2.4, 0.0, 2.4, 4.8, 7.2, 9.6, 12.0]:
+		box(0.14, 2.0, 0.14, fm, Vector3(px, 1.0, -14.0))
+	# Shed 2x2 in the NW corner, door facing south (z-constant wall, no ry needed).
+	var sm := TEX.mat_for("planks", Color(0.32, 0.24, 0.15), 0.9)
+	_floor(-10.0, -12.0, -8.0, -10.0, TEX.mat_for("concrete", Color(0.4, 0.4, 0.42), 0.95))
+	box(2.0, 2.3, 0.12, sm, Vector3(-9.0, 1.15, -12.0), 0.0, true)
+	box(0.12, 2.3, 2.0, sm, Vector3(-10.0, 1.15, -11.0), 0.0, true)
+	box(0.12, 2.3, 2.0, sm, Vector3(-8.0, 1.15, -11.0), 0.0, true)
+	box(0.5, 2.3, 0.12, sm, Vector3(-9.75, 1.15, -10.0), 0.0, true)
+	box(0.5, 2.3, 0.12, sm, Vector3(-8.25, 1.15, -10.0), 0.0, true)
+	box(1.1, 0.24, 0.12, sm, Vector3(-9.0, 2.18, -10.0))
+	box(0.08, 2.1, 0.16, sm, Vector3(-9.54, 1.05, -10.0))
+	box(0.08, 2.1, 0.16, sm, Vector3(-8.46, 1.05, -10.0))
+	box(2.3, 0.1, 2.3, mat(Color(0.08, 0.08, 0.09), 1.0), Vector3(-9.0, 2.33, -11.0))
+	add_door("shed", -9.5, -10.0, 0.9, 1.92, {"label": "Shed door"})
+	var cm2 := mat(Color(0.42, 0.33, 0.2), 0.9)
+	box(0.6, 0.6, 0.6, cm2, Vector3(-9.4, 0.3, -11.4), 0.0, true)
+	box(0.16, 0.02, 0.22, mat(Color(0.82, 0.8, 0.72), 0.9), Vector3(-9.4, 0.62, -11.4))
+	for cx in [-9.4, -9.0, -8.6]:
+		box(0.3, 0.4, 0.015, mat(Color(0.75, 0.73, 0.65), 0.95), Vector3(cx, 1.5, -11.92))
+	var lan: OmniLight3D = OmniLight3D.new()
+	lan.light_color = Color(1.0, 0.75, 0.45)
+	lan.light_energy = 0.7
+	lan.omni_range = 4.0
+	lan.position = Vector3(-9.0, 1.3, -11.0)
+	add_child(lan)
+	_ball(0.05, glow_mat(Color(1.0, 0.75, 0.45), 1.2), Vector3(-9.0, 1.3, -11.0))
+	# Patio + grill + dead tree + bushes.
+	box(4.0, 0.08, 3.0, TEX.mat_for("concrete", Color(0.45, 0.44, 0.4), 0.95), Vector3(1.5, 0.0, -7.5))
+	_cyl(0.28, 0.24, 0.5, mat(Color(0.1, 0.1, 0.1), 0.6), Vector3(2.6, 0.55, -7.2))
+	_cyl(0.3, 0.3, 0.12, mat(Color(0.08, 0.08, 0.08), 0.6), Vector3(2.6, 0.85, -7.2))
+	for lx in [2.35, 2.85]:
+		box(0.04, 0.5, 0.04, mat(Color(0.15, 0.15, 0.15), 0.7), Vector3(lx, 0.25, -7.2))
+	box(0.04, 0.5, 0.04, mat(Color(0.15, 0.15, 0.15), 0.7), Vector3(2.6, 0.25, -7.45))
+	_cyl(0.16, 0.22, 3.2, mat(Color(0.2, 0.15, 0.1), 0.95), Vector3(-5.5, 1.6, -11.0))
+	for ba in [0.6, 2.2, 4.0]:
+		var br := _cyl(0.05, 0.08, 1.6, mat(Color(0.2, 0.15, 0.1), 0.95), Vector3(-5.5, 2.9, -11.0))
+		br.rotation.z = 0.7
+		br.rotation.y = ba
+	_ball(0.7, mat(Color(0.08, 0.14, 0.08), 1.0), Vector3(-2.5, 0.5, -12.5))
+	_ball(0.55, mat(Color(0.07, 0.12, 0.07), 1.0), Vector3(5.5, 0.4, -12.0))
+	_ball(0.6, mat(Color(0.08, 0.13, 0.08), 1.0), Vector3(-11.0, 0.45, -8.0))
+	# String lights over the patio, wired to the porch switch.
+	box(0.06, 2.6, 0.06, fm, Vector3(-0.3, 1.3, -7.5), 0.0, true)
+	box(0.06, 2.6, 0.06, fm, Vector3(3.3, 1.3, -7.5), 0.0, true)
+	box(3.6, 0.02, 0.02, mat(Color(0.05, 0.05, 0.05), 0.9), Vector3(1.5, 2.5, -7.5))
+	for bx in [-0.1, 0.5, 1.1, 1.7, 2.3, 2.9]:
+		_ball(0.035, glow_mat(Color(1.0, 0.8, 0.5), 1.4), Vector3(bx, 2.46, -7.5))
+	var sl: OmniLight3D = OmniLight3D.new()
+	sl.light_color = Color(1.0, 0.8, 0.55)
+	sl.light_energy = 1.2
+	sl.omni_range = 7.0
+	sl.position = Vector3(1.5, 2.3, -7.5)
+	add_child(sl)
+	room_light("porch", sl)
+	# Cool moonlight wash so the yard never goes pitch-void.
+	var ml: OmniLight3D = OmniLight3D.new()
+	ml.light_color = Color(0.35, 0.45, 0.7)
+	ml.light_energy = 0.5
+	ml.omni_range = 20.0
+	ml.position = Vector3(0, 4.0, -10.0)
+	add_child(ml)
+
+
 func _curtain(cx: float, z: float, rod_y: float, w: float, panels: Array, short: bool, c: Color) -> void:
 	var rod_m := mat(Color(0.25, 0.18, 0.1), 0.5, 0.3)
 	box(w + 0.9, 0.04, 0.04, rod_m, Vector3(cx, rod_y, z))
@@ -827,7 +981,7 @@ func _curtain(cx: float, z: float, rod_y: float, w: float, panels: Array, short:
 	_ball(0.035, rod_m, Vector3(cx + (w + 0.9) * 0.5, rod_y, z))
 	var h := 1.2 if short else 1.7
 	var y := 1.7 if short else 1.45
-	var fm := mat(c, 1.0)
+	var fm := TEX.mat_for("lace", c.lightened(0.55), 1.0) # R5: curtains get real lace
 	for px in panels:
 		box(0.42, h, 0.09, fm, Vector3(px, y, z))
 
@@ -1230,7 +1384,7 @@ func _furnish2() -> void:
 	_ball(0.03, brass, Vector3(3.12, 1.0, -1.64))
 	_ball(0.03, brass, Vector3(3.28, 1.0, -1.64))
 	box(0.04, 1.1, 0.7, mat(Color(0.1, 0.13, 0.16), 0.05, 0.9), Vector3(-1.86, 1.6, -3.5))
-	art_props["carkeys"] = box(0.13, 0.02, 0.06, brass, Vector3(3.3, 0.87, -5.1))
+	art_props["carkeys"] = box(0.13, 0.02, 0.06, brass, Vector3(3.3, 0.86, -5.1)) # R5: seated on the dresser
 	# ---- bath: vanity bar, shelf + bottles, TP ----
 	var vb := glow_mat(Color(0.9, 0.95, 1.0), 1.4)
 	box(0.5, 0.08, 0.1, vb, Vector3(5.2, 2.15, -1.62))
@@ -1256,6 +1410,70 @@ func _poster(pos: Vector3, c: Color) -> void:
 	p.material_override = mat(c, 0.9)
 	p.position = pos
 	add_child(p)
+
+
+func _poster_art(pos: Vector3, art: String, w: float, h: float) -> void:
+	# R5: real poster art with a frame (falls back to a flat poster if missing).
+	var img := TEX.art(art)
+	if img == null:
+		_poster(pos, Color(0.2, 0.2, 0.25))
+		return
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = img
+	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR
+	m.roughness = 0.85
+	var p := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(w, h)
+	p.mesh = pm
+	p.material_override = m
+	p.position = pos
+	add_child(p)
+	var fm := mat(Color(0.1, 0.08, 0.06), 0.6)
+	box(w + 0.06, 0.04, 0.03, fm, pos + Vector3(0, h * 0.5 + 0.02, -0.005))
+	box(w + 0.06, 0.04, 0.03, fm, pos + Vector3(0, -h * 0.5 - 0.02, -0.005))
+	box(0.04, h + 0.06, 0.03, fm, pos + Vector3(w * 0.5 + 0.02, 0, -0.005))
+	box(0.04, h + 0.06, 0.03, fm, pos + Vector3(-w * 0.5 - 0.02, 0, -0.005))
+
+
+func _fabric_plane(pos: Vector3, art: String, w: float, d: float) -> void:
+	# R5: horizontal art plane (rugs). PlaneMesh faces +Y: zero extra work.
+	var img := TEX.art(art)
+	if img == null:
+		return
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = img
+	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR
+	m.roughness = 0.95
+	var p := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(w, d)
+	p.mesh = pm
+	p.material_override = m
+	p.position = pos
+	add_child(p)
+
+
+func _frame_x(pos: Vector3, art: String, w: float, h: float) -> void:
+	# R5: framed art facing +X (west-wall frames). Width runs along Z.
+	var img := TEX.art(art)
+	if img == null:
+		return
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = img
+	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR
+	m.roughness = 0.7
+	var p := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(w, h)
+	p.mesh = pm
+	p.material_override = m
+	p.position = pos
+	p.rotation.y = PI * 0.5
+	add_child(p)
+	var fm := mat(Color(0.12, 0.09, 0.06), 0.6)
+	box(0.03, h + 0.06, 0.04, fm, pos + Vector3(-0.005, 0, w * 0.5 + 0.02))
+	box(0.03, h + 0.06, 0.04, fm, pos + Vector3(-0.005, 0, -w * 0.5 - 0.02))
 
 
 func _omni(room: String, color: Color, energy: float, dist: float, pos: Vector3, shadow := false) -> void:
@@ -1685,6 +1903,12 @@ func cam_cycle(dir: int) -> String:
 
 
 func room_at(x: float, z: float) -> String:
+	if z < -5.5:
+		return "backyard"
+	if x > 8.0 and z >= -3.5:
+		return "garage"
+	if x > 8.0:
+		return "backyard" # east strip behind the garage: outdoors
 	if z >= 5.5:
 		return "porch"
 	if z >= 0.5:
@@ -1705,6 +1929,6 @@ func room_name(r: String) -> String:
 		"living": "LIVING ROOM", "kitchen": "KITCHEN", "hall": "HALLWAY",
 		"guest": "GUEST ROOM", "master": "MASTER BEDROOM", "bath": "BATHROOM",
 		"laundry": "LAUNDRY", "porch": "FRONT PORCH", "yard": "YARD", "street": "STREET",
-		"market": "FRESHMART",
+		"market": "FRESHMART", "garage": "GARAGE", "backyard": "BACKYARD",
 	}
 	return names.get(r, r.to_upper())

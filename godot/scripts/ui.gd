@@ -73,6 +73,12 @@ var pause_resume_btn: Button
 var cc_panel: PanelContainer # R4: closed captions
 var cc_label: Label
 var cc_tween: Tween
+var cross_dot: ColorRect # R5: spec crosshair — dot that becomes a ring
+var cross_ring: Panel
+var hide_overlay: Control # R5: closet slats over the eyes while hiding
+var ch_narr: Label # R5: typewriter retrospective under chapter cards
+var ch_narr_full := ""
+var ch_narr_t := 0.0
 var rebind_btns := {}
 var rebind_capture := ""
 var panel_how: VBoxContainer
@@ -262,6 +268,26 @@ func _build_hud() -> void:
 	_anchor(holdbar, 0.5, 0.63)
 	holdbar.visible = false
 	hud.add_child(holdbar)
+	cross_dot = ColorRect.new()
+	cross_dot.color = Color(0.9, 0.9, 0.9, 0.85)
+	cross_dot.custom_minimum_size = Vector2(4, 4)
+	cross_dot.set_anchors_preset(Control.PRESET_CENTER)
+	cross_dot.position = Vector2(-2, -2)
+	cross_dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hud.add_child(cross_dot)
+	cross_ring = Panel.new()
+	var ring: StyleBoxFlat = StyleBoxFlat.new()
+	ring.bg_color = Color(0, 0, 0, 0)
+	ring.border_color = Color(0.95, 0.85, 0.6, 0.95)
+	ring.set_border_width_all(2)
+	ring.set_corner_radius_all(13)
+	cross_ring.add_theme_stylebox_override("panel", ring)
+	cross_ring.custom_minimum_size = Vector2(26, 26)
+	cross_ring.set_anchors_preset(Control.PRESET_CENTER)
+	cross_ring.position = Vector2(-13, -13)
+	cross_ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cross_ring.visible = false
+	hud.add_child(cross_ring)
 	sub_panel = _panel(Color(0, 0, 0, 0.78))
 	_anchor(sub_panel, 0.5, 0.86)
 	sub_label = _label("", 17)
@@ -278,6 +304,20 @@ func _build_hud() -> void:
 	cc_panel.add_child(cc_label)
 	cc_panel.visible = false
 	hud.add_child(cc_panel)
+	hide_overlay = Control.new()
+	hide_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	hide_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for i in 7: # closet slats: peer THROUGH the gaps, per spec hiding
+		var bar: ColorRect = ColorRect.new()
+		bar.color = Color(0, 0, 0, 0.88)
+		bar.anchor_top = 0.08 + float(i) * 0.125
+		bar.anchor_bottom = 0.08 + float(i) * 0.125 + 0.075
+		bar.anchor_left = 0.0
+		bar.anchor_right = 1.0
+		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		hide_overlay.add_child(bar)
+	hide_overlay.visible = false
+	hud.add_child(hide_overlay)
 	toast_wrap = VBoxContainer.new()
 	toast_wrap.anchor_left = 1.0
 	toast_wrap.anchor_right = 1.0
@@ -354,9 +394,14 @@ func _build_hud() -> void:
 	ch_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	ch_sub = _label("", 15, DIMC)
 	ch_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ch_narr = _label("", 14, Color(0.75, 0.72, 0.65))
+	ch_narr.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ch_narr.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	ch_narr.custom_minimum_size = Vector2(560, 0)
 	cv.add_child(ch_kicker)
 	cv.add_child(ch_name)
 	cv.add_child(ch_sub)
+	cv.add_child(ch_narr)
 	cc.add_child(cv)
 	ch_card.add_child(cc)
 	ch_card.visible = false
@@ -799,7 +844,7 @@ func _build_menu() -> void:
 	v.add_child(set_btn)
 	v.add_child(cred_btn)
 	panel_how = VBoxContainer.new()
-	var how_text := _label("You are JAMIE, 17, housesitting for the Millers for one stormy night. Feed the cat. Heat the lasagna. Answer your texts. Then survive what knocks.\n\nWASD move · Mouse look · SHIFT sprint (loud!) · C crouch (quiet)\nE interact / hold E for long tasks · F flashlight · TAB phone · security cameras on the hall monitor\n\nRunning, doors and beeps make NOISE. When HE is inside, noise gets you found. Hide UNDER THE BED or in CLOSETS. Turn the flashlight OFF when hiding.\n\n🎙 MICROPHONE STEALTH (Settings): with a mic on, coughing or talking while hiding gets you HEARD. M mutes.\n\n🛒 Mid-shift you'll walk to FreshMart for groceries. Grab everything on Dana's list. Mind the two guys by the dairy case.\n\n🥚 2 hidden easter eggs. 🐈 Pet the cat. Trust the cat.\n\n4 endings. Your choices and noise matter. ~60 minutes.", 14)
+	var how_text := _label("You are JAMIE, 17, housesitting for the Millers for one stormy night. Feed the cat. Heat the lasagna. Answer your texts. Then survive what knocks.\n\nWASD move · Mouse look · SHIFT sprint (loud!) · C crouch (quiet)\nE interact / hold E for long tasks · F flashlight · TAB phone · security cameras on the hall monitor\n\nRunning, doors and beeps make NOISE. When HE is inside, noise gets you found. Hide UNDER THE BED or in CLOSETS. Turn the flashlight OFF when hiding.\n\n🎙 MICROPHONE STEALTH (Settings): with a mic on, coughing or talking while hiding gets you HEARD. M mutes.\n\n🛒 Mid-shift you'll walk to FreshMart for groceries. Grab everything on Dana's list. Mind the two guys by the dairy case.\n\n🥚 3 well-hidden easter eggs. 🐈 Pet the cat. Trust the cat.\n\n4 endings. Your choices and noise matter. ~60 minutes.", 14)
 	how_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	panel_how.add_child(_label("HOW TO PLAY", 13, RED))
 	panel_how.add_child(how_text)
@@ -1050,6 +1095,9 @@ func _process(_dt: float) -> void:
 		scare_label.position = Vector2(randf_range(-14, 14), randf_range(-10, 10))
 	if mic_status and panel_settings.visible and game and game.mic:
 		mic_status.text = game.mic.status_text()
+	if ch_narr and ch_narr.visible and ch_narr.text.length() < ch_narr_full.length():
+		ch_narr_t += _dt
+		ch_narr.text = ch_narr_full.left(mini(ch_narr_full.length(), int(ch_narr_t / 0.035)))
 	if hud != null and hud.visible:
 		tc_sec += _dt
 		var tt := int(tc_sec)
@@ -1118,10 +1166,14 @@ func objectives(list: Array) -> void:
 	pause_obj.text = "OBJECTIVES\n" + "\n".join(lines)
 
 
-func chapter_card(kicker: String, card_name: String, sub: String) -> void:
+func chapter_card(kicker: String, card_name: String, sub: String, narr := "") -> void:
 	ch_kicker.text = "▶ TRACKING"
 	ch_name.text = "···"
 	ch_sub.text = sub
+	ch_narr.text = ""
+	ch_narr.visible = narr != ""
+	ch_narr_full = narr
+	ch_narr_t = 0.0
 	ch_card.visible = true
 	ch_card.modulate.a = 1.0
 	if ch_tween and ch_tween.is_valid():
@@ -1342,9 +1394,16 @@ func show_ending(id: String, text: String, sub: String, stats: String) -> void:
 # ---------- HUD updates ----------
 func set_prompt(text: String, hold_mode: bool) -> void:
 	prompt_panel.visible = text != ""
+	cross_ring.visible = text != ""
+	cross_dot.visible = text == ""
 	if text != "":
 		prompt_key.text = "HOLD E" if hold_mode else "E"
 		prompt_text.text = text
+
+
+func set_hide_overlay(h: String) -> void:
+	if hide_overlay:
+		hide_overlay.visible = h == "closet" or h == "pcloset"
 
 
 func set_hold(frac: float) -> void:

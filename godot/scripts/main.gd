@@ -329,13 +329,16 @@ func _physics_process(dt: float) -> void:
 		last_room = room
 		if not story.finished:
 			story.on_room(room)
-	player.indoor = room != "porch" and room != "yard" and room != "street"
+	player.indoor = room != "porch" and room != "yard" and room != "street" and room != "backyard"
 	world.set_slabs_outside(not player.indoor)
 	# R4: rain follows shelter — full storm outside, muffled patter inside.
 	if bool(story.flags.get("in_market", false)):
 		audio.set_rain_level(0.12, true)
 	else:
 		audio.set_rain_level(0.35 if player.indoor else 1.0, player.indoor)
+	var house_in: bool = player.indoor and not bool(story.flags.get("in_market", false))
+	audio.set_glass_rain(house_in)
+	audio.set_wind(not player.indoor)
 	story.update(dt)
 	# R4: Daniel freezes while MODAL ui holds the player — being caught
 	# mid-dialogue was unfair and fired story callbacks after death.
@@ -367,8 +370,10 @@ func _physics_process(dt: float) -> void:
 		dread = 0.15
 	ui.set_dread(dread)
 	audio.set_dread_mix(dread)
+	audio.set_subbass(est2 == "chase" and not story.finished)
 	world.set_alert(est2 == "chase" and not story.finished)
 	ui.set_mic(mic.enabled and mic.available and not story.finished, mic.level, mic.loud, String(player.get("hidden")) != "")
+	ui.set_hide_overlay(String(player.get("hidden")))
 	var cur: Dictionary = interact.update(dt)
 	if not cur.is_empty():
 		ui.set_prompt(String(cur["text"]), float(cur["hold"]) > 0.0)
@@ -461,12 +466,13 @@ func _reset_run() -> void:
 	audio.set_whisper(false)
 	audio.set_drone(false)
 	audio.set_stalk(false)
+	audio.set_subbass(false)
 	world.reset_dread_props()
 	audio.mj_stop()
 	mic.reset_run()
 	market.reset_run()
 	cat.reset_run()
-	player.bounds_min = Vector2(-26.0, -7.6)
+	player.bounds_min = Vector2(-26.0, -14.5) # R5: the fence, not the void
 	player.bounds_max = Vector2(26.0, 16.4)
 	world.escape_win_body.get_child(0).set_deferred("disabled", false)
 	for id in world.doors.keys():
@@ -653,6 +659,9 @@ func quit_to_menu() -> void:
 	audio.set_drone(false)
 	audio.set_stalk(false)
 	audio.set_whisper(false)
+	audio.set_subbass(false)
+	audio.set_glass_rain(false)
+	audio.set_wind(false)
 	get_tree().paused = false
 	phone.toggle(0)
 	ui.show_menu()
@@ -672,6 +681,9 @@ func on_ending(id: String) -> void:
 	audio.mj_stop()
 	audio.set_hum(false)
 	audio.set_stalk(false)
+	audio.set_subbass(false)
+	audio.set_glass_rain(false)
+	audio.set_wind(false)
 	ui.refresh_endings_list()
 	ui.refresh_continue()
 

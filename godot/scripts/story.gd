@@ -17,6 +17,7 @@ const NOTES := {
 	"manual": {"title": "Breaker box manual", "body": "HOLLOW CREEK ELECTRIC — Model FB-3\n\n\"If all breakers trip at once, flip each switch LEFT then RIGHT, one at a time. Wait for the click.\n\nWARNING: simultaneous trips usually mean a surge... or manual interference at the meter.\"\n\nSomeone has circled \"manual interference\" in red."},
 	"priya_note": {"title": "Note slipped under the door", "body": "In Priya's handwriting, shaky:\n\n\"jamie i drove by and there was a guy standing by the side of the house just STARING at the windows. i honked and he looked RIGHT at me and smiled. i'm going home. DO NOT open the door tonight. call me\"\n\nThe ink is smeared, like it was written fast."},
 	"grocery": {"title": "Dana's grocery list (fridge)", "body": "FRESHMART RUN — please!! 🙏\n\n☐ Milk (2%!!)\n☐ Eggs\n☐ Bread\n☐ Biscuit's cat food (the EXPENSIVE one, he knows the difference)\n☐ AA batteries (storm!!)\n☐ Mint chip ice cream (for you, obviously)\n\nTake the $50 from the cookie jar. Keep the change, sweetie. — Dana"},
+	"shed": {"title": "Clippings — the shed wall", "body": "Newspaper clippings, taped to the shed wall in neat rows.\n\n'HOLLOW CREEK FAMILY OF THREE SETTLES IN' ... 'MILLER REJOINS HOA BOARD' ... 'LOCAL TEEN WINS REGIONAL SPELLING BEE' — that one's about YOU, from two years ago.\n\nIn every photo of Dana, the eyes are scratched out. Not angrily. Carefully.\n\nOn the doorframe, a height chart in pencil. The top mark reads 6'4\".\n\nUnder it, one word: 'PATIENT.'"},
 }
 
 const CHAPTERS := [
@@ -27,6 +28,17 @@ const CHAPTERS := [
 	{"kicker": "10:41 PM", "name": "Blackout", "sub": "The dark is full of sounds."},
 	{"kicker": "11:12 PM", "name": "He's Inside", "sub": "Don't run. Don't breathe. Don't shine light."},
 	{"kicker": "11:47 PM", "name": "Run", "sub": "Whatever you do — don't let him touch you."},
+]
+
+# R5: retrospective typewriter narration under each chapter card (spec §2.6).
+const NARR := [
+	"Looking back, the storm was already inside the house before I ever locked the door.",
+	"Every chore felt normal. That is what I keep coming back to. It all felt normal.",
+	"The lasagna was good. The news was bad. I should have left during the commercials.",
+	"He knew my name before I ever said it. I still do not know how.",
+	"Darkness has a sound. It is the sound of your own house, deciding.",
+	"Under the bed, I counted his footsteps. I lost count at eleven.",
+	"Three ways out. I only remember choosing one.",
 ]
 
 var audio
@@ -350,7 +362,7 @@ func goto_chapter(n: int) -> void:
 	script_token += 1
 	chapter = n
 	var c: Dictionary = CHAPTERS[n]
-	ui.chapter_card(String(c["kicker"]), "Chapter %d: %s" % [n, String(c["name"])], String(c["sub"]))
+	ui.chapter_card(String(c["kicker"]), "Chapter %d: %s" % [n, String(c["name"])], String(c["sub"]), NARR[clampi(n, 0, NARR.size() - 1)])
 	objectives = []
 	match n:
 		0:
@@ -558,6 +570,7 @@ func _knock_sequence() -> void:
 	await tree.create_timer(1.6, false).timeout
 	if t != script_token:
 		return
+	audio.scare_duck() # R5: half a beat of wrong silence before the knock
 	audio.knock_at(Vector3(0, 1.5, 5.5), "soft3")
 	enemy.call("perch", WorldScript.PERCHES["porch"])
 	stranger_out = true
@@ -731,6 +744,7 @@ func _ch5_seq() -> void:
 	await tree.create_timer(2.5, false).timeout
 	if t != script_token:
 		return
+	audio.scare_duck()
 	audio.glass_at(Vector3(1.5, 1.5, -5.5))
 	sub("GLASS. From the back of the house. The master window — the one that never locked.", 6.0)
 	toast("🪟 Something broke the back window")
@@ -1031,6 +1045,9 @@ func _vinyl() -> void:
 	if not world.power:
 		sub("The turntable sits silent. No power. The record waits.", 4.0)
 		return
+	if not bool(flags.get("adapter", false)): # R5: the egg is a HUNT now
+		sub("The record needs a 45 adapter. Martin would stash one with the dress clothes...", 5.0)
+		return
 	if bool(flags.get("vinyl_played", false)):
 		sub("Side B. Still funky. Still nobody here to moonwalk for.", 3.0)
 		return
@@ -1225,6 +1242,13 @@ func on_room(room: String) -> void:
 	if room == "yard" and chapter == 6 and not bool(flags.get("dread_e6", false)):
 		flags["dread_e6"] = true
 		world.spawn_glimpse(Vector3(8.0, 0, 11.5), 0.4)
+	if room == "garage" and not bool(flags.get("garage_seen", false)):
+		flags["garage_seen"] = true
+		sub("The Millers' garage. Oil, old rain, and a car that hasn't moved in weeks.", 5.0)
+	if room == "backyard" and chapter >= 5 and not bool(flags.get("dread_yard", false)):
+		flags["dread_yard"] = true
+		world.spawn_glimpse(Vector3(-9.0, 0, -10.5), 0.5)
+		sub("Between the shed slats — was that a face? No. Boards and shadow. Boards and shadow.", 6.0)
 
 
 func flicker(room: String, dur: float) -> void:
@@ -1239,6 +1263,7 @@ func closet_found() -> void:
 		return
 	flags["closet_doom"] = true
 	var t := script_token
+	audio.scare_duck()
 	audio.sting()
 	ui.flash()
 	sub("He stops. Turns. Walks straight toward your closet —", 2.5)
@@ -1254,6 +1279,7 @@ func closet_found() -> void:
 
 func on_spotted() -> void:
 	spotted += 1
+	audio.scare_duck()
 	audio.sting()
 	ui.flash()
 	sub("HE SEES YOU. R U N .", 3.0)
@@ -1486,6 +1512,7 @@ func finish(id: String, custom := "") -> void:
 	player.set("frozen", true)
 	audio.set_heart(false)
 	audio.set_stalk(false)
+	audio.set_subbass(false)
 	audio.set_tv(false)
 	audio.set_drone(false)
 	tick_on = false
@@ -1621,6 +1648,8 @@ func register(inter) -> void:
 	_door_def(inter, "master", 1.5, -1.5, "master bedroom door")
 	_door_def(inter, "bath", 5.2, -1.5, "bathroom door")
 	_door_def(inter, "laundry", 7.25, -1.5, "laundry door")
+	_door_def(inter, "garage", 8.0, -0.5, "garage door")
+	_door_def(inter, "shed", -9.5, -10.0, "shed door")
 	inter.add({"id": "cams", "area": inter.halo(Vector3(-3.5, 1.1, -1.1), 0.7),
 		"prompt": func(_c): return "Check security cameras",
 		"on_use": func(_c): cam_show()})
@@ -1706,6 +1735,7 @@ func register(inter) -> void:
 	_switch_def(inter, "sw_master", "master", Vector3(2.1, 1.35, -1.3), "master bedroom")
 	_switch_def(inter, "sw_bath", "bath", Vector3(4.6, 1.35, -1.3), "bathroom")
 	_switch_def(inter, "sw_laundry", "laundry", Vector3(6.67, 1.35, -1.3), "laundry")
+	_switch_def(inter, "sw_garage", "garage", Vector3(7.85, 1.35, 0.2), "garage")
 	inter.add({"id": "shower", "area": inter.halo(Vector3(4.6, 1.2, -4.5), 0.9),
 		"prompt": func(_c): return "Take a quick shower" if chapter >= 1 and not bool(flags.get("showered", false)) else "",
 		"hold": func(_c): return 2.5 if chapter >= 1 and not bool(flags.get("showered", false)) else 0.0,
@@ -1730,11 +1760,15 @@ func register(inter) -> void:
 	inter.add({"id": "vinyl", "area": inter.halo(Vector3(-7.45, 1.25, 2.5), 0.6),
 		"prompt": func(_c): return "Drop the needle (\"MIDNIGHT — the 1982 pressing\")",
 		"on_use": func(_c): _vinyl()})
+	inter.add({"id": "adapter", "area": inter.halo(Vector3(3.2, 1.0, -2.0), 0.8),
+		"prompt": func(_c): return "Search the wardrobe boxes" if not bool(flags.get("adapter", false)) else "",
+		"on_use": func(_c): _take_adapter()})
 	pet_def = {"id": "petcat", "area": inter.halo(Vector3(5.6, 0.45, 4.4), 0.7),
 		"prompt": func(_c): return "Pet Biscuit" if not bool(flags.get("in_market", false)) else "",
-		"on_use": func(_c): cat.pet()}
+		"on_use": func(_c): _pet_cat()}
 	inter.add(pet_def)
 	_note_def(inter, "grocery", Vector3(6.55, 1.45, 0.55), "grocery_note")
+	_note_def(inter, "shed", Vector3(-9.4, 0.8, -11.4))
 
 
 func _feed_biscuit() -> void:
@@ -1874,6 +1908,25 @@ func _drawer_use() -> void:
 		sub("Taped under the drawer: a brass key. \"MASTER — DO NOT.\" ...Sorry, Dana.", 5.0)
 	else:
 		sub("Dead pens. Soy sauce packets. A Size D battery. Nope.", 3.0)
+
+
+func _take_adapter() -> void:
+	flags["adapter"] = true
+	audio.pickup()
+	choices.append("Found the 45 adapter in the master wardrobe")
+	sub("Buried in wool coats: a glittery 45 adapter. The record shelf suddenly matters.", 5.0)
+
+
+func _pet_cat() -> void:
+	# R5: the Cat Whisperer egg — five REAL pets (cooldown-gated, not spam).
+	if float(cat.get("pet_cool")) <= 0.0:
+		flags["pets"] = int(flags.get("pets", 0)) + 1
+		if int(flags["pets"]) >= 5:
+			_egg_found("catwhisper", "Cat Whisperer")
+			sub("Biscuit headbutts your hand, hard, then stares at the front door. The fur on his spine stands up.", 6.0)
+		elif int(flags["pets"]) == 3:
+			toast("🐈 Biscuit is starting to trust you. (%d/5)" % int(flags["pets"]))
+	cat.pet()
 
 
 func _take_flash() -> void:

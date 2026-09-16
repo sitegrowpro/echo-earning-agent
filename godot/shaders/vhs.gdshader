@@ -5,13 +5,13 @@ shader_type canvas_item;
 // renders clean on top while the 3D view gets the camcorder treatment.
 // `dread` (0..1) is driven by gameplay: calm 0.15 -> chores 0.55 -> chase 1.0.
 uniform sampler2D screen_texture : hint_screen_texture, repeat_disable, filter_linear;
-uniform float scan_strength : hint_range(0.0, 0.5) = 0.14;
-uniform float grain_amount : hint_range(0.0, 0.3) = 0.06;
-uniform float vignette_strength : hint_range(0.0, 1.0) = 0.38;
+uniform float scan_strength : hint_range(0.0, 0.5) = 0.25;
+uniform float grain_amount : hint_range(0.0, 0.3) = 0.07;
+uniform float vignette_strength : hint_range(0.0, 1.0) = 0.6;
 uniform float track_strength : hint_range(0.0, 1.0) = 0.6;
 uniform float dread : hint_range(0.0, 1.0) = 0.3;
 uniform float barrel : hint_range(0.0, 0.3) = 0.10;
-uniform float chroma : hint_range(0.0, 6.0) = 2.2;
+uniform float chroma : hint_range(0.0, 6.0) = 2.8;
 
 float hash(vec2 p) {
 	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);

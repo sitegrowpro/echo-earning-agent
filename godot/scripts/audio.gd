@@ -26,6 +26,12 @@ var vol := 0.8
 var pool3d_muf: Array[AudioStreamPlayer3D] = [] # R4: occluded (through-wall) voices
 var voice_player: AudioStreamPlayer
 var stalk_player: AudioStreamPlayer
+var sub_player: AudioStreamPlayer
+var glass_player: AudioStreamPlayer
+var night_player: AudioStreamPlayer
+var fridge_player: AudioStreamPlayer3D
+var rain_on := false
+var duck_t := 0.0
 var caption_cb := Callable() # R4: closed captions, wired by main
 var listener: Node3D
 var occlude_excludes: Array = []
@@ -92,6 +98,15 @@ func _ready() -> void:
 	voice_player.bus = "Voice"
 	add_child(voice_player)
 	stalk_player = _loop_player("SFX")
+	sub_player = _loop_player("SFX")
+	glass_player = _loop_player("SFX")
+	night_player = _loop_player("SFX")
+	fridge_player = AudioStreamPlayer3D.new()
+	fridge_player.bus = "SFX"
+	fridge_player.position = Vector3(7.0, 1.2, 1.0)
+	fridge_player.unit_size = 5.0
+	fridge_player.max_distance = 12.0
+	add_child(fridge_player)
 	_build_bank()
 	set_vol(vol)
 	set_mix(1.0, 1.0, 1.0)
@@ -118,10 +133,9 @@ func set_mix(m: float, s: float, v: float) -> void:
 
 
 func set_dread_mix(d: float) -> void:
-	# R4: the score breathes with danger — beds down while safe, leans in
-	# as dread rises. Calibrated so 0.3 (roam) matches the old -17 dB bed.
+	# R5: score stays minimal while safe (spec: silence-first), leans in on dread.
 	if music_player and music_player.playing:
-		music_player.volume_db = clampf(music_db + lerpf(-20.0, -9.0, clampf(d, 0.0, 1.0)), -48.0, 3.0)
+		music_player.volume_db = clampf(music_db + lerpf(-26.0, -10.0, clampf(d, 0.0, 1.0)), -48.0, 3.0)
 		music_player.pitch_scale = 0.96 + 0.08 * clampf(d, 0.0, 1.0)
 
 
@@ -138,6 +152,60 @@ func set_stalk(on: bool, level := 0.0) -> void:
 func cue(t: String) -> void:
 	if caption_cb.is_valid():
 		caption_cb.call(t)
+
+
+func set_subbass(on: bool) -> void:
+	# R5: 30-60 Hz threat weight — felt on headphones/subs, per spec.
+	if on and bank.has("subbass_loop"):
+		if not sub_player.playing:
+			sub_player.stream = bank["subbass_loop"]
+			sub_player.volume_db = -12.0
+			sub_player.play()
+	elif sub_player:
+		sub_player.stop()
+
+
+func set_glass_rain(indoor: bool) -> void:
+	var want: bool = indoor and rain_on and rain_player.playing
+	if want and bank.has("glassrain_loop"):
+		if not glass_player.playing:
+			glass_player.stream = bank["glassrain_loop"]
+			glass_player.volume_db = -24.0
+			glass_player.play()
+	elif glass_player:
+		glass_player.stop()
+
+
+func set_wind(outdoor: bool) -> void:
+	if outdoor and bank.has("night_loop"):
+		if not night_player.playing:
+			night_player.stream = bank["night_loop"]
+			night_player.volume_db = -26.0
+			night_player.play()
+	elif night_player:
+		night_player.stop()
+
+
+func scare_duck() -> void:
+	# R5: the spec's "wrong silence" — everything drops out half a beat
+	# before the scare lands. Restored automatically in _process.
+	if duck_t > 0.0:
+		return
+	duck_t = 0.55
+	_apply_duck(-28.0)
+
+
+func _apply_duck(db: float) -> void:
+	for b in ["Music", "SFX", "Voice", "Muffled"]:
+		var bn: String = b
+		AudioServer.set_bus_volume_db(AudioServer.get_bus_index(bn), db)
+
+
+func _restore_mix() -> void:
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Music"), music_db)
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("SFX"), sfx_db)
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Voice"), voice_db)
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Muffled"), sfx_db - 4.0)
 
 
 # ---------- synthesis helpers ----------
@@ -483,6 +551,31 @@ func _build_bank() -> void:
 		var br := 0.5 + 0.5 * sin(TAU * t / 4.0)
 		b[i] *= 0.3 + 0.7 * br * br
 	bank["stalk_loop"] = _loop_wav(b)
+	# R5: sub-bass threat weight (spec §3: 30-60 Hz, threat-only).
+	b = _empty(8.0)
+	_put_tone(b, 41.0, 0.5, "sine", 0.0, 8.0, 0.0, 0.0)
+	_put_tone(b, 47.0, 0.4, "sine", 0.0, 8.0, 0.0, 0.0)
+	_put_tone(b, 55.0, 0.25, "sine", 0.0, 8.0, 0.0, 0.0)
+	for i in b.size():
+		var t := float(i) / rate
+		b[i] *= 0.5 + 0.5 * (0.5 + 0.5 * sin(TAU * t / 8.0))
+	bank["subbass_loop"] = _loop_wav(b)
+	# R5: rain-on-glass patter (near-window indoor layer) + night wind bed.
+	b = _empty(6.0)
+	_put_noise(b, 0.22, 0.0, 6.0, 2600.0, true, 0.0)
+	_put_noise(b, 0.1, 0.0, 6.0, 800.0, false, 0.0)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	for d in 26:
+		var at := rng.randf() * 6.0
+		_put_tone(b, rng.randf_range(1400.0, 3200.0), 0.05, "sine", at, 0.06, 0.0, 30.0)
+	bank["glassrain_loop"] = _loop_wav(b)
+	b = _empty(12.0)
+	_put_noise(b, 0.14, 0.0, 12.0, 300.0, false, 0.0)
+	for i in b.size():
+		var t := float(i) / rate
+		b[i] *= 0.6 + 0.4 * sin(TAU * t / 12.0 + 1.0) * sin(TAU * t / 5.0)
+	bank["night_loop"] = _loop_wav(b)
 
 
 func _mj_groove() -> PackedFloat32Array:
@@ -567,7 +660,13 @@ func _occluded(pos: Vector3) -> bool:
 
 
 func _process(delta: float) -> void:
-	if tv_player.playing: # R4: the TV muffles through walls, live
+	if duck_t > 0.0:
+		duck_t -= delta
+		if duck_t <= 0.0:
+			_restore_mix()
+	if fridge_player.playing:
+		fridge_player.bus = "Muffled" if _occluded(fridge_player.global_position) else "SFX"
+	if tv_player.playing: # R5: the TV muffles through walls, live
 		tv_player.bus = "Muffled" if _occluded(tv_player.global_position) else "SFX"
 	if heart_on:
 		heart_t -= delta
@@ -586,6 +685,7 @@ func start_ambience() -> void:
 
 
 func start_rain() -> void:
+	rain_on = true
 	if not rain_player.playing:
 		rain_player.stream = bank["rain_loop"]
 		rain_player.volume_db = -19.0
@@ -602,6 +702,7 @@ func start_music() -> void:
 
 
 func stop_rain() -> void:
+	rain_on = false
 	rain_player.stop()
 
 
@@ -641,6 +742,13 @@ func set_hum(on: bool) -> void:
 		hum_player.play()
 	elif not on:
 		hum_player.stop()
+	# R5: the fridge is a PLACE now — hum swells as you near the kitchen.
+	if on and not fridge_player.playing:
+		fridge_player.stream = bank["hum_loop"]
+		fridge_player.volume_db = -10.0
+		fridge_player.play()
+	elif not on:
+		fridge_player.stop()
 
 
 func set_whisper(on: bool) -> void:

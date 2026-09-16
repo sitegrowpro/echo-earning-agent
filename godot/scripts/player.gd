@@ -22,7 +22,7 @@ var eye_cur := 1.62
 var bob_t := 0.0
 var step_t := 0.0
 var indoor := true
-var bounds_min := Vector2(-26.0, -7.6)
+var bounds_min := Vector2(-26.0, -14.5) # R5: fenced backyard
 var bounds_max := Vector2(26.0, 16.4)
 var fov_kick := 0.0
 var fov_target := 72.0 # roam fov_base / 52 talk-zoom (story.say drives it)
@@ -95,6 +95,10 @@ func surface_at() -> String:
 	match world.room_at(p.x, p.z):
 		"kitchen", "bath":
 			return "tile"
+		"backyard":
+			return "grass"
+		"garage":
+			return "conc"
 		"guest", "master":
 			return "carpet"
 		"laundry":

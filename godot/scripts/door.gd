@@ -7,6 +7,7 @@ const TEX := preload("res://scripts/tex.gd")
 
 var door_id := ""
 var swing := 1.92
+var base_ry := 0.0 # R5: doors on X-constant walls (garage) rest rotated
 var angle := 0.0
 var target := 0.0
 var is_open := false
@@ -65,7 +66,7 @@ func setup(p_id: String, w: float, p_swing: float, p_open: bool, p_locked: bool,
 	if is_open:
 		angle = swing
 		target = swing
-		rotation.y = swing
+		rotation.y = base_ry + swing
 		shape.set_deferred("disabled", true)
 
 
@@ -73,12 +74,12 @@ func _process(dt: float) -> void:
 	if absf(target - angle) < 0.002:
 		if angle != target:
 			angle = target
-			rotation.y = angle
+			rotation.y = base_ry + angle
 			shape.set_deferred("disabled", absf(angle) > 0.25)
 		return
 	# Exponential ease-out: the panel swings fast, then settles softly.
 	angle = lerpf(angle, target, minf(1.0, dt * 4.2))
-	rotation.y = angle
+	rotation.y = base_ry + angle
 	shape.set_deferred("disabled", absf(angle) > 0.25)
 
 
@@ -90,6 +91,6 @@ func toggle() -> void:
 func jiggle() -> void:
 	# Locked rattle: the knob turns, the panel shudders, nothing gives.
 	var tw := create_tween()
-	tw.tween_property(self, "rotation:y", 0.07, 0.06)
-	tw.tween_property(self, "rotation:y", -0.05, 0.08)
-	tw.tween_property(self, "rotation:y", angle, 0.09)
+	tw.tween_property(self, "rotation:y", base_ry + 0.07, 0.06)
+	tw.tween_property(self, "rotation:y", base_ry - 0.05, 0.08)
+	tw.tween_property(self, "rotation:y", base_ry + angle, 0.09)
