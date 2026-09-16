@@ -1304,6 +1304,11 @@ func on_room(room: String) -> void:
 	if room == "woods" and not bool(flags.get("woods_enter", false)):
 		flags["woods_enter"] = true
 		sub("Pine needles underfoot. The streetlights don't reach back here. Someone burnt candles at that cross — recently.", 6.0)
+	if room == "yard" and chapter == 6 and not bool(flags.get("yard_run", false)):
+		flags["yard_run"] = true
+		world.spawn_glimpse(Vector3(-8.0, 1.2, 12.0), 0.8)
+		audio.sting()
+		sub("Between the houses — standing — GONE. Don't stop. DON'T STOP.", 4.0)
 	# Dread director: the house gaslights you before he arrives. No cues, no
 	# explanations — you simply find things wrong.
 	if (room == "living" or room == "kitchen") and chapter == 1 and not bool(flags.get("dread_e1", false)):

@@ -15,6 +15,7 @@ const TILE_METERS := {
 	"wooddoor": 2.0, "shrub": 1.0, "grave": 2.0, "gravedirt": 1.0,
 	"pinefloor": 4.0, "bark": 1.5,
 	"block": 2.0, "cellar": 3.0,
+	"porch": 2.0, "lino": 2.0, "asphalt2": 4.0,
 }
 
 const PHOTO := {
@@ -26,6 +27,7 @@ const PHOTO := {
 	"wooddoor": "wooddoor", "shrub": "shrub", "grave": "grave", "gravedirt": "gravedirt",
 	"pinefloor": "pinefloor", "bark": "bark",
 	"block": "block", "cellar": "cellar",
+	"porch": "porch", "lino": "lino", "asphalt2": "asphalt2",
 }
 
 

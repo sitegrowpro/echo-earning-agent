@@ -1789,7 +1789,7 @@ func _outside() -> void:
 	var rm := PlaneMesh.new()
 	rm.size = Vector2(90, 3.4)
 	road.mesh = rm
-	road.material_override = TEX.mat_for("asphalt", Color(0.13, 0.13, 0.15), 1.0)
+	road.material_override = TEX.mat_for("asphalt2", Color(0.5, 0.5, 0.52), 1.0) # R6: cracked, patched, leaf-strewn
 	road.position = Vector3(0, 0.0, 15)
 	add_child(road)
 	_puddle(0, 10.5, 1.4, 2.2)
@@ -1859,6 +1859,17 @@ func _outside() -> void:
 	nwin.rotation.y = PI
 	add_child(nwin)
 	box(1.1, 2.1, 0.1, mat(Color(0.43, 0.18, 0.15), 0.7), Vector3(-18.2, 1.05, 7.25))
+	# R6: the neighbor's porch — the ending-A run ends on real boards.
+	var np := TEX.mat_for("porch", Color(0.6, 0.58, 0.52), 0.9)
+	box(5.0, 0.18, 2.0, np, Vector3(-17, 0.09, 6.2), 0.0, true)
+	var nramp := box(0.9, 0.06, 2.0, np, Vector3(-14.05, 0.05, 6.2), 0.0, true)
+	nramp.rotation.z = -0.27 # step up from the east, like the Millers' ramp
+	box(0.18, 3.0, 0.18, mat(Color(0.23, 0.18, 0.12), 0.9), Vector3(-19.3, 1.5, 5.4), 0.0, true)
+	box(0.18, 3.0, 0.18, mat(Color(0.23, 0.18, 0.12), 0.9), Vector3(-14.7, 1.5, 5.4), 0.0, true)
+	box(5.4, 0.15, 2.4, mat(Color(0.08, 0.08, 0.09), 1.0), Vector3(-17, 3.0, 6.2))
+	box(0.08, 0.9, 2.0, mat(Color(0.3, 0.24, 0.16), 0.9), Vector3(-19.4, 0.65, 6.2), 0.0, true)
+	box(5.0, 0.9, 0.08, mat(Color(0.3, 0.24, 0.16), 0.9), Vector3(-17, 0.65, 5.3), 0.0, true)
+	box(0.9, 0.03, 0.6, mat(Color(0.43, 0.23, 0.23), 1.0), Vector3(-18.2, 0.2, 6.9))
 	var nl := OmniLight3D.new()
 	nl.light_color = Color(1.0, 0.85, 0.63)
 	nl.light_energy = 3.5

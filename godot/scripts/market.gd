@@ -98,7 +98,7 @@ func build() -> void:
 	var fm := PlaneMesh.new()
 	fm.size = Vector2(X1 - X0, Z1 - Z0)
 	fl.mesh = fm
-	fl.material_override = TEX.mat_for("tile", Color(0.82, 0.83, 0.82), 0.35)
+	fl.material_override = TEX.mat_for("lino", Color(0.75, 0.72, 0.62), 0.4) # R6: scuffed checkerboard vinyl
 	fl.position = Vector3(MX, 0.01, 0)
 	add_child(fl)
 	var slab := StaticBody3D.new()
@@ -229,6 +229,13 @@ func _shelf(x: float, sign_text: String) -> void:
 				var w := 0.35 + float((ci * 7) % 3) * 0.1
 				box(w, 0.32, 0.7, mat(cols[ci % cols.size()], 0.7), Vector3(x + side * 0.62, lvl, z))
 				ci += 1
+	var shelf_art := TEX.art("shelf")
+	if shelf_art != null:
+		var em := StandardMaterial3D.new()
+		em.albedo_texture = shelf_art
+		em.roughness = 0.7
+		box(1.1, 1.5, 0.06, em, Vector3(x, 0.95, -6.54))
+		box(1.1, 1.5, 0.06, em, Vector3(x, 0.95, 4.54))
 	label3d(sign_text, Vector3(x, 2.6, -1.0), 56, Color(1.0, 0.85, 0.4))
 
 
