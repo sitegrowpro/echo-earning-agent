@@ -2,7 +2,7 @@
 [SHOT] saved /tmp/shot_01_menu.png err=0
 [SHOT] menu captured; starting new game
 [SHOT] card dismissed; front open; TV on; walking in
-[SHOT] walk-in final pos=(0.092628, 0.000122, 1.840938) verdict=WALKIN-OK
+[SHOT] walk-in final pos=(0.093441, -0.000293, 1.84146) verdict=WALKIN-OK
 [SHOT] saved /tmp/shot_02_spawn.png err=0
 [SHOT] stop 2 saved
 [SHOT] saved /tmp/shot_03_living.png err=0
