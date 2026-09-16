@@ -67,7 +67,8 @@ func _process(_delta: float) -> bool:
 			print("[SHOT] phone closed")
 		if stop_i == 8:
 			main.get("enemy").call("perch", {"x": 0.0, "z": 7.2, "face": 1.41})
-			print("[SHOT] Daniel perched for finale")
+			main.get("story").call("cam_show")
+			print("[SHOT] Daniel perched for finale; cams open")
 		# Teleport to THIS stop (captured next slot).
 		if stop_i < stops.size():
 			var s: Dictionary = stops[stop_i]

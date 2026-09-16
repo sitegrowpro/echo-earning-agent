@@ -76,6 +76,7 @@ func _ensure_input() -> void:
 		"phone_next": [81], "reply_1": [49], "reply_2": [50], "reply_3": [51],
 		"pause_game": [4194305], "mute_mic": [77],
 		"getup": [32], "throw_item": [71],
+		"cam_prev": [65], "cam_next": [68], "cam_night": [78],
 	}
 	for a in defs.keys():
 		if not InputMap.has_action(a):
@@ -160,6 +161,20 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.is_action_pressed("reply_3"):
 			ui.press_dialog(2)
 			return
+	if story.cam_open:
+		if event.is_action_pressed("interact") or event.is_action_pressed("phone"):
+			story.cam_close()
+			return
+		if event.is_action_pressed("cam_prev"):
+			ui.cam_cycle(-1)
+			return
+		if event.is_action_pressed("cam_next"):
+			ui.cam_cycle(1)
+			return
+		if event.is_action_pressed("cam_night"):
+			ui.cam_night_toggle()
+			return
+		return
 	if story.ui_busy():
 		return
 	if event.is_action_pressed("getup"):

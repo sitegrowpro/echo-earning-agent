@@ -48,6 +48,10 @@ var tv_glow: OmniLight3D
 var micro_light: OmniLight3D
 var alert_light: OmniLight3D
 var _alert_on := false
+var cams: Array = []
+var cam_labels: Array = []
+var cam_vp: SubViewport
+var cam_idx := 0
 var escape_win_body: StaticBody3D
 var rain_nodes: Array[CPUParticles3D] = []
 var env: Environment
@@ -471,6 +475,7 @@ func build() -> void:
 	_build_clock()
 	_light_rig()
 	_outside()
+	_build_cams()
 
 
 func _ground_collision() -> void:
@@ -1595,6 +1600,43 @@ func _make_rain(center: Vector3, extents: Vector3) -> void:
 func set_rain(on: bool) -> void:
 	for r in rain_nodes:
 		r.emitting = on
+
+
+func _build_cams() -> void:
+	cam_vp = SubViewport.new()
+	cam_vp.name = "CamVP"
+	cam_vp.size = Vector2i(960, 540)
+	cam_vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	cam_vp.handle_input_locally = false
+	add_child(cam_vp)
+	var defs := [
+		{"pos": Vector3(2.6, 2.7, 7.9), "look": Vector3(-0.3, 1.0, 6.2), "label": "CAM 01 · PORCH"},
+		{"pos": Vector3(-7.5, 2.5, 0.9), "look": Vector3(-2, 0.8, 3.3), "label": "CAM 02 · LIVING"},
+		{"pos": Vector3(-6.5, 3.2, 12.5), "look": Vector3(1.5, 1.0, 6.5), "label": "CAM 03 · STREET"},
+	]
+	for d in defs:
+		var c := Camera3D.new()
+		c.fov = 70.0
+		c.position = d["pos"]
+		cam_vp.add_child(c)
+		c.look_at(d["look"], Vector3.UP)
+		c.current = false
+		cams.append(c)
+		cam_labels.append(String(d["label"]))
+	cams[0].current = true
+	# Security monitor on the hall console (E to watch).
+	box(0.5, 0.32, 0.04, mat(Color(0.05, 0.05, 0.06), 0.4), Vector3(-3.5, 1.12, -1.28))
+	box(0.44, 0.26, 0.045, glow_mat(Color(0.2, 0.5, 0.3), 0.5), Vector3(-3.5, 1.12, -1.28))
+	_cyl(0.03, 0.05, 0.14, mat(Color(0.1, 0.1, 0.1), 0.6), Vector3(-3.5, 0.9, -1.28))
+
+
+func cam_cycle(dir: int) -> String:
+	if cams.is_empty():
+		return ""
+	cams[cam_idx].current = false
+	cam_idx = (cam_idx + dir + cams.size()) % cams.size()
+	cams[cam_idx].current = true
+	return String(cam_labels[cam_idx])
 
 
 func room_at(x: float, z: float) -> String:

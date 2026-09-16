@@ -88,6 +88,12 @@ var mic_status: Label
 var rec_label: Label
 var tc_label: Label
 var tc_sec := 0.0
+var cam_root: PanelContainer
+var cam_box: SubViewportContainer
+var cam_title: Label
+var cam_night_rect: ColorRect
+var cam_flash_rect: ColorRect
+var cam_night := false
 
 
 func setup(g, s, p) -> void:
@@ -184,6 +190,7 @@ func _build_all() -> void:
 	_build_note()
 	_build_peephole()
 	_build_call()
+	_build_cam()
 	_build_menu()
 	_build_pause()
 	_build_ending()
@@ -250,7 +257,7 @@ func _build_hud() -> void:
 	toast_wrap.anchor_right = 1.0
 	toast_wrap.offset_left = -372
 	toast_wrap.offset_right = -22
-	toast_wrap.offset_top = 20
+	toast_wrap.offset_top = 70
 	toast_wrap.offset_bottom = 400
 	toast_wrap.add_theme_constant_override("separation", 8)
 	hud.add_child(toast_wrap)
@@ -518,6 +525,101 @@ func _build_call() -> void:
 	add_child(call_root)
 
 
+func _build_cam() -> void:
+	cam_root = _panel(Color(0.01, 0.01, 0.02, 0.99))
+	cam_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	cam_root.visible = false
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 6)
+	var top := HBoxContainer.new()
+	cam_title = _label("MILLER SECURITY · CAM 01 · PORCH", 15, PAPER)
+	cam_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var rec := _label("● REC", 15, RED)
+	top.add_child(cam_title)
+	top.add_child(rec)
+	v.add_child(top)
+	cam_box = SubViewportContainer.new()
+	cam_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	cam_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cam_box.stretch = true
+	v.add_child(cam_box)
+	cam_night_rect = ColorRect.new()
+	cam_night_rect.color = Color(0.15, 0.85, 0.25, 0.22)
+	cam_night_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	cam_night_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cam_night_rect.visible = false
+	cam_flash_rect = ColorRect.new()
+	cam_flash_rect.color = Color(0.9, 0.9, 0.92, 1.0)
+	cam_flash_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	cam_flash_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cam_flash_rect.modulate.a = 0.0
+	var bot := HBoxContainer.new()
+	bot.alignment = BoxContainer.ALIGNMENT_CENTER
+	bot.add_theme_constant_override("separation", 12)
+	var prev := _button("[<] Prev", 14)
+	var next := _button("[>] Next", 14)
+	var night := _button("[N] Night mode", 14)
+	var exit := _button("[E] Exit", 14)
+	prev.pressed.connect(func(): cam_cycle(-1))
+	next.pressed.connect(func(): cam_cycle(1))
+	night.pressed.connect(func(): cam_night_toggle())
+	exit.pressed.connect(func(): game.story.cam_close())
+	bot.add_child(prev)
+	bot.add_child(next)
+	bot.add_child(night)
+	bot.add_child(exit)
+	v.add_child(bot)
+	var hint := _label("A/D switch · N night mode · E exit", 11, DIMC)
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(hint)
+	cam_root.add_child(v)
+	cam_root.add_child(cam_night_rect)
+	cam_root.add_child(cam_flash_rect)
+	add_child(cam_root)
+
+
+func cam_show() -> void:
+	var vp: SubViewport = game.world.get("cam_vp")
+	if vp != null:
+		if vp.get_parent() != null:
+			vp.get_parent().remove_child(vp)
+		cam_box.add_child(vp)
+		vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	cam_title.text = "MILLER SECURITY · " + String((game.world.get("cam_labels") as Array)[int(game.world.get("cam_idx"))])
+	cam_night = false
+	cam_night_rect.visible = false
+	cam_root.visible = true
+	game.update_mouse()
+
+
+func cam_close() -> void:
+	var vp: SubViewport = game.world.get("cam_vp")
+	if vp != null:
+		if vp.get_parent() != null:
+			vp.get_parent().remove_child(vp)
+		game.world.add_child(vp)
+		vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	cam_root.visible = false
+	game.update_mouse()
+
+
+func cam_cycle(dir: int) -> void:
+	game.audio.ui_click()
+	var label: String = game.world.cam_cycle(dir)
+	cam_title.text = "MILLER SECURITY · " + label + (" · NIGHT" if cam_night else "")
+	cam_flash_rect.modulate.a = 0.85
+	var tw := create_tween()
+	tw.tween_property(cam_flash_rect, "modulate:a", 0.0, 0.18)
+
+
+func cam_night_toggle() -> void:
+	game.audio.ui_click()
+	cam_night = not cam_night
+	cam_night_rect.visible = cam_night
+	var base: String = String((game.world.get("cam_labels") as Array)[int(game.world.get("cam_idx"))])
+	cam_title.text = "MILLER SECURITY · " + base + (" · NIGHT" if cam_night else "")
+
+
 func _build_menu() -> void:
 	menu_root = _panel(Color(0.02, 0.02, 0.03, 0.98))
 	menu_root.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -554,7 +656,7 @@ func _build_menu() -> void:
 	v.add_child(endings_count)
 	v.add_child(set_btn)
 	panel_how = VBoxContainer.new()
-	var how_text := _label("You are JAMIE, 17, housesitting for the Millers for one stormy night. Feed the cat. Heat the lasagna. Answer your texts. Then survive what knocks.\n\nWASD move · Mouse look · SHIFT sprint (loud!) · C crouch (quiet)\nE interact / hold E for long tasks · F flashlight · TAB phone\n\nRunning, doors and beeps make NOISE. When HE is inside, noise gets you found. Hide UNDER THE BED or in CLOSETS. Turn the flashlight OFF when hiding.\n\n🎙 MICROPHONE STEALTH (Settings): with a mic on, coughing or talking while hiding gets you HEARD. M mutes.\n\n🛒 Mid-shift you'll walk to FreshMart for groceries. Grab everything on Dana's list. Mind the two guys by the dairy case.\n\n🥚 2 hidden easter eggs. 🐈 Pet the cat. Trust the cat.\n\n4 endings. Your choices and noise matter. ~60 minutes.", 14)
+	var how_text := _label("You are JAMIE, 17, housesitting for the Millers for one stormy night. Feed the cat. Heat the lasagna. Answer your texts. Then survive what knocks.\n\nWASD move · Mouse look · SHIFT sprint (loud!) · C crouch (quiet)\nE interact / hold E for long tasks · F flashlight · TAB phone · security cameras on the hall monitor\n\nRunning, doors and beeps make NOISE. When HE is inside, noise gets you found. Hide UNDER THE BED or in CLOSETS. Turn the flashlight OFF when hiding.\n\n🎙 MICROPHONE STEALTH (Settings): with a mic on, coughing or talking while hiding gets you HEARD. M mutes.\n\n🛒 Mid-shift you'll walk to FreshMart for groceries. Grab everything on Dana's list. Mind the two guys by the dairy case.\n\n🥚 2 hidden easter eggs. 🐈 Pet the cat. Trust the cat.\n\n4 endings. Your choices and noise matter. ~60 minutes.", 14)
 	how_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	panel_how.add_child(_label("HOW TO PLAY", 13, RED))
 	panel_how.add_child(how_text)

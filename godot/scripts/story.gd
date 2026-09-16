@@ -63,6 +63,7 @@ var flicker_t := 0.0
 var flicker_room := ""
 var dialog_open := false
 var note_open := false
+var cam_open := false
 var peep_open := false
 var call_open := false
 var story_open := false
@@ -128,6 +129,7 @@ func reset_state() -> void:
 	flicker_room = ""
 	dialog_open = false
 	note_open = false
+	cam_open = false
 	peep_open = false
 	call_open = false
 	story_open = false
@@ -151,7 +153,7 @@ func reset_state() -> void:
 
 
 func ui_busy() -> bool:
-	return dialog_open or note_open or peep_open or call_open or story_open or finished
+	return dialog_open or note_open or peep_open or call_open or story_open or cam_open or finished
 
 
 # ---------- helpers ----------
@@ -230,6 +232,22 @@ func close_note() -> void:
 	player.set("frozen", false)
 	player.set("fov_target", 72.0)
 	ui.note_close()
+
+
+func cam_show() -> void:
+	cam_open = true
+	player.set("frozen", true)
+	audio.ui_click()
+	ui.cam_show()
+
+
+func cam_close() -> void:
+	if not cam_open:
+		return
+	cam_open = false
+	player.set("frozen", false)
+	audio.ui_click()
+	ui.cam_close()
 
 
 func close_story() -> void:
@@ -1541,6 +1559,9 @@ func register(inter) -> void:
 	_door_def(inter, "master", 1.5, -1.5, "master bedroom door")
 	_door_def(inter, "bath", 5.2, -1.5, "bathroom door")
 	_door_def(inter, "laundry", 7.25, -1.5, "laundry door")
+	inter.add({"id": "cams", "area": inter.halo(Vector3(-3.5, 1.1, -1.1), 0.7),
+		"prompt": func(_c): return "Check security cameras",
+		"on_use": func(_c): cam_show()})
 	inter.add({"id": "peephole", "area": inter.halo(Vector3(0, 1.6, 5.3), 0.4),
 		"prompt": func(c): return "Look through peephole" if (c["player"] as CharacterBody3D).global_position.z < 5.4 else "",
 		"on_use": func(_c): peep()})
