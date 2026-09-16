@@ -949,9 +949,18 @@ func _backyard() -> void:
 		var br := _cyl(0.05, 0.08, 1.6, mat(Color(0.2, 0.15, 0.1), 0.95), Vector3(-5.5, 2.9, -11.0))
 		br.rotation.z = 0.7
 		br.rotation.y = ba
-	_ball(0.7, mat(Color(0.08, 0.14, 0.08), 1.0), Vector3(-2.5, 0.5, -12.5))
-	_ball(0.55, mat(Color(0.07, 0.12, 0.07), 1.0), Vector3(5.5, 0.4, -12.0))
-	_ball(0.6, mat(Color(0.08, 0.13, 0.08), 1.0), Vector3(-11.0, 0.45, -8.0))
+	var shrub_m := TEX.mat_for("shrub", Color(0.55, 0.62, 0.55), 1.0) # R5b: real hedge
+	_ball(0.7, shrub_m, Vector3(-2.5, 0.5, -12.5))
+	_ball(0.55, shrub_m, Vector3(5.5, 0.4, -12.0))
+	_ball(0.6, shrub_m, Vector3(-11.0, 0.45, -8.0))
+	# R5b: the old family plot along the north fence — four leaning stones.
+	var grave_m := TEX.mat_for("grave", Color(0.72, 0.72, 0.74), 0.95)
+	var dirt_m := TEX.mat_for("gravedirt", Color(0.62, 0.57, 0.52), 1.0)
+	box(1.6, 0.06, 1.0, dirt_m, Vector3(-4.5, 0.03, -13.0))
+	for i in 4:
+		var st := box(0.5, 0.9, 0.12, grave_m, Vector3(-7.6 + float(i) * 0.9, 0.42, -13.4), 0.0, true)
+		st.rotation.z = 0.06 * float((i % 2) * 2 - 1)
+		st.rotation.x = -0.05
 	# String lights over the patio, wired to the porch switch.
 	box(0.06, 2.6, 0.06, fm, Vector3(-0.3, 1.3, -7.5), 0.0, true)
 	box(0.06, 2.6, 0.06, fm, Vector3(3.3, 1.3, -7.5), 0.0, true)
@@ -1004,6 +1013,7 @@ func _sheer(cx: float, z: float, w: float) -> void:
 	var m := StandardMaterial3D.new()
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	m.albedo_color = Color(0.88, 0.86, 0.8, 0.28)
+	m.albedo_texture = TEX.art("curtainlace") # R5b: sheers get real lace (null-safe)
 	m.cull_mode = BaseMaterial3D.CULL_DISABLED
 	m.roughness = 0.9
 	box(w * 0.46, 1.35, 0.02, m, Vector3(cx - w * 0.26, 1.6, z))
