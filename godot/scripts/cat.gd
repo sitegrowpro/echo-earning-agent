@@ -18,6 +18,8 @@ var pet_cool := 0.0
 var mesh_root: Node3D
 var tail: MeshInstance3D
 var head_mi: MeshInstance3D
+var legs: Array[Node3D] = []
+var walk_ph := 0.0
 var spots := [
 	Vector3(5.6, 0, 4.4), Vector3(3.0, 0, 2.2), Vector3(-1.5, 0, 3.2),
 	Vector3(-4.5, 0, 1.8), Vector3(-0.5, 0, -0.5), Vector3(4.6, 0, -0.5),
@@ -94,6 +96,21 @@ func _build_mesh() -> void:
 	tail.position = Vector3(0, 0.36, -0.24)
 	tail.rotation_degrees = Vector3(-24, 0, 0)
 	mesh_root.add_child(tail)
+	for lx in [-0.07, 0.07]:
+		for lz in [-0.14, 0.14]:
+			var hip := Node3D.new()
+			hip.position = Vector3(lx, 0.12, lz)
+			mesh_root.add_child(hip)
+			var leg := MeshInstance3D.new()
+			var lm := CylinderMesh.new()
+			lm.top_radius = 0.028
+			lm.bottom_radius = 0.032
+			lm.height = 0.13
+			leg.mesh = lm
+			leg.material_override = dark
+			leg.position = Vector3(0, -0.06, 0)
+			hip.add_child(leg)
+			legs.append(hip)
 
 
 func reset_run() -> void:
@@ -148,6 +165,12 @@ func update(dt: float) -> void:
 	# Idle tail sway + occasional meow.
 	if tail:
 		tail.rotation.z = sin(Time.get_ticks_msec() * 0.003) * 0.25
+	# R7d: diagonal-gait walk cycle — hips swing, the body rides along.
+	var moving := Vector2(goal.x - global_position.x, goal.z - global_position.z).length() > 0.3
+	walk_ph += dt * (9.0 if moving else 2.0)
+	for i in legs.size():
+		(legs[i] as Node3D).rotation.x = sin(walk_ph + float(i) * PI * 0.5) * (0.5 if moving else 0.03)
+	mesh_root.position.y = absf(sin(walk_ph)) * (0.02 if moving else 0.004)
 	meow_t -= dt
 	if meow_t <= 0.0:
 		meow_t = randf_range(22.0, 45.0)
