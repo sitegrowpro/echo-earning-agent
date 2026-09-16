@@ -55,7 +55,7 @@ func _ready() -> void:
 	_ensure_bus("SFX")
 	_ensure_bus("Voice")
 	_ensure_bus("Muffled")
-	var lp: AudioEffectLowPass = AudioEffectLowPass.new()
+	var lp: AudioEffectLowPassFilter = AudioEffectLowPassFilter.new()
 	lp.cutoff_hz = 550.0
 	AudioServer.add_bus_effect(AudioServer.get_bus_index("Muffled"), lp)
 	for i in 10:
