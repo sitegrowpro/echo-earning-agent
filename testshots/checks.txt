@@ -1,0 +1,16 @@
+OK: res://scripts/audio.gd
+OK: res://scripts/cat.gd
+OK: res://scripts/config.gd
+OK: res://scripts/door.gd
+OK: res://scripts/enemy.gd
+OK: res://scripts/interact.gd
+OK: res://scripts/main.gd
+OK: res://scripts/market.gd
+OK: res://scripts/mic.gd
+OK: res://scripts/phone.gd
+OK: res://scripts/player.gd
+OK: res://scripts/save.gd
+OK: res://scripts/story.gd
+OK: res://scripts/tex.gd
+OK: res://scripts/ui.gd
+OK: res://scripts/world.gd
