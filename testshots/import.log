@@ -100,8 +100,8 @@ SCRIPT ERROR: Parse Error: Cannot infer the type of "modal" variable because the
           at: GDScript::reload (res://scripts/main.gd:343)
 ERROR: Failed to load script "res://scripts/main.gd" with error "Parse error".
    at: load (modules/gdscript/gdscript_resource_format.cpp:46)
-SCRIPT ERROR: Parse Error: Unterminated string.
-          at: GDScript::reload (res://scripts/ui.gd:1529)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "act" variable because the value doesn't have a set type.
+          at: GDScript::reload (res://scripts/ui.gd:899)
 ERROR: Failed to load script "res://scripts/ui.gd" with error "Parse error".
    at: load (modules/gdscript/gdscript_resource_format.cpp:46)
 SCRIPT ERROR: Parse Error: Identifier "AudioEffectLowpass" not declared in the current scope.
