@@ -1219,6 +1219,9 @@ func on_room(room: String) -> void:
 	if room == "master" and chapter >= 5 and not bool(flags.get("master_enter", false)):
 		flags["master_enter"] = true
 		sub("The back window gapes open. Glass on the carpet. Curtains breathing in the wind.", 6.0)
+	if room == "woods" and not bool(flags.get("woods_enter", false)):
+		flags["woods_enter"] = true
+		sub("Pine needles underfoot. The streetlights don't reach back here. Someone burnt candles at that cross — recently.", 6.0)
 	# Dread director: the house gaslights you before he arrives. No cues, no
 	# explanations — you simply find things wrong.
 	if (room == "living" or room == "kitchen") and chapter == 1 and not bool(flags.get("dread_e1", false)):

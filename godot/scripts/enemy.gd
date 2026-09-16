@@ -221,6 +221,10 @@ func step_toward(tx: float, tz: float, speed: float, dt: float) -> bool:
 		var run := speed > 2.6
 		estep_t = 0.3 if run else 0.5
 		audio.step_at(global_position, run)
+	# R6: hard map containment — he can never leave the playable rect
+	# (void-falls used to soft-lock the hunt with no recovery).
+	global_position.x = clampf(global_position.x, -30.0, 30.0)
+	global_position.z = clampf(global_position.z, -38.0, 20.0)
 	return d < 0.4
 
 

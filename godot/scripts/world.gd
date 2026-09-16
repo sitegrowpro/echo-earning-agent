@@ -509,6 +509,7 @@ func build() -> void:
 	_liners()
 	_garage()
 	_backyard()
+	_woods()
 	_build_clock()
 	_light_rig()
 	_outside()
@@ -520,10 +521,10 @@ func _ground_collision() -> void:
 	var sb := StaticBody3D.new()
 	sb.collision_layer = 1
 	sb.collision_mask = 0
-	sb.position = Vector3(0, -0.25, 1.0)
+	sb.position = Vector3(0, -0.25, -7.0) # R6: slab now spans z -39..25 (woods)
 	var cs := CollisionShape3D.new()
 	var bs := BoxShape3D.new()
-	bs.size = Vector3(64, 0.5, 40) # R5: stretched north — the backyard needs ground too
+	bs.size = Vector3(64, 0.5, 64) # R6: stretched further north — the woods need ground too
 	cs.shape = bs
 	sb.add_child(cs)
 	add_child(sb)
@@ -905,7 +906,13 @@ func _backyard() -> void:
 	# escape B runs around the garage, and no fence exists for the AI to hug.
 	var fm := mat(Color(0.3, 0.24, 0.16), 0.9)
 	for px in [-11.0, -8.5, -6.0, -3.5, -1.0, 1.5, 4.0, 6.5, 9.0, 11.5]:
+		if px == 1.5: # R6: the broken gate — the woods are through here
+			continue
 		box(2.4, 1.8, 0.08, fm, Vector3(px, 0.9, -14.0), 0.0, true)
+	box(0.14, 2.0, 0.14, fm, Vector3(0.3, 1.0, -14.0), 0.0, true)
+	box(0.14, 2.0, 0.14, fm, Vector3(2.7, 1.0, -14.0), 0.0, true)
+	var gate := box(2.2, 1.6, 0.06, fm, Vector3(1.5, 0.75, -14.35))
+	gate.rotation.y = 0.5 # hanging open, dragging in the dirt
 	for pz in [-13.0, -10.5, -8.0, -5.5, -3.0, -0.5, 2.0, 4.5]:
 		box(0.08, 1.8, 2.4, fm, Vector3(-12.0, 0.9, pz), 0.0, true)
 	for pz in [-13.0, -10.5, -8.0, -5.5]:
@@ -981,6 +988,58 @@ func _backyard() -> void:
 	ml.omni_range = 20.0
 	ml.position = Vector3(0, 4.0, -10.0)
 	add_child(ml)
+
+
+func _pine(pos: Vector3, s: float, bark_m: Material, pine_m: Material) -> void:
+	_cyl(0.14 * s, 0.2 * s, 3.2 * s, bark_m, pos + Vector3(0, 1.6 * s, 0))
+	box(0.4 * s, 3.4 * s, 0.4 * s, bark_m, pos + Vector3(0, 1.7 * s, 0), 0.0, true)
+	_cone(0.08 * s, 1.5 * s, 2.6 * s, Color(0.05, 0.10, 0.07), pos + Vector3(0, 3.6 * s, 0))
+	_cone(0.06 * s, 1.1 * s, 2.0 * s, Color(0.04, 0.09, 0.06), pos + Vector3(0, 5.0 * s, 0))
+
+
+func _woods() -> void:
+	# R6: pine woods, x -13..14, z -14..-38. Same plane as the yard: the
+	# enemy hunts here unmodified (raycast sight blocked by trunks, movement
+	# slides around them). Player containment: trunk walls + hard blockers.
+	var gnd := MeshInstance3D.new()
+	var gm := PlaneMesh.new()
+	gm.size = Vector2(28, 25)
+	gnd.mesh = gm
+	gnd.material_override = TEX.mat_for("pinefloor", Color(0.5, 0.52, 0.45), 1.0)
+	gnd.position = Vector3(0.5, -0.01, -26.0)
+	add_child(gnd)
+	# Trampled trail: gate (1.5,-14) winding to the clearing (-2,-30).
+	var trail_m := TEX.mat_for("gravedirt", Color(0.55, 0.52, 0.47), 1.0)
+	for t in [Vector3(1.2, 0.005, -16.5), Vector3(0.4, 0.005, -19.5), Vector3(-0.6, 0.005, -22.5), Vector3(-1.4, 0.005, -25.5), Vector3(-2.0, 0.005, -28.5)]:
+		box(1.7, 0.03, 3.4, trail_m, t)
+	var bark_m := TEX.mat_for("bark", Color(0.6, 0.58, 0.55), 1.0)
+	var pine_m := mat(Color(0.05, 0.10, 0.07), 1.0)
+	for tp in [[-6.0, -17.0], [5.0, -16.0], [-10.0, -19.0], [9.0, -20.0], [-3.0, -18.5], [2.4, -20.0], [-8.0, -24.0], [7.0, -25.0], [-5.5, -27.5], [4.5, -29.0], [-9.5, -31.0], [6.0, -32.5], [-1.0, -33.5], [-11.0, -27.0], [10.5, -28.0], [-7.5, -21.5], [3.5, -22.0]]:
+		_pine(Vector3(tp[0], 0, tp[1]), 1.0, bark_m, pine_m)
+	# Perimeter: a trunk wall the player cannot pass.
+	for wx in range(-14, 16, 2):
+		_pine(Vector3(float(wx), 0, -38.0), 1.2, bark_m, pine_m)
+	for wz in range(-38, -13, 2):
+		_pine(Vector3(-13.5, 0, float(wz)), 1.2, bark_m, pine_m)
+	for wz2 in range(-38, -13, 2):
+		_pine(Vector3(14.0, 0, float(wz2)), 1.2, bark_m, pine_m)
+	blocker(-15.0, -40.0, 15.0, -38.5) # hard north stop behind the trunks
+	blocker(-15.5, -40.0, -14.0, -13.0) # hard west stop
+	blocker(14.5, -40.0, 16.0, -13.0) # hard east stop
+	# The clearing: a stump, a shrine cross, and burnt-out candles.
+	_cyl(0.32, 0.38, 0.5, bark_m, Vector3(-2.0, 0.25, -30.5))
+	box(0.12, 1.1, 0.12, bark_m, Vector3(-3.2, 0.55, -31.5), 0.0, true)
+	box(0.7, 0.12, 0.12, bark_m, Vector3(-3.2, 0.85, -31.5))
+	for i in 3:
+		var cx := -2.7 + float(i) * 0.22
+		_cyl(0.03, 0.03, 0.12, mat(Color(0.75, 0.7, 0.6), 0.7), Vector3(cx, 0.06, -31.1))
+		_ball(0.025, glow_mat(Color(1.0, 0.6, 0.25), 1.5), Vector3(cx, 0.15, -31.1))
+	var ml2: OmniLight3D = OmniLight3D.new()
+	ml2.light_color = Color(0.35, 0.45, 0.7)
+	ml2.light_energy = 0.5
+	ml2.omni_range = 18.0
+	ml2.position = Vector3(0, 4.0, -28.0)
+	add_child(ml2)
 
 
 func _curtain(cx: float, z: float, rod_y: float, w: float, panels: Array, short: bool, c: Color) -> void:
@@ -1886,6 +1945,7 @@ func _build_cams() -> void:
 		{"pos": Vector3(-2.6, 2.7, 7.7), "look": Vector3(0.3, 1.0, 6.2), "label": "CAM 01 · PORCH"},
 		{"pos": Vector3(-7.5, 2.5, 0.9), "look": Vector3(-2, 0.8, 3.3), "label": "CAM 02 · LIVING"},
 		{"pos": Vector3(-6.5, 3.2, 12.5), "look": Vector3(1.5, 1.0, 6.5), "label": "CAM 03 · STREET"},
+		{"pos": Vector3(2.5, 3.0, -26.0), "look": Vector3(-3.0, 0.8, -31.5), "label": "CAM 04 · WOODS"},
 	]
 	for d in defs:
 		var c := Camera3D.new()
@@ -1913,6 +1973,8 @@ func cam_cycle(dir: int) -> String:
 
 
 func room_at(x: float, z: float) -> String:
+	if z < -14.0:
+		return "woods" # R6: the pine woods behind the fence
 	if z < -5.5:
 		return "backyard"
 	if x > 8.0 and z >= -3.5:
@@ -1939,6 +2001,6 @@ func room_name(r: String) -> String:
 		"living": "LIVING ROOM", "kitchen": "KITCHEN", "hall": "HALLWAY",
 		"guest": "GUEST ROOM", "master": "MASTER BEDROOM", "bath": "BATHROOM",
 		"laundry": "LAUNDRY", "porch": "FRONT PORCH", "yard": "YARD", "street": "STREET",
-		"market": "FRESHMART", "garage": "GARAGE", "backyard": "BACKYARD",
+		"market": "FRESHMART", "garage": "GARAGE", "backyard": "BACKYARD", "woods": "THE WOODS",
 	}
 	return names.get(r, r.to_upper())

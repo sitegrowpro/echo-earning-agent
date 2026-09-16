@@ -329,7 +329,7 @@ func _physics_process(dt: float) -> void:
 		last_room = room
 		if not story.finished:
 			story.on_room(room)
-	player.indoor = room != "porch" and room != "yard" and room != "street" and room != "backyard"
+	player.indoor = room != "porch" and room != "yard" and room != "street" and room != "backyard" and room != "woods"
 	world.set_slabs_outside(not player.indoor)
 	# R4: rain follows shelter — full storm outside, muffled patter inside.
 	if bool(story.flags.get("in_market", false)):
@@ -472,7 +472,7 @@ func _reset_run() -> void:
 	mic.reset_run()
 	market.reset_run()
 	cat.reset_run()
-	player.bounds_min = Vector2(-26.0, -14.5) # R5: the fence, not the void
+	player.bounds_min = Vector2(-26.0, -38.5) # R6: the woods fence, not the void
 	player.bounds_max = Vector2(26.0, 16.4)
 	world.escape_win_body.get_child(0).set_deferred("disabled", false)
 	for id in world.doors.keys():

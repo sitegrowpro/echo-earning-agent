@@ -95,7 +95,7 @@ func surface_at() -> String:
 	match world.room_at(p.x, p.z):
 		"kitchen", "bath":
 			return "tile"
-		"backyard":
+		"backyard", "woods":
 			return "grass"
 		"garage":
 			return "conc"
