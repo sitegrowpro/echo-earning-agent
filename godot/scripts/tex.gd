@@ -98,7 +98,7 @@ static func _photo(kind: String) -> ImageTexture:
 			avg += img.get_pixel(x, y).r
 	avg /= 16384.0
 	if avg > 0.01:
-		img.adjust_bcs(0.9 / avg, 1.0, 1.0)
+		img.adjust_bcs(0.9 / avg, 1.0, 0.0)
 	return ImageTexture.create_from_image(_tileable(img))
 
 

@@ -310,6 +310,11 @@ func _process(dt: float) -> void:
 	if power:
 		for f in fan_hubs:
 			f.rotate_y(dt * 2.8)
+	if tv_on and tv_glow != null and tv_glow.visible:
+		var ms := float(Time.get_ticks_msec())
+		var n := sin(ms * 0.02) * 0.5 + sin(ms * 0.043 + 1.7) * 0.3 + sin(ms * 0.11 + 0.4) * 0.2
+		tv_glow.light_energy = 1.2 + n * 0.55
+		tv_screen_mat.emission_energy_multiplier = 1.6 + n * 0.6
 	if door_seep.is_empty():
 		return
 	# Signature-gated: recompute strip energies only when light/door state changes.
@@ -1132,6 +1137,74 @@ func _omni(room: String, color: Color, energy: float, dist: float, pos: Vector3,
 	room_light(room, l)
 
 
+func _cone(top_r: float, bot_r: float, h: float, c: Color, pos: Vector3) -> void:
+	var mi := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = top_r
+	cm.bottom_radius = bot_r
+	cm.height = h
+	mi.mesh = cm
+	var m := StandardMaterial3D.new()
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.albedo_color = c
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mi.material_override = m
+	mi.position = pos
+	add_child(mi)
+
+
+func _shaft(w: float, y: float, z: float, tilt: float, cx: float) -> void:
+	var m := StandardMaterial3D.new()
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.albedo_color = Color(0.56, 0.66, 1.0, 0.10)
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var sh := box(w, 0.05, 2.6, m, Vector3(cx, y, z))
+	sh.rotation.x = tilt
+	var pm := StandardMaterial3D.new()
+	pm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	pm.albedo_color = Color(0.5, 0.62, 1.0, 0.14)
+	pm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	box(w * 0.85, 0.012, 1.5, pm, Vector3(cx, 0.025, z - 1.05))
+
+
+func _dust(center: Vector3, extents: Vector3, n: int) -> void:
+	var p := CPUParticles3D.new()
+	p.amount = n
+	p.lifetime = 7.0
+	p.preprocess = 7.0
+	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	p.emission_box_extents = extents
+	p.direction = Vector3(0, -1, 0)
+	p.spread = 20.0
+	p.initial_velocity_min = 0.02
+	p.initial_velocity_max = 0.08
+	p.gravity = Vector3.ZERO
+	var dot := SphereMesh.new()
+	dot.radius = 0.008
+	dot.height = 0.016
+	var dm := StandardMaterial3D.new()
+	dm.albedo_color = Color(1.0, 0.95, 0.85, 0.5)
+	dm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	dm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	dm.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	dot.material = dm
+	p.mesh = dot
+	p.position = center
+	add_child(p)
+
+
+func _puddle(x: float, z: float, w: float, d: float) -> void:
+	var f := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(w, d)
+	f.mesh = pm
+	f.material_override = mat(Color(0.04, 0.06, 0.11), 0.05, 0.7)
+	f.position = Vector3(x, 0.012, z)
+	add_child(f)
+
+
 func _build_clock() -> void:
 	# Round wall clock; the second hand steps once per audible tick (story calls
 	# clock_tick in sync with the sound) and freezes forever when the clock dies.
@@ -1243,6 +1316,24 @@ func _light_rig() -> void:
 	add_child(bulb)
 	box(0.07, 0.07, 1.2, mat(Color(0.16, 0.14, 0.12), 0.6), Vector3(1.3, 2.95, 5.95))
 	box(0.06, 0.28, 0.06, mat(Color(0.16, 0.14, 0.12), 0.6), Vector3(1.3, 2.82, 6.5))
+	_cone(0.15, 1.1, 1.6, Color(1.0, 0.95, 0.85, 0.07), Vector3(4, 1.5, 3))
+	_cone(0.12, 1.3, 2.4, Color(1.0, 0.85, 0.63, 0.08), Vector3(1.3, 1.6, 6.5))
+	_cone(0.12, 0.9, 1.4, Color(1.0, 0.85, 0.63, 0.07), Vector3(-4.5, 1.5, -3.5))
+	_cone(0.1, 1.0, 1.6, Color(1.0, 0.85, 0.63, 0.06), Vector3(-4, 1.6, 3))
+	_shaft(1.7, 0.9, 4.2, -0.45, -4.5)
+	_shaft(1.7, 1.0, 4.5, -0.5, 4.5)
+	_dust(Vector3(-4.5, 1.2, 4.0), Vector3(0.9, 0.8, 1.2), 30)
+	_dust(Vector3(4, 1.5, 3), Vector3(1.0, 0.7, 1.0), 24)
+	_dust(Vector3(0, 1.4, -0.5), Vector3(2.0, 0.8, 0.5), 20)
+	_dust(Vector3(1.3, 1.5, 6.5), Vector3(0.8, 0.8, 0.8), 20)
+	var moonspot := SpotLight3D.new()
+	moonspot.light_color = Color(0.56, 0.66, 1.0)
+	moonspot.light_energy = 1.2
+	moonspot.spot_range = 8.0
+	moonspot.spot_angle = 30.0
+	moonspot.position = Vector3(-4.5, 2.2, 5.8)
+	moonspot.rotation.x = -0.67
+	add_child(moonspot)
 
 
 func _outside() -> void:
@@ -1267,6 +1358,10 @@ func _outside() -> void:
 	road.material_override = TEX.mat_for("asphalt", Color(0.13, 0.13, 0.15), 1.0)
 	road.position = Vector3(0, 0.0, 15)
 	add_child(road)
+	_puddle(0, 10.5, 1.4, 2.2)
+	_puddle(-3.5, 13.5, 2.2, 1.4)
+	_puddle(4.5, 14.5, 2.6, 1.6)
+	_puddle(-6, 9.0, 1.8, 1.2)
 	var deck := TEX.mat_for("deck", Color(0.38, 0.29, 0.22), 0.9)
 	box(6.4, 0.18, 2.6, deck, Vector3(0, 0.09, 6.8), 0.0, true)
 	box(0.18, 3.0, 0.18, mat(Color(0.23, 0.18, 0.12), 0.9), Vector3(-2.9, 1.5, 7.9), 0.0, true)
