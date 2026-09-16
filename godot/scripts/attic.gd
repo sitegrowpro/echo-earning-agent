@@ -76,6 +76,7 @@ func label3d(text: String, pos: Vector3, size := 64, color := Color.WHITE) -> vo
 	l.font_size = size
 	l.modulate = color
 	l.pixel_size = 0.004
+	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	l.position = pos
 	add_child(l)
 

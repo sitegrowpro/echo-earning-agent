@@ -487,7 +487,7 @@ func _build_bank() -> void:
 	bank["mj"] = _wav(b)
 	# loops
 	b = _empty(2.0)
-	_put_noise(b, 0.5, 0.0, 2.0, 220.0, false, 0.0)
+	_put_noise(b, 0.22, 0.0, 2.0, 110.0, false, 0.0) # R7: room tone, not hiss
 	_put_tone(b, 59.0, 0.06, "sine", 0.0, 2.0, 0.0, 0.0)
 	bank["room_loop"] = _loop_wav(b)
 	b = _empty(6.0) # R6: rain is low rumble + slow swell now, not white hiss
@@ -702,7 +702,7 @@ func _process(delta: float) -> void:
 func start_ambience() -> void:
 	if not room_player.playing:
 		room_player.stream = bank["room_loop"]
-		room_player.volume_db = -14.0
+		room_player.volume_db = -17.0
 		room_player.play()
 
 

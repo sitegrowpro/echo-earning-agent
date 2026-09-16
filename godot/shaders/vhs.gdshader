@@ -5,13 +5,14 @@ shader_type canvas_item;
 // renders clean on top while the 3D view gets the camcorder treatment.
 // `dread` (0..1) is driven by gameplay: calm 0.15 -> chores 0.55 -> chase 1.0.
 uniform sampler2D screen_texture : hint_screen_texture, repeat_disable, filter_linear;
-uniform float scan_strength : hint_range(0.0, 0.5) = 0.25;
-uniform float grain_amount : hint_range(0.0, 0.3) = 0.07;
+uniform float scan_strength : hint_range(0.0, 0.5) = 0.12;
+uniform float grain_amount : hint_range(0.0, 0.3) = 0.045;
 uniform float vignette_strength : hint_range(0.0, 1.0) = 0.6;
-uniform float track_strength : hint_range(0.0, 1.0) = 0.6;
+uniform float track_strength : hint_range(0.0, 1.0) = 0.35;
 uniform float dread : hint_range(0.0, 1.0) = 0.3;
-uniform float barrel : hint_range(0.0, 0.3) = 0.10;
-uniform float chroma : hint_range(0.0, 6.0) = 2.8;
+uniform float barrel : hint_range(0.0, 0.3) = 0.08;
+uniform float chroma : hint_range(0.0, 6.0) = 2.0;
+uniform float grade : hint_range(-1.0, 1.0) = 0.25; // -1 cold cellar .. +1 warm tungsten
 
 float hash(vec2 p) {
 	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
@@ -52,6 +53,8 @@ void fragment() {
 	// Slight VHS desaturation.
 	float luma = dot(col, vec3(0.299, 0.587, 0.114));
 	col = mix(col, vec3(luma), 0.12);
+	// R7: retro grade — warm tungsten upstairs, cold blue-gray below.
+	col *= mix(vec3(0.94, 0.99, 1.08), vec3(1.06, 1.0, 0.9), clampf(grade * 0.5 + 0.5, 0.0, 1.0));
 	// Vignette closing in with dread + lamp flicker.
 	float vig = smoothstep(1.02 - dread * 0.15, 0.36, length(cc));
 	col *= mix(1.0, vig, vignette_strength);

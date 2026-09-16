@@ -547,7 +547,7 @@ func _build_env() -> void:
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_energy = 0.4
+	env.ambient_light_energy = 0.32
 	# Filmic + bloom: lamps, TV and windows bleed like a camcorder at night.
 	env.tonemap_mode = Environment.TONE_MAPPER_ACES
 	env.tonemap_exposure = 1.15
@@ -556,6 +556,9 @@ func _build_env() -> void:
 	env.glow_strength = 1.1
 	env.glow_bloom = 0.15
 	env.ssao_enabled = true
+	env.ssr_enabled = true
+	env.volumetric_fog_enabled = true
+	env.volumetric_fog_density = 0.05
 	env.fog_enabled = true
 	env.fog_mode = Environment.FOG_MODE_EXPONENTIAL
 	env.fog_density = 0.012
@@ -567,6 +570,7 @@ func _build_env() -> void:
 	moon.light_color = Color(0.56, 0.66, 1.0)
 	moon.light_energy = 0.5
 	moon.shadow_enabled = true
+	moon.shadow_blur = 2.0
 	moon.rotation_degrees = Vector3(-50, -30, 0)
 	add_child(moon)
 	_ground_collision()
@@ -1755,12 +1759,8 @@ func _light_rig() -> void:
 	_cone(0.12, 1.3, 2.4, Color(1.0, 0.85, 0.63, 0.08), Vector3(1.3, 1.6, 6.5))
 	_cone(0.12, 0.9, 1.4, Color(1.0, 0.85, 0.63, 0.07), Vector3(-4.5, 1.5, -3.5))
 	_cone(0.1, 1.0, 1.6, Color(1.0, 0.85, 0.63, 0.06), Vector3(-4, 1.6, 3))
-	_shaft(1.7, 0.9, 4.2, -0.45, -4.5)
-	_shaft(1.7, 1.0, 4.5, -0.5, 4.5)
-	_dust(Vector3(-4.5, 1.2, 4.0), Vector3(0.9, 0.8, 1.2), 30)
-	_dust(Vector3(4, 1.5, 3), Vector3(1.0, 0.7, 1.0), 24)
-	_dust(Vector3(0, 1.4, -0.5), Vector3(2.0, 0.8, 0.5), 20)
-	_dust(Vector3(1.3, 1.5, 6.5), Vector3(0.8, 0.8, 0.8), 20)
+	# R7: blue moon-shaft sheets removed — they read as floating plastic.
+	# R7: dust motes removed — they read as dust ON the lens, not in the air.
 	var moonspot := SpotLight3D.new()
 	moonspot.light_color = Color(0.56, 0.66, 1.0)
 	moonspot.light_energy = 1.2
@@ -1811,6 +1811,10 @@ func _outside() -> void:
 	box(6.8, 0.15, 3.0, mat(Color(0.08, 0.08, 0.09), 1.0), Vector3(0, 3.05, 6.8))
 	var step_ramp := box(6.4, 0.06, 0.75, deck, Vector3(0, 0.09, 8.42), 0.0, true)
 	step_ramp.rotation.x = 0.27
+	# R7: threshold ramp INSIDE the doorway — the 0.18 deck lip was an
+	# invisible wall trapping players indoors (no auto-step in Godot 4).
+	var th := box(1.0, 0.05, 0.7, deck, Vector3(0, 0.09, 5.15), 0.0, true)
+	th.rotation.x = -0.25
 	box(1.6, 0.03, 1.0, mat(Color(0.43, 0.23, 0.23), 1.0), Vector3(0, 0.2, 6.1))
 	box(0.12, 1.1, 0.12, mat(Color(0.23, 0.18, 0.12), 0.9), Vector3(2.2, 0.55, 9.0), 0.0, true)
 	box(0.55, 0.3, 0.35, mat(Color(0.18, 0.29, 0.48), 0.6), Vector3(2.2, 1.2, 9.0))

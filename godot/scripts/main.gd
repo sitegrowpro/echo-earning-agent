@@ -6,6 +6,7 @@ const Phone := preload("res://scripts/phone.gd")
 const Interact := preload("res://scripts/interact.gd")
 const Save := preload("res://scripts/save.gd")
 const Mic := preload("res://scripts/mic.gd")
+const Disturb := preload("res://scripts/disturb.gd")
 const Market := preload("res://scripts/market.gd")
 const Cellar := preload("res://scripts/cellar.gd")
 const Attic := preload("res://scripts/attic.gd")
@@ -19,11 +20,16 @@ const Cat := preload("res://scripts/cat.gd")
 @onready var camera = $Player/Camera3D
 @onready var flash = $Player/Camera3D/Flashlight
 @onready var ray = $Player/Camera3D/InteractRay
+var _flash_pyaw := 0.0
+var _flash_rx := 0.0
+var _flash_ry := 0.0
+var _flash_init := false
 
 var story
 var phone
 var interact
 var mic
+var disturb
 var market
 var cellar
 var attic
@@ -66,6 +72,8 @@ func _ready() -> void:
 	add_child(cat)
 	mic = Mic.new()
 	mic.setup(get_tree())
+	disturb = Disturb.new()
+	disturb.setup(world, enemy)
 	player.audio = audio
 	player.world = world
 	enemy.audio = audio
@@ -358,12 +366,30 @@ func _physics_process(dt: float) -> void:
 	var res := ""
 	if not modal and not story.finished:
 		res = enemy.update_enemy(dt, player, story)
+		disturb.update(dt, player, story)
 	if res == "caught" and not story.finished:
 		ui.jumpscare(Callable(story, "finish").bind("D", "He was faster. He is always faster."))
 	var target_e := 8.0 if story.flash_is_on else 0.0
 	if story.flash_is_on and float(story.items.get("battery", 100.0)) < 20.0 and randf() < 0.08:
 		target_e = 1.0
 	flash.light_energy += (target_e - flash.light_energy) * minf(1.0, dt * 10.0)
+	# R7: the flashlight is a hand, not a tripod — idle sway plus lag that
+	# trails behind fast head-turns and catches up a split second later.
+	var pyaw := float(player.get("yaw"))
+	if not _flash_init:
+		_flash_pyaw = pyaw
+		_flash_init = true
+	var yaw_v := (pyaw - _flash_pyaw) / maxf(dt, 0.001)
+	_flash_pyaw = pyaw
+	var sw := float(Time.get_ticks_msec()) * 0.001
+	var moving := Vector2(player.velocity.x, player.velocity.z).length() > 0.6
+	var sway_a := 0.035 if moving else 0.012
+	var t_rx := sin(sw * 1.9) * sway_a + (sin(sw * 5.3) * 0.02 if moving else 0.0)
+	var t_ry := cos(sw * 1.4) * sway_a - clampf(yaw_v * 0.03, -0.2, 0.2)
+	_flash_rx = lerpf(_flash_rx, t_rx, minf(1.0, dt * 5.0))
+	_flash_ry = lerpf(_flash_ry, t_ry, minf(1.0, dt * 5.0))
+	flash.rotation.x = _flash_rx
+	flash.rotation.y = _flash_ry
 	if story.chapter == 6 and not story.finished and room == "street":
 		story.finish("B")
 	ui.set_meters(player.stamina, player.noise, float(story.items.get("battery", 100.0)), bool(story.items.get("flash", false)))
@@ -384,10 +410,14 @@ func _physics_process(dt: float) -> void:
 	elif bool(story.flags.get("in_market", false)):
 		dread = 0.15
 	ui.set_dread(dread)
+	ui.set_grade(-0.7 if bool(story.flags.get("in_cellar", false)) else 0.25)
 	audio.set_dread_mix(dread)
 	audio.set_subbass(est2 == "chase" and not story.finished)
 	world.set_alert(est2 == "chase" and not story.finished)
 	ui.set_mic(mic.enabled and mic.available and not story.finished, mic.level, mic.loud, String(player.get("hidden")) != "")
+	# R7: the mic is real stealth now — cough while hiding and HE comes to look.
+	if mic.loud and not story.finished and not modal:
+		enemy.call("hear_at", player.global_position)
 	ui.set_hide_overlay(String(player.get("hidden")))
 	var cur: Dictionary = interact.update(dt)
 	if not cur.is_empty():
@@ -546,6 +576,7 @@ func _reset_run() -> void:
 	world.reset_dread_props()
 	audio.mj_stop()
 	mic.reset_run()
+	disturb.reset_run()
 	market.reset_run()
 	cat.reset_run()
 	player.bounds_min = Vector2(-26.0, -38.5) # R6: the woods fence, not the void
