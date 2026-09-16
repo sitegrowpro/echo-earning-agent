@@ -1,8 +1,12 @@
 [SHOT] main instanced
 [SHOT] saved /tmp/shot_01_menu.png err=0
-[SHOT] menu captured; starting new game
+[SHOT] menu captured; starting WITH intro (regression: menu must hide)
+[SHOT] intro menu-hidden verdict=MENU-OK
+[SHOT] saved /tmp/shot_00_intro.png err=0
+[SHOT] intro card captured; simulating Continue-during-intro
+[SHOT] intro buried verdict=INTRO-OK
 [SHOT] card dismissed; front open; TV on; walking in
-[SHOT] walk-in final pos=(0.093441, -0.000293, 1.84146) verdict=WALKIN-OK
+[SHOT] walk-in final pos=(0.093458, 0.000088, 1.840926) verdict=WALKIN-OK
 [SHOT] saved /tmp/shot_02_spawn.png err=0
 [SHOT] stop 2 saved
 [SHOT] saved /tmp/shot_03_living.png err=0
