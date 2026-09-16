@@ -85,6 +85,9 @@ var mic_panel: PanelContainer
 var mic_bar: ProgressBar
 var mic_label: Label
 var mic_status: Label
+var rec_label: Label
+var tc_label: Label
+var tc_sec := 0.0
 
 
 func setup(g, s, p) -> void:
@@ -326,6 +329,27 @@ func _build_hud() -> void:
 	ch_card.visible = false
 	ch_card.modulate.a = 0.0
 	hud.add_child(ch_card)
+	rec_label = _label("● REC", 16, RED)
+	rec_label.anchor_left = 1.0
+	rec_label.anchor_right = 1.0
+	rec_label.offset_left = -150
+	rec_label.offset_top = 18
+	rec_label.offset_right = -22
+	rec_label.offset_bottom = 40
+	rec_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	hud.add_child(rec_label)
+	tc_label = _label("SP 0:00:00", 13, Color(0.87, 0.9, 0.93))
+	tc_label.anchor_left = 1.0
+	tc_label.anchor_right = 1.0
+	tc_label.offset_left = -150
+	tc_label.offset_top = 40
+	tc_label.offset_right = -22
+	tc_label.offset_bottom = 60
+	tc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	hud.add_child(tc_label)
+	var date_label := _label("SEP 14 · FALL 2024", 12, DIMC)
+	date_label.position = Vector2(22, 44)
+	hud.add_child(date_label)
 
 
 func _build_phone() -> void:
@@ -710,6 +734,11 @@ func _process(_dt: float) -> void:
 		scare_label.position = Vector2(randf_range(-14, 14), randf_range(-10, 10))
 	if mic_status and panel_settings.visible and game and game.mic:
 		mic_status.text = game.mic.status_text()
+	if hud != null and hud.visible:
+		tc_sec += _dt
+		var tt := int(tc_sec)
+		tc_label.text = "SP %d:%02d:%02d" % [tt / 3600, (tt / 60) % 60, tt % 60]
+		rec_label.modulate.a = 0.35 + 0.65 * (0.5 + 0.5 * sin(tc_sec * 4.0))
 
 
 # ---------- story API ----------
@@ -758,15 +787,18 @@ func objectives(list: Array) -> void:
 
 
 func chapter_card(kicker: String, card_name: String, sub: String) -> void:
-	ch_kicker.text = kicker
-	ch_name.text = card_name
+	ch_kicker.text = "▶ TRACKING"
+	ch_name.text = "···"
 	ch_sub.text = sub
 	ch_card.visible = true
-	ch_card.modulate.a = 0.0
+	ch_card.modulate.a = 1.0
 	if ch_tween and ch_tween.is_valid():
 		ch_tween.kill()
 	ch_tween = create_tween()
-	ch_tween.tween_property(ch_card, "modulate:a", 1.0, 0.8)
+	ch_tween.tween_interval(0.55)
+	ch_tween.tween_callback(func():
+		ch_kicker.text = kicker
+		ch_name.text = card_name)
 	ch_tween.tween_interval(2.0)
 	ch_tween.tween_property(ch_card, "modulate:a", 0.0, 0.9)
 	ch_tween.tween_callback(func(): ch_card.visible = false)
@@ -1021,27 +1053,40 @@ func render_phone() -> void:
 		return
 	for c in msg_vbox.get_children():
 		c.queue_free()
+	var who := "Dana"
+	if String(phone.get("active")) == "priya":
+		who = "Priya"
+	elif String(phone.get("active")) == "unknown":
+		who = "???"
 	for m in ((phone.get("threads") as Dictionary)[String(phone.get("active"))] as Array):
 		var d: Dictionary = m
-		var l := _label("", 14)
-		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		l.custom_minimum_size = Vector2(250, 0)
-		if bool(d.get("me", false)):
-			l.text = "You: " + String(d["text"])
-			l.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-			l.add_theme_color_override("font_color", Color(0.62, 0.78, 1.0))
-		elif bool(d.get("sys", false)):
-			l.text = String(d["text"])
-			l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			l.add_theme_color_override("font_color", DIMC)
+		if bool(d.get("sys", false)):
+			var s := _label(String(d["text"]), 12, DIMC)
+			s.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			s.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			msg_vbox.add_child(s)
+			continue
+		var me := bool(d.get("me", false))
+		var nm := _label("You" if me else who, 10, Color(0.62, 0.78, 1.0) if me else DIMC)
+		nm.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT if me else HORIZONTAL_ALIGNMENT_LEFT
+		msg_vbox.add_child(nm)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 0)
+		var bub := PanelContainer.new()
+		bub.add_theme_stylebox_override("panel", _style(Color(0.15, 0.32, 0.62, 0.95) if me else Color(0.17, 0.17, 0.2, 0.95), Color(0, 0, 0, 0), 0, 10))
+		var bl := _label(String(d["text"]), 14, PAPER)
+		bl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		bl.custom_minimum_size = Vector2(200, 0)
+		bub.add_child(bl)
+		var sp := Control.new()
+		sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		if me:
+			row.add_child(sp)
+			row.add_child(bub)
 		else:
-			var who := "Dana"
-			if String(phone.get("active")) == "priya":
-				who = "Priya"
-			elif String(phone.get("active")) == "unknown":
-				who = "???"
-			l.text = who + ": " + String(d["text"])
-		msg_vbox.add_child(l)
+			row.add_child(bub)
+			row.add_child(sp)
+		msg_vbox.add_child(row)
 	render_phone_badges()
 	await get_tree().process_frame
 	if is_instance_valid(msg_scroll):
@@ -1081,6 +1126,7 @@ func show_hud() -> void:
 	ending_root.visible = false
 	pause_root.visible = false
 	hud.visible = true
+	tc_sec = 0.0
 	fade_rect.modulate.a = 0.0
 	game.update_mouse()
 

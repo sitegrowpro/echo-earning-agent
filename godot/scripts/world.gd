@@ -46,6 +46,8 @@ var tv_on := false
 var tv_screen_mat: StandardMaterial3D
 var tv_glow: OmniLight3D
 var micro_light: OmniLight3D
+var alert_light: OmniLight3D
+var _alert_on := false
 var escape_win_body: StaticBody3D
 var rain_nodes: Array[CPUParticles3D] = []
 var env: Environment
@@ -310,6 +312,8 @@ func _process(dt: float) -> void:
 	if power:
 		for f in fan_hubs:
 			f.rotate_y(dt * 2.8)
+	if _alert_on and alert_light != null:
+		alert_light.light_energy = 2.2 + 1.6 * (0.5 + 0.5 * sin(float(Time.get_ticks_msec()) * 0.012))
 	if tv_on and tv_glow != null and tv_glow.visible:
 		var ms := float(Time.get_ticks_msec())
 		var n := sin(ms * 0.02) * 0.5 + sin(ms * 0.043 + 1.7) * 0.3 + sin(ms * 0.11 + 0.4) * 0.2
@@ -347,6 +351,14 @@ func set_tv(on: bool) -> void:
 		tv_screen_mat.emission_energy_multiplier = 1.6 if on else 0.02
 	if tv_glow:
 		tv_glow.visible = on and power
+
+
+func set_alert(on: bool) -> void:
+	if on == _alert_on:
+		return
+	_alert_on = on
+	if alert_light != null:
+		alert_light.visible = on
 
 
 func set_market_mood(inside: bool) -> void:
@@ -803,7 +815,19 @@ func _blind_v(x: float, cz: float, w: float, s: float) -> void:
 	box(0.1, 0.16, w + 0.25, mat(Color(0.6, 0.58, 0.52), 0.7), Vector3(x + s * 0.04, 2.3, cz))
 
 
+func _sheer(cx: float, z: float, w: float) -> void:
+	var m := StandardMaterial3D.new()
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.albedo_color = Color(0.88, 0.86, 0.8, 0.28)
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	m.roughness = 0.9
+	box(w * 0.46, 1.35, 0.02, m, Vector3(cx - w * 0.26, 1.6, z))
+	box(w * 0.46, 1.35, 0.02, m, Vector3(cx + w * 0.26, 1.6, z))
+
+
 func _window_dressing() -> void:
+	_sheer(-4.5, 5.38, 1.9)
+	_sheer(4.5, 5.38, 1.9)
 	_curtain(-4.5, 5.32, 2.42, 1.9, [-5.7, -3.3], false, Color(0.45, 0.16, 0.14))
 	_curtain(4.5, 5.32, 2.42, 1.9, [3.3, 5.7], false, Color(0.5, 0.44, 0.3))
 	_curtain(-5.5, -5.32, 2.37, 1.5, [-6.5, -4.5], true, Color(0.2, 0.26, 0.4))
@@ -1352,6 +1376,7 @@ func spawn_glimpse(pos: Vector3, dur := 0.3) -> void:
 
 
 func reset_dread_props() -> void:
+	set_alert(false)
 	if not porch_on:
 		porch_on = true
 		apply_lights()
@@ -1408,6 +1433,13 @@ func _light_rig() -> void:
 	moonspot.position = Vector3(-4.5, 2.2, 5.8)
 	moonspot.rotation.x = -0.67
 	add_child(moonspot)
+	alert_light = OmniLight3D.new()
+	alert_light.light_color = Color(1.0, 0.08, 0.1)
+	alert_light.light_energy = 3.0
+	alert_light.omni_range = 12.0
+	alert_light.position = Vector3(0, 2.4, -0.5)
+	alert_light.visible = false
+	add_child(alert_light)
 
 
 func _outside() -> void:

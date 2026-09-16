@@ -228,6 +228,7 @@ func _physics_process(dt: float) -> void:
 	elif bool(story.flags.get("in_market", false)):
 		dread = 0.15
 	ui.set_dread(dread)
+	world.set_alert(est2 == "chase" and not story.finished)
 	ui.set_mic(mic.enabled and mic.available and not story.finished, mic.level, mic.loud, String(player.get("hidden")) != "")
 	var cur: Dictionary = interact.update(dt)
 	if not cur.is_empty():
