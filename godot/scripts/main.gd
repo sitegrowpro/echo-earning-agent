@@ -499,6 +499,9 @@ func _reset_run() -> void:
 
 
 func _start(fresh: bool) -> void:
+	intro_on = false # R4.1: _start is terminal — the intro can never survive it
+	intro_t = 0.0
+	ui.show_intro(false)
 	audio.ui_click()
 	audio.start_ambience()
 	audio.start_rain()

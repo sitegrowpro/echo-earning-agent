@@ -37,10 +37,18 @@ func _process(_delta: float) -> bool:
 	if stage == 0 and frames >= 60:
 		stage = 1
 		_shot("/tmp/shot_01_menu.png")
-		print("[SHOT] menu captured; starting new game")
-		main.call("start_new", true)
-	elif stage == 1 and frames >= 140:
+		print("[SHOT] menu captured; starting WITH intro (regression: menu must hide)")
+		main.call("start_new")
+	elif stage == 1 and frames >= 150:
 		stage = 2
+		var ui = main.get("ui")
+		print("[SHOT] intro menu-hidden verdict=", "MENU-OK" if not (ui.get("menu_root") as Control).visible else "MENU-FAIL")
+		_shot("/tmp/shot_00_intro.png")
+		print("[SHOT] intro card captured; simulating Continue-during-intro")
+		main.call("_start", true)
+		print("[SHOT] intro buried verdict=", "INTRO-OK" if not (ui.get("intro_root") as Control).visible and String(main.get("state")) == "playing" else "INTRO-FAIL")
+	elif stage == 2 and frames >= 230:
+		stage = 3
 		stop_i = -1
 		main.call("story_click")
 		main.get("story").call("toggle_door", "front")
@@ -48,13 +56,13 @@ func _process(_delta: float) -> bool:
 		main.get("story").call("_tv_use")
 		Input.action_press("move_forward")
 		print("[SHOT] card dismissed; front open; TV on; walking in")
-	elif stage == 2 and frames >= 180:
-		stage = 3
+	elif stage == 3 and frames >= 270:
+		stage = 4
 		Input.action_release("move_forward")
 		var pp: Vector3 = (main.get("player") as Node3D).global_position
 		print("[SHOT] walk-in final pos=", pp, " verdict=", "WALKIN-OK" if pp.z < 5.0 else "WALKIN-FAIL")
 		main.get("player").set("frozen", true)
-	elif stage == 3 and frames >= 260 + (stop_i + 1) * 35:
+	elif stage == 4 and frames >= 350 + (stop_i + 1) * 35:
 		stop_i += 1
 		# Capture the PREVIOUS stop: its teleport has had a full slot to render.
 		if stop_i >= 1 and stop_i - 1 < stops.size():

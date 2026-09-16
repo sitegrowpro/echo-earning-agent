@@ -730,6 +730,7 @@ func _build_intro() -> void:
 func show_intro(on: bool) -> void:
 	intro_root.visible = on
 	if on:
+		menu_root.visible = false # R4.1: the menu stayed up over the intro — clicks leaked through
 		intro_kick.text = ""
 		intro_name.text = ""
 		intro_sub.text = ""
@@ -1462,6 +1463,7 @@ func _on_reply(i: int) -> void:
 # ---------- screens ----------
 func hide_modals() -> void:
 	# R4: one call buries every modal panel (quit-to-menu, endings, new runs).
+	intro_root.visible = false # R4.1: the intro is modal too — nothing may outlive show_hud
 	dialog_panel.visible = false
 	call_root.visible = false
 	note_root.visible = false
