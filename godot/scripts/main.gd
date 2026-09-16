@@ -236,7 +236,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		ui.toast("🎙 Mic MUTED — hiding uses movement noise only." if m else "🎙 Mic LIVE — stay quiet when hiding.")
 		return
 	if event.is_action_pressed("phone") and not story.ui_busy():
-		audio.ui_click()
 		phone.toggle()
 		return
 	if phone.visible:
@@ -566,8 +565,12 @@ func _start(fresh: bool) -> void:
 		var s := Save.load_game()
 		if s.is_empty():
 			story.new_game()
+			player.set("frozen", false)
 		else:
 			story.load_data(s)
+			player.set("frozen", false)
+			player.set("hidden", "")
+			player.set("sitting", false)
 			if bool(story.flags.get("master_open", false)):
 				(world.doors["master"]).set("locked", false)
 			if story.chapter == 4 and not story.is_done("fuse"):

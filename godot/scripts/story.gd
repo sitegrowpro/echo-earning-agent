@@ -306,6 +306,8 @@ func cam_close() -> void:
 func close_story() -> void:
 	story_open = false
 	ui.close_story()
+	if not (dialog_open or note_open or peep_open or call_open or cam_open):
+		player.set("frozen", false)
 
 
 func clock_str() -> String:
@@ -1468,7 +1470,6 @@ func toggle_flash() -> void:
 		toast("🔦 Battery dead — find batteries (kitchen drawer).")
 		return
 	items["flash_on"] = not bool(items.get("flash_on", false))
-	audio.ui_click()
 	if bool(items.get("flash_on", false)) and String(player.get("hidden")) != "":
 		toast("⚠️ Light ON while hiding = he WILL see you. Press F to kill it.")
 

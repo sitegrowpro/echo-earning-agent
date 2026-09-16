@@ -675,7 +675,6 @@ func cam_close() -> void:
 
 
 func cam_cycle(dir: int) -> void:
-	game.audio.ui_click()
 	var label: String = game.world.cam_cycle(dir)
 	cam_title.text = "MILLER SECURITY · " + label + (" · NIGHT" if cam_night else "")
 	if not bool(game.settings.get("photosafe", false)):

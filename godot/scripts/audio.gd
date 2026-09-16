@@ -488,12 +488,12 @@ func _build_bank() -> void:
 	_put_noise(b, 0.5, 0.0, 2.0, 220.0, false, 0.0)
 	_put_tone(b, 59.0, 0.06, "sine", 0.0, 2.0, 0.0, 0.0)
 	bank["room_loop"] = _loop_wav(b)
-	b = _empty(4.0)
-	_put_noise(b, 0.16, 0.0, 4.0, 900.0, false, 0.0)
-	_put_noise(b, 0.1, 0.0, 4.0, 320.0, false, 0.0)
+	b = _empty(6.0) # R6: rain is low rumble + slow swell now, not white hiss
+	_put_noise(b, 0.10, 0.0, 6.0, 480.0, false, 0.0)
+	_put_noise(b, 0.07, 0.0, 6.0, 220.0, false, 0.0)
 	for i in b.size():
 		var t := float(i) / rate
-		b[i] *= 0.7 + 0.3 * sin(TAU * t / 2.1 + 0.4) * sin(TAU * t / 3.7)
+		b[i] *= 0.7 + 0.3 * sin(TAU * t / 3.1 + 0.4) * sin(TAU * t / 5.3)
 	bank["rain_loop"] = _loop_wav(b)
 	b = _empty(16.0)
 	var prog := [
@@ -562,13 +562,13 @@ func _build_bank() -> void:
 	bank["subbass_loop"] = _loop_wav(b)
 	# R5: rain-on-glass patter (near-window indoor layer) + night wind bed.
 	b = _empty(6.0)
-	_put_noise(b, 0.22, 0.0, 6.0, 2600.0, true, 0.0)
-	_put_noise(b, 0.1, 0.0, 6.0, 800.0, false, 0.0)
+	_put_noise(b, 0.13, 0.0, 6.0, 1700.0, true, 0.0)
+	_put_noise(b, 0.07, 0.0, 6.0, 600.0, false, 0.0)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	for d in 26:
+	for d in 16:
 		var at := rng.randf() * 6.0
-		_put_tone(b, rng.randf_range(1400.0, 3200.0), 0.05, "sine", at, 0.06, 0.0, 30.0)
+		_put_tone(b, rng.randf_range(1200.0, 2400.0), 0.035, "sine", at, 0.06, 0.0, 30.0)
 	bank["glassrain_loop"] = _loop_wav(b)
 	b = _empty(12.0)
 	_put_noise(b, 0.14, 0.0, 12.0, 300.0, false, 0.0)
@@ -708,7 +708,7 @@ func stop_rain() -> void:
 
 func set_rain_level(x: float, muffle := false) -> void:
 	if rain_player.playing:
-		rain_player.volume_db = lerpf(-40.0, -19.0, clampf(x, 0.0, 1.0))
+		rain_player.volume_db = lerpf(-44.0, -24.0, clampf(x, 0.0, 1.0)) # R6: storms breathe, they don't scream
 		rain_player.bus = "Muffled" if muffle else "SFX"
 
 
