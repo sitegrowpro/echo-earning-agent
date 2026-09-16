@@ -25,7 +25,8 @@ var indoor := true
 var bounds_min := Vector2(-26.0, -7.6)
 var bounds_max := Vector2(26.0, 16.4)
 var fov_kick := 0.0
-var fov_target := 72.0 # 72 roam / 52 talk-zoom (story.say drives it)
+var fov_target := 72.0 # roam fov_base / 52 talk-zoom (story.say drives it)
+var fov_base := 72.0 # R4: user FOV setting (60-90, comfort/motion-sickness)
 var base_yaw := 0.0
 var base_pitch := 0.0
 
@@ -55,6 +56,7 @@ func look_at_spot(from_pos: Vector3, to_pos: Vector3) -> void:
 	# from_pos is an EYE position (web-style coords); feet stay on the floor.
 	global_position = Vector3(from_pos.x, 0.0, from_pos.z)
 	camera.position = Vector3(0, from_pos.y, 0)
+	eye_cur = from_pos.y # R4: was unsynced — hiding/sitting snapped the eye back a frame later
 	velocity = Vector3.ZERO
 	var d := to_pos - from_pos
 	yaw = atan2(-d.x, -d.z)
@@ -120,6 +122,16 @@ func _physics_process(dt: float) -> void:
 	if Input.is_action_just_pressed("crouch"):
 		crouch = not crouch
 		_apply_crouch_shape()
+	# R4: gamepad right-stick look (left stick moves via the move_* actions).
+	var jx := Input.get_joy_axis(0, JOY_AXIS_RIGHT_X)
+	var jy := Input.get_joy_axis(0, JOY_AXIS_RIGHT_Y)
+	if absf(jx) > 0.18 or absf(jy) > 0.18:
+		yaw -= jx * 2.6 * sens * dt
+		pitch = clampf(pitch - jy * 2.0 * sens * dt, -1.45, 1.45)
+		if hidden != "" or sitting:
+			yaw = clampf(yaw, base_yaw - 0.7, base_yaw + 0.7)
+			pitch = clampf(pitch, base_pitch - 0.45, base_pitch + 0.45)
+		_apply_look()
 	var ix := Input.get_axis("move_left", "move_right")
 	var iz := Input.get_axis("move_forward", "move_back")
 	moving = ix != 0.0 or iz != 0.0
@@ -163,7 +175,7 @@ func _physics_process(dt: float) -> void:
 			noise = minf(100.0, noise + n)
 	camera.position = Vector3(0, eye_cur + bob_y, 0)
 	fov_kick = lerpf(fov_kick, 6.0 if want_sprint else 0.0, minf(1.0, dt * 5.0))
-	var fov_now := minf(fov_target, 60.0 if Input.is_action_pressed("focus") else 72.0)
+	var fov_now := minf(fov_target, 60.0 if Input.is_action_pressed("focus") else fov_base)
 	camera.fov = lerpf(camera.fov, fov_now + fov_kick, minf(1.0, dt * 8.0))
 	noise = maxf(0.0, noise - CFG.NOISE_DECAY * dt * (0.4 if moving else 1.0))
 

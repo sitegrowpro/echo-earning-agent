@@ -33,6 +33,14 @@ var intro_t := 0.0
 var intro_on := false
 var menu_t := 0.0
 
+# R4: remappable keyboard controls (gamepad layout is fixed, see _pad_defaults).
+const DEFAULT_KEYS := {
+	"interact": [69], "flashlight": [70], "phone": [4194306],
+	"crouch": [67, 4194326], "sprint": [4194325], "mute_mic": [77], "throw_item": [71],
+}
+const REBINDABLE := ["interact", "flashlight", "phone", "crouch", "sprint", "mute_mic", "throw_item"]
+const REBIND_LABELS := {"interact": "Interact", "flashlight": "Flashlight", "phone": "Phone", "crouch": "Crouch", "sprint": "Sprint", "mute_mic": "Mute mic", "throw_item": "Throw distraction"}
+
 
 func _ready() -> void:
 	ui.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -64,6 +72,10 @@ func _ready() -> void:
 	story.register(interact)
 	story.I = interact
 	ui.setup(self, story, phone)
+	audio.caption_cb = Callable(ui, "caption")
+	audio.listener = player
+	audio.occlude_excludes = [player.get_rid(), enemy.get_rid()]
+	_apply_keys()
 	apply_settings()
 	ui.refresh_endings_list()
 	ui.refresh_continue()
@@ -96,6 +108,85 @@ func _ensure_input() -> void:
 		var mev := InputEventMouseButton.new()
 		mev.button_index = MOUSE_BUTTON_RIGHT
 		InputMap.action_add_event("focus", mev)
+	_pad_defaults()
+
+
+func _pad_defaults() -> void:
+	# R4: fixed gamepad layout. Left stick moves (motion events on move_*),
+	# right stick looks (player.gd polls it), Start pauses, D-pad + A drive
+	# focused menu/dialog buttons through the default ui_* actions.
+	var pads := {
+		"interact": [JOY_BUTTON_A], "flashlight": [JOY_BUTTON_X], "phone": [JOY_BUTTON_Y],
+		"sprint": [JOY_BUTTON_LEFT_STICK], "crouch": [JOY_BUTTON_RIGHT_STICK],
+		"pause_game": [JOY_BUTTON_START], "mute_mic": [JOY_BUTTON_BACK],
+		"throw_item": [JOY_BUTTON_RIGHT_SHOULDER], "getup": [JOY_BUTTON_B],
+	}
+	for a in pads.keys():
+		if not InputMap.has_action(a):
+			continue
+		var has_pad := false
+		for e in InputMap.action_get_events(a):
+			if e is InputEventJoypadButton or e is InputEventJoypadMotion:
+				has_pad = true
+		if has_pad:
+			continue
+		for b in (pads[a] as Array):
+			var ev := InputEventJoypadButton.new()
+			ev.button_index = b
+			InputMap.action_add_event(a, ev)
+	var sticks := {
+		"move_left": [JOY_AXIS_LEFT_X, -1.0], "move_right": [JOY_AXIS_LEFT_X, 1.0],
+		"move_forward": [JOY_AXIS_LEFT_Y, -1.0], "move_back": [JOY_AXIS_LEFT_Y, 1.0],
+	}
+	for a in sticks.keys():
+		var has_motion := false
+		for e in InputMap.action_get_events(a):
+			if e is InputEventJoypadMotion:
+				has_motion = true
+		if has_motion:
+			continue
+		var mv := InputEventJoypadMotion.new()
+		mv.axis = (sticks[a] as Array)[0]
+		mv.axis_value = (sticks[a] as Array)[1]
+		InputMap.action_add_event(a, mv)
+
+
+func _apply_keys() -> void:
+	# Rebuild key events for remappable actions: saved key if any, else default.
+	var saved: Dictionary = settings.get("keys", {})
+	for a in REBINDABLE:
+		if not InputMap.has_action(a):
+			continue
+		for e in InputMap.action_get_events(a):
+			if e is InputEventKey:
+				InputMap.action_erase_event(a, e)
+		var codes: Array = [int(saved[a])] if saved.has(a) else (DEFAULT_KEYS[a] as Array).duplicate()
+		for code in codes:
+			var ev := InputEventKey.new()
+			ev.device = -1
+			ev.physical_keycode = code
+			InputMap.action_add_event(a, ev)
+
+
+func rebind(action: String, code: int) -> void:
+	if not (action in REBINDABLE) or code == KEY_ESCAPE or code <= 0:
+		return
+	var keys: Dictionary = (settings.get("keys", {}) as Dictionary).duplicate()
+	for a in keys.keys(): # one key, one action: whoever had it falls back to default
+		if String(a) != action and int(keys[a]) == code:
+			keys.erase(a)
+	keys[action] = code
+	settings["keys"] = keys
+	Save.save_settings(settings)
+	_apply_keys()
+	ui.refresh_rebinds()
+
+
+func reset_keys() -> void:
+	settings["keys"] = {}
+	Save.save_settings(settings)
+	_apply_keys()
+	ui.refresh_rebinds()
 
 
 func is_ui_blocked() -> bool:
@@ -240,8 +331,19 @@ func _physics_process(dt: float) -> void:
 			story.on_room(room)
 	player.indoor = room != "porch" and room != "yard" and room != "street"
 	world.set_slabs_outside(not player.indoor)
+	# R4: rain follows shelter — full storm outside, muffled patter inside.
+	if bool(story.flags.get("in_market", false)):
+		audio.set_rain_level(0.12, true)
+	else:
+		audio.set_rain_level(0.35 if player.indoor else 1.0, player.indoor)
 	story.update(dt)
-	var res: String = enemy.update_enemy(dt, player, story)
+	# R4: Daniel freezes while MODAL ui holds the player — being caught
+	# mid-dialogue was unfair and fired story callbacks after death.
+	# The phone is NOT modal: texting while he hunts stays dangerous.
+	var modal := story.dialog_open or story.note_open or story.peep_open or story.call_open or story.story_open or story.cam_open
+	var res := ""
+	if not modal and not story.finished:
+		res = enemy.update_enemy(dt, player, story)
 	if res == "caught" and not story.finished:
 		ui.jumpscare(Callable(story, "finish").bind("D", "He was faster. He is always faster."))
 	var target_e := 8.0 if story.flash_is_on else 0.0
@@ -264,6 +366,7 @@ func _physics_process(dt: float) -> void:
 	elif bool(story.flags.get("in_market", false)):
 		dread = 0.15
 	ui.set_dread(dread)
+	audio.set_dread_mix(dread)
 	world.set_alert(est2 == "chase" and not story.finished)
 	ui.set_mic(mic.enabled and mic.available and not story.finished, mic.level, mic.loud, String(player.get("hidden")) != "")
 	var cur: Dictionary = interact.update(dt)
@@ -337,6 +440,9 @@ func _exit_market_now() -> void:
 
 
 func flash_lightning() -> void:
+	if bool(settings.get("photosafe", false)):
+		audio.thunder() # R4: photosafe users get the cue without the strobe
+		return
 	world.flash_lightning()
 	await get_tree().create_timer(randf_range(0.6, 2.2), false).timeout
 	if state == "playing":
@@ -353,6 +459,8 @@ func _reset_run() -> void:
 	audio.set_heart(false)
 	audio.set_hum(false)
 	audio.set_whisper(false)
+	audio.set_drone(false)
+	audio.set_stalk(false)
 	world.reset_dread_props()
 	audio.mj_stop()
 	mic.reset_run()
@@ -535,8 +643,13 @@ func autosave() -> void:
 func quit_to_menu() -> void:
 	if (state == "playing" or state == "paused") and not story.finished:
 		Save.save_game(story.serialize())
+	story.script_token += 1 # R4: kill pending timers/coroutines — nothing may fire on the menu
 	state = "menu"
 	audio.set_hum(false)
+	audio.set_heart(false) # R4: loops driven by update() must die here — update() stops on menu
+	audio.set_drone(false)
+	audio.set_stalk(false)
+	audio.set_whisper(false)
 	get_tree().paused = false
 	phone.toggle(0)
 	ui.show_menu()
@@ -555,6 +668,7 @@ func on_ending(id: String) -> void:
 	audio.set_whisper(false)
 	audio.mj_stop()
 	audio.set_hum(false)
+	audio.set_stalk(false)
 	ui.refresh_endings_list()
 	ui.refresh_continue()
 
@@ -598,8 +712,13 @@ func setting_changed(key: String, v: Variant) -> void:
 
 func apply_settings() -> void:
 	audio.set_vol(float(settings.get("vol", 0.8)))
+	audio.set_mix(float(settings.get("vol_music", 1.0)), float(settings.get("vol_sfx", 1.0)), float(settings.get("vol_voice", 1.0)))
 	player.sens = float(settings.get("sens", 1.0))
 	player.headbob = bool(settings.get("headbob", true))
+	player.fov_base = clampf(float(settings.get("fov", 72.0)), 60.0, 90.0)
+	if not story.dialog_open and not story.note_open:
+		player.fov_target = player.fov_base
+	story.photosafe = bool(settings.get("photosafe", false))
 	mic.enabled = bool(settings.get("mic", true))
 	mic.sensitivity = float(settings.get("micsens", 0.6))
 	ui.apply_settings_vis()

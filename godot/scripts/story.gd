@@ -49,6 +49,8 @@ var start_msec := 0
 var spotted := 0
 var finished := false
 var script_token := 0
+var photosafe := false # R4: set by main.apply_settings; kills strobes
+var nap_token := -1 # R4: guards the fade_swap nap callback
 var micro := {"state": "idle", "t": 0.0}
 var news_t := 0.0
 var news_seg := 0
@@ -209,7 +211,7 @@ func say(sp: String, text: String, opts: Array) -> void:
 func _close_say(cb: Callable) -> void:
 	dialog_open = false
 	player.set("frozen", false)
-	player.set("fov_target", 72.0)
+	player.set("fov_target", float(player.get("fov_base")))
 	ui.close_dialog()
 	cb.call()
 
@@ -230,7 +232,7 @@ func read_note(id: String) -> void:
 func close_note() -> void:
 	note_open = false
 	player.set("frozen", false)
-	player.set("fov_target", 72.0)
+	player.set("fov_target", float(player.get("fov_base")))
 	ui.note_close()
 
 
@@ -238,17 +240,30 @@ func _play_machine() -> void:
 	if bool(flags.get("machine_played", false)):
 		return
 	flags["machine_played"] = true
+	var t := script_token # R4: every beat guarded — quitting mid-tape must not sub the menu
 	audio.microwave_beep(true)
 	sub("ANSWERING MACHINE — message 1 of 2:", 3.0)
 	await tree.create_timer(3.2, false).timeout
+	if t != script_token or finished:
+		audio.set_whisper(false)
+		return
 	sub("DANA (fond, fast): \"...jamie honey it's Dana, we're stuck at the airport, don't wait up! Milk's in the fridge, lasagna's in the freezer, 375 for 40 minutes, you remember! Love you, bye!\"", 7.0)
 	await tree.create_timer(7.2, false).timeout
+	if t != script_token or finished:
+		audio.set_whisper(false)
+		return
 	audio.microwave_beep(true)
 	sub("ANSWERING MACHINE — message 2 of 2:", 3.0)
 	await tree.create_timer(3.2, false).timeout
+	if t != script_token or finished:
+		audio.set_whisper(false)
+		return
 	audio.set_whisper(true)
 	sub("(breathing. slow. close to the receiver. and a smile you can hear: \"nice house.\")", 7.0)
 	await tree.create_timer(7.2, false).timeout
+	if t != script_token or finished:
+		audio.set_whisper(false)
+		return
 	audio.set_whisper(false)
 	audio.static_burst()
 	sub("Click. End of messages.", 3.5)
@@ -318,6 +333,8 @@ func load_data(s: Dictionary) -> void:
 	clock_min = float(s.get("clock_min", clock_min))
 	essay_pages = int(s.get("essay_pages", 0))
 	var pos: Array = s.get("pos", [0.0, 7.4])
+	if pos.size() < 2 or not ((pos[0] is float or pos[0] is int) and (pos[1] is float or pos[1] is int)):
+		pos = [0.0, 7.4] # R4: corrupt saves land on the porch, they don't crash
 	player.global_position = Vector3(float(pos[0]), 0.0, float(pos[1]))
 	player.call("set_look", float(s.get("yaw", 0.0)), 0.0)
 	goto_chapter(int(s.get("chapter", 0)))
@@ -1091,6 +1108,10 @@ func update(dt: float) -> void:
 	var ep: Vector3 = enemy.global_position
 	var near_hidden: bool = String(player.get("hidden")) != "" and Vector2(pp.x - ep.x, pp.z - ep.z).length() < 5.0 and est != "dormant" and est != "gone" and est != "perch"
 	audio.set_heart(hunted or near_hidden, est == "chase")
+	# R4: stalk layer — a low presence that swells as he closes in.
+	var estalk := est == "patrol" or est == "investigate" or est == "search" or est == "chase"
+	var edist := Vector2(pp.x - ep.x, pp.z - ep.z).length()
+	audio.set_stalk(estalk and edist < 13.0 and pp.x < 60.0, clampf(1.0 - edist / 13.0, 0.0, 1.0))
 	if flicker_t > 0.0 and flicker_room != "":
 		flicker_t -= dt
 		if world.room_lights.has(flicker_room):
@@ -1207,6 +1228,8 @@ func on_room(room: String) -> void:
 
 
 func flicker(room: String, dur: float) -> void:
+	if photosafe:
+		return # R4: room strobes are the #1 photosensitivity risk after lightning
 	flicker_room = room
 	flicker_t = dur
 
@@ -1398,12 +1421,15 @@ func throw_distraction() -> void:
 	tw.tween_property(can, "position:y", start.y + 0.6, 0.4)
 	tw.set_parallel(false)
 	tw.tween_property(can, "position:y", 0.06, 0.2)
-	tw.tween_callback(func(): _throw_land(can, land))
+	var t := script_token # R4: the can may land after a quit — guard the payoff
+	tw.tween_callback(func(): _throw_land(can, land, t))
 
 
-func _throw_land(can: Node3D, land: Vector3) -> void:
+func _throw_land(can: Node3D, land: Vector3, t: int) -> void:
 	if is_instance_valid(can):
 		can.queue_free()
+	if t != script_token or finished:
+		return
 	audio.clatter(land + Vector3(0, 0.3, 0))
 	enemy.call("hear_at", land)
 	toast("The can clatters down the hall.")
@@ -1449,7 +1475,17 @@ func finish(id: String, custom := "") -> void:
 		return
 	finished = true
 	script_token += 1
+	# R4: bury any open modal first — the ending must own the screen.
+	dialog_open = false
+	note_open = false
+	peep_open = false
+	call_open = false
+	story_open = false
+	cam_open = false
+	ui.hide_modals()
+	player.set("frozen", true)
 	audio.set_heart(false)
+	audio.set_stalk(false)
 	audio.set_tv(false)
 	audio.set_drone(false)
 	tick_on = false
@@ -1547,11 +1583,14 @@ func _shower() -> void:
 	if bool(flags.get("showered", false)):
 		return
 	flags["showered"] = true
+	var t := script_token # R4: quitting mid-shower must not unfreeze/flow onto the menu
 	player.set("frozen", true)
 	audio.set_shower(true)
 	sub("Hot water. Steam. For a minute the night can't touch you.", 5.0)
 	await tree.create_timer(6.0, false).timeout
 	audio.set_shower(false)
+	if t != script_token or finished:
+		return
 	clock_min += 30.0
 	player.set("frozen", false)
 	choices.append("Took a hot shower")
@@ -1562,11 +1601,14 @@ func _nap() -> void:
 	if bool(flags.get("napped", false)):
 		return
 	flags["napped"] = true
+	nap_token = script_token
 	player.set("frozen", true)
 	ui.fade_swap(func(): _nap_wake(), 0.9)
 
 
 func _nap_wake() -> void:
+	if nap_token != script_token or finished:
+		return # R4: stale fade callback — never wake onto a menu/ending
 	clock_min += 30.0
 	player.set("frozen", false)
 	choices.append("Napped on the guest bed")

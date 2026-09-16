@@ -68,6 +68,13 @@ var story_root: ColorRect
 # menu / pause / ending
 var menu_root: PanelContainer
 var continue_btn: Button
+var menu_new_btn: Button # R4: focus targets for gamepad/keyboard users
+var pause_resume_btn: Button
+var cc_panel: PanelContainer # R4: closed captions
+var cc_label: Label
+var cc_tween: Tween
+var rebind_btns := {}
+var rebind_capture := ""
 var panel_how: VBoxContainer
 var panel_endings: VBoxContainer
 var panel_settings: VBoxContainer
@@ -148,7 +155,7 @@ func _button(text: String, size := 16) -> Button:
 	b.add_theme_stylebox_override("hover", _style(Color(0.11, 0.07, 0.08, 0.95), RED, 1, 4))
 	b.add_theme_stylebox_override("pressed", _style(Color(0.16, 0.05, 0.06, 0.95), RED, 1, 4))
 	b.add_theme_stylebox_override("disabled", _style(Color(0.05, 0.05, 0.06, 0.9), Color(0.12, 0.12, 0.14), 1, 4))
-	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	b.add_theme_stylebox_override("focus", _style(Color(0, 0, 0, 0), Color(0.75, 0.75, 0.8), 1, 4)) # R4: visible focus ring — pad/keyboard players must SEE selection
 	return b
 
 
@@ -264,6 +271,13 @@ func _build_hud() -> void:
 	sub_panel.add_child(sub_label)
 	sub_panel.visible = false
 	hud.add_child(sub_panel)
+	cc_panel = _panel(Color(0.05, 0.05, 0.08, 0.85))
+	_anchor(cc_panel, 0.5, 0.77)
+	cc_label = _label("", 13, Color(0.75, 0.78, 0.85))
+	cc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cc_panel.add_child(cc_label)
+	cc_panel.visible = false
+	hud.add_child(cc_panel)
 	toast_wrap = VBoxContainer.new()
 	toast_wrap.anchor_left = 1.0
 	toast_wrap.anchor_right = 1.0
@@ -619,9 +633,10 @@ func cam_cycle(dir: int) -> void:
 	game.audio.ui_click()
 	var label: String = game.world.cam_cycle(dir)
 	cam_title.text = "MILLER SECURITY · " + label + (" · NIGHT" if cam_night else "")
-	cam_flash_rect.modulate.a = 0.85
-	var tw := create_tween()
-	tw.tween_property(cam_flash_rect, "modulate:a", 0.0, 0.18)
+	if not bool(game.settings.get("photosafe", false)):
+		cam_flash_rect.modulate.a = 0.85
+		var tw := create_tween()
+		tw.tween_property(cam_flash_rect, "modulate:a", 0.0, 0.18)
 
 
 func cam_night_toggle() -> void:
@@ -761,21 +776,21 @@ func _build_menu() -> void:
 	var by := _label("A GAME BY MOHAMMAD R", 13, Color(0.91, 0.77, 0.42))
 	by.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(by)
-	var new_btn := _button("▶ New Night")
+	menu_new_btn = _button("▶ New Night")
 	continue_btn = _button("Continue")
 	var how_btn := _button("How to play")
 	var end_btn := _button("Endings")
 	endings_count = _label("", 12, DIMC)
 	endings_count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var set_btn := _button("Settings")
-	new_btn.pressed.connect(func(): game.start_new())
+	menu_new_btn.pressed.connect(func(): game.start_new())
 	continue_btn.pressed.connect(func(): game.start_continue())
 	how_btn.pressed.connect(func(): _toggle_panel("how"))
 	end_btn.pressed.connect(func(): _toggle_panel("endings"))
 	set_btn.pressed.connect(func(): _toggle_panel("settings"))
 	var cred_btn := _button("Credits")
 	cred_btn.pressed.connect(func(): _toggle_panel("credits"))
-	v.add_child(new_btn)
+	v.add_child(menu_new_btn)
 	v.add_child(continue_btn)
 	v.add_child(how_btn)
 	v.add_child(end_btn)
@@ -804,6 +819,14 @@ func _build_menu() -> void:
 	_add_check_row(panel_settings, "Head-bob", "headbob")
 	_add_check_row(panel_settings, "🎙 Microphone stealth (he hears you)", "mic")
 	_add_check_row(panel_settings, "High graphics (turn OFF if the game stutters)", "highq")
+	_add_slider_row(panel_settings, "Music volume", 0.0, 1.0, 0.05, "vol_music")
+	_add_slider_row(panel_settings, "Effects volume", 0.0, 1.0, 0.05, "vol_sfx")
+	_add_slider_row(panel_settings, "Voices volume", 0.0, 1.0, 0.05, "vol_voice")
+	_add_slider_row(panel_settings, "Field of view", 60.0, 90.0, 1.0, "fov")
+	_add_slider_row(panel_settings, "Subtitle size", 12.0, 24.0, 1.0, "subsize")
+	_add_check_row(panel_settings, "Reduce flashing lights (photosafe)", "photosafe")
+	_add_check_row(panel_settings, "Closed captions for sounds", "cc")
+	_build_rebinds(panel_settings)
 	_add_slider_row(panel_settings, "Mic sensitivity", 0.0, 1.0, 0.05, "micsens")
 	mic_status = _label("", 12, DIMC)
 	mic_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -864,6 +887,58 @@ func _add_check_row(parent: VBoxContainer, text: String, key: String) -> void:
 	parent.add_child(cb)
 
 
+func _build_rebinds(parent: VBoxContainer) -> void:
+	# R4: click-to-rebind keyboard controls (gamepad layout stays fixed).
+	parent.add_child(_label("CONTROLS — click a key, then press its replacement (ESC cancels)", 13, RED))
+	for a in game.REBINDABLE:
+		var hb := HBoxContainer.new()
+		var l := _label(String((game.REBIND_LABELS as Dictionary).get(a, a)), 14)
+		l.custom_minimum_size = Vector2(220, 0)
+		var b := _button(_key_name(a), 14)
+		b.custom_minimum_size = Vector2(160, 0)
+		var act := a
+		b.pressed.connect(func(): _rebind_start(act))
+		hb.add_child(l)
+		hb.add_child(b)
+		parent.add_child(hb)
+		rebind_btns[a] = b
+	var rst := _button("Reset keys to defaults", 14)
+	rst.pressed.connect(func(): game.reset_keys())
+	parent.add_child(rst)
+
+
+func _key_name(a: String) -> String:
+	var saved: Dictionary = game.settings.get("keys", {})
+	var code := int(saved.get(a, 0))
+	if code <= 0:
+		code = int((game.DEFAULT_KEYS[a] as Array)[0])
+	return OS.get_keycode_string(code)
+
+
+func refresh_rebinds() -> void:
+	rebind_capture = ""
+	for a in rebind_btns.keys():
+		(rebind_btns[a] as Button).text = _key_name(String(a))
+
+
+func _rebind_start(a: String) -> void:
+	rebind_capture = a
+	(rebind_btns[a] as Button).text = "...press a key..."
+	game.audio.ui_click()
+
+
+func _input(event: InputEvent) -> void:
+	if rebind_capture == "":
+		return
+	if event is InputEventKey and event.pressed and not event.echo:
+		var code := (event as InputEventKey).physical_keycode
+		if code == KEY_ESCAPE or code == 0:
+			refresh_rebinds()
+			return
+		get_viewport().set_input_as_handled()
+		game.rebind(rebind_capture, int(code))
+
+
 func _build_pause() -> void:
 	pause_root = CenterContainer.new()
 	pause_root.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -883,17 +958,20 @@ func _build_pause() -> void:
 	var hb := HBoxContainer.new()
 	hb.alignment = BoxContainer.ALIGNMENT_CENTER
 	hb.add_theme_constant_override("separation", 10)
-	var resume_btn := _button("Resume")
+	pause_resume_btn = _button("Resume")
 	var quit_btn := _button("Quit to menu")
-	resume_btn.pressed.connect(func(): game.resume_game())
+	pause_resume_btn.pressed.connect(func(): game.resume_game())
 	quit_btn.pressed.connect(func(): game.quit_to_menu())
-	hb.add_child(resume_btn)
+	hb.add_child(pause_resume_btn)
 	hb.add_child(quit_btn)
 	v.add_child(t)
 	v.add_child(pause_obj)
 	v.add_child(hb)
 	_add_slider_row(v, "Mouse sensitivity", 0.3, 3.0, 0.1, "sens")
 	_add_slider_row(v, "Volume", 0.0, 1.0, 0.05, "vol")
+	_add_slider_row(v, "Music", 0.0, 1.0, 0.05, "vol_music")
+	_add_slider_row(v, "Effects", 0.0, 1.0, 0.05, "vol_sfx")
+	_add_slider_row(v, "Voices", 0.0, 1.0, 0.05, "vol_voice")
 	p.add_child(v)
 	pause_root.add_child(p)
 	add_child(pause_root)
@@ -999,6 +1077,7 @@ func subtitle(text: String, dur := 4.0) -> void:
 	if not bool(game.settings.get("subs", true)):
 		return
 	sub_label.text = text
+	sub_label.add_theme_font_size_override("font_size", int(game.settings.get("subsize", 16)))
 	sub_panel.visible = true
 	sub_panel.modulate.a = 1.0
 	if sub_tween and sub_tween.is_valid():
@@ -1007,6 +1086,21 @@ func subtitle(text: String, dur := 4.0) -> void:
 	sub_tween.tween_interval(dur)
 	sub_tween.tween_property(sub_panel, "modulate:a", 0.0, 0.5)
 	sub_tween.tween_callback(func(): sub_panel.visible = false)
+
+
+func caption(t: String) -> void:
+	# R4: closed captions for key sounds — independent of dialogue subtitles.
+	if not bool(game.settings.get("cc", false)):
+		return
+	cc_label.text = t
+	cc_panel.visible = true
+	cc_panel.modulate.a = 1.0
+	if cc_tween and cc_tween.is_valid():
+		cc_tween.kill()
+	cc_tween = create_tween()
+	cc_tween.tween_interval(2.5)
+	cc_tween.tween_property(cc_panel, "modulate:a", 0.0, 0.4)
+	cc_tween.tween_callback(func(): cc_panel.visible = false)
 
 
 func objectives(list: Array) -> void:
@@ -1053,6 +1147,8 @@ func show_dialog(sp: String, text: String, opts: Array) -> void:
 		b.pressed.connect(func(): _on_dialog_opt(cb))
 		dialog_opts.add_child(b)
 	dialog_panel.visible = true
+	if dialog_opts.get_child_count() > 0:
+		(dialog_opts.get_child(0) as Button).grab_focus()
 	dialog_cbs = []
 	for o in opts:
 		dialog_cbs.append((o as Dictionary)["cb"])
@@ -1154,6 +1250,7 @@ func call_show(caller: String, on_accept: Callable, on_decline: Callable) -> voi
 	call_decline.pressed.connect(func(): _on_call_btn(on_decline))
 	call_root.visible = true
 	game.update_mouse()
+	call_accept.grab_focus()
 
 
 func _on_call_btn(cb: Callable) -> void:
@@ -1167,6 +1264,8 @@ func call_close() -> void:
 
 
 func flash() -> void:
+	if bool(game.settings.get("photosafe", false)):
+		return
 	flash_rect.modulate.a = 0.9
 	var tw := create_tween()
 	tw.tween_property(flash_rect, "modulate:a", 0.0, 0.3)
@@ -1236,6 +1335,7 @@ func show_ending(id: String, text: String, sub: String, stats: String) -> void:
 	game.on_ending(id)
 	ending_root.visible = true
 	game.update_mouse()
+	again_btn.grab_focus()
 
 
 # ---------- HUD updates ----------
@@ -1265,6 +1365,8 @@ func set_phone_visible(v: bool) -> void:
 	phone_panel.visible = v
 	if v:
 		render_phone()
+		if reply_vbox.get_child_count() > 0:
+			(reply_vbox.get_child(0) as Button).grab_focus()
 	game.update_mouse()
 
 
@@ -1358,10 +1460,21 @@ func _on_reply(i: int) -> void:
 
 
 # ---------- screens ----------
+func hide_modals() -> void:
+	# R4: one call buries every modal panel (quit-to-menu, endings, new runs).
+	dialog_panel.visible = false
+	call_root.visible = false
+	note_root.visible = false
+	peep_root.visible = false
+	story_root.visible = false
+	cam_root.visible = false
+
+
 func show_hud() -> void:
 	menu_root.visible = false
 	ending_root.visible = false
 	pause_root.visible = false
+	hide_modals()
 	hud.visible = true
 	tc_sec = 0.0
 	fade_rect.modulate.a = 0.0
@@ -1373,14 +1486,19 @@ func show_menu() -> void:
 	ending_root.visible = false
 	pause_root.visible = false
 	menu_root.visible = true
+	hide_modals() # R4: quitting mid-dialog/call must not strand panels on the menu
 	refresh_endings_list()
 	refresh_continue()
 	game.update_mouse()
+	if menu_new_btn:
+		menu_new_btn.grab_focus()
 
 
 func show_pause(v: bool) -> void:
 	pause_root.visible = v
 	game.update_mouse()
+	if v and pause_resume_btn:
+		pause_resume_btn.grab_focus()
 
 
 func hide_ending() -> void:

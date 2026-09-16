@@ -10,7 +10,7 @@ var i2d := 0
 var i3d := 0
 var room_player: AudioStreamPlayer
 var rain_player: AudioStreamPlayer
-var tv_player: AudioStreamPlayer
+var tv_player: AudioStreamPlayer3D # R4: the TV is a room, not a soundtrack — positional now
 var heart_player: AudioStreamPlayer
 var hum_player: AudioStreamPlayer
 var whisper_player: AudioStreamPlayer
@@ -23,46 +23,121 @@ var heart_on := false
 var heart_fast := false
 var heart_t := 0.0
 var vol := 0.8
+var pool3d_muf: Array[AudioStreamPlayer3D] = [] # R4: occluded (through-wall) voices
+var voice_player: AudioStreamPlayer
+var stalk_player: AudioStreamPlayer
+var caption_cb := Callable() # R4: closed captions, wired by main
+var listener: Node3D
+var occlude_excludes: Array = []
+var music_db := 0.0
+var sfx_db := 0.0
+var voice_db := 0.0
+
+
+func _ensure_bus(n: String) -> void:
+	if AudioServer.get_bus_index(n) < 0:
+		AudioServer.add_bus()
+		AudioServer.set_bus_name(AudioServer.bus_count - 1, n)
+
+
+func _loop_player(bus: String) -> AudioStreamPlayer:
+	var pl := AudioStreamPlayer.new()
+	pl.bus = bus
+	add_child(pl)
+	return pl
 
 
 func _ready() -> void:
 	randomize()
+	# R4: Music / SFX / Voice buses (separate sliders = the accessibility
+	# standard) + a lowpassed Muffled bus for through-wall sound.
+	_ensure_bus("Music")
+	_ensure_bus("SFX")
+	_ensure_bus("Voice")
+	_ensure_bus("Muffled")
+	var lp := AudioEffectLowpass.new()
+	lp.cutoff_hz = 550.0
+	AudioServer.add_bus_effect(AudioServer.get_bus_index("Muffled"), lp)
 	for i in 10:
 		var p := AudioStreamPlayer.new()
+		p.bus = "SFX"
 		add_child(p)
 		pool2d.append(p)
 		var q := AudioStreamPlayer3D.new()
 		q.max_distance = 60.0
+		q.bus = "SFX"
 		add_child(q)
 		pool3d.append(q)
-	room_player = AudioStreamPlayer.new()
-	add_child(room_player)
-	rain_player = AudioStreamPlayer.new()
-	add_child(rain_player)
-	tv_player = AudioStreamPlayer.new()
+		var qm := AudioStreamPlayer3D.new()
+		qm.max_distance = 60.0
+		qm.bus = "Muffled"
+		add_child(qm)
+		pool3d_muf.append(qm)
+	room_player = _loop_player("SFX")
+	rain_player = _loop_player("SFX")
+	tv_player = AudioStreamPlayer3D.new()
+	tv_player.bus = "SFX"
+	tv_player.position = Vector3(-2.0, 1.2, 0.6)
+	tv_player.unit_size = 6.0
+	tv_player.max_distance = 24.0
 	add_child(tv_player)
-	heart_player = AudioStreamPlayer.new()
-	add_child(heart_player)
-	hum_player = AudioStreamPlayer.new()
-	add_child(hum_player)
-	whisper_player = AudioStreamPlayer.new()
-	add_child(whisper_player)
-	mj_player = AudioStreamPlayer.new()
-	add_child(mj_player)
-	drone_player = AudioStreamPlayer.new()
-	add_child(drone_player)
-	shower_player = AudioStreamPlayer.new()
-	add_child(shower_player)
-	music_player = AudioStreamPlayer.new()
-	add_child(music_player)
+	heart_player = _loop_player("SFX")
+	hum_player = _loop_player("SFX")
+	whisper_player = _loop_player("SFX")
+	mj_player = _loop_player("SFX")
+	drone_player = _loop_player("SFX")
+	shower_player = _loop_player("SFX")
+	music_player = _loop_player("Music")
+	voice_player = AudioStreamPlayer.new()
+	voice_player.bus = "Voice"
+	add_child(voice_player)
+	stalk_player = _loop_player("SFX")
 	_build_bank()
 	set_vol(vol)
+	set_mix(1.0, 1.0, 1.0)
 
 
 func set_vol(v: float) -> void:
 	vol = v
 	var db := -60.0 if v <= 0.01 else linear_to_db(v)
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Master"), db)
+
+
+func _slider_db(v: float) -> float:
+	return -60.0 if v <= 0.01 else linear_to_db(v)
+
+
+func set_mix(m: float, s: float, v: float) -> void:
+	music_db = _slider_db(m)
+	sfx_db = _slider_db(s)
+	voice_db = _slider_db(v)
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Music"), music_db)
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("SFX"), sfx_db)
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Voice"), voice_db)
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Muffled"), sfx_db - 4.0)
+
+
+func set_dread_mix(d: float) -> void:
+	# R4: the score breathes with danger — beds down while safe, leans in
+	# as dread rises. Calibrated so 0.3 (roam) matches the old -17 dB bed.
+	if music_player and music_player.playing:
+		music_player.volume_db = clampf(music_db + lerpf(-20.0, -9.0, clampf(d, 0.0, 1.0)), -48.0, 3.0)
+		music_player.pitch_scale = 0.96 + 0.08 * clampf(d, 0.0, 1.0)
+
+
+func set_stalk(on: bool, level := 0.0) -> void:
+	if on and bank.has("stalk_loop"):
+		if not stalk_player.playing:
+			stalk_player.stream = bank["stalk_loop"]
+			stalk_player.play()
+		stalk_player.volume_db = lerpf(-38.0, -14.0, clampf(level, 0.0, 1.0))
+	elif stalk_player:
+		stalk_player.stop()
+
+
+func cue(t: String) -> void:
+	if caption_cb.is_valid():
+		caption_cb.call(t)
 
 
 # ---------- synthesis helpers ----------
@@ -398,6 +473,16 @@ func _build_bank() -> void:
 		var t := float(i) / rate
 		b[i] *= 0.8 + 0.2 * sin(TAU * t / 0.7 + 1.1) * sin(TAU * t / 2.3)
 	bank["shower_loop"] = _loop_wav(b)
+	# R4: stalk loop — a low breathing rumble, 2 breath cycles per 8 s loop.
+	b = _empty(8.0)
+	_put_noise(b, 0.5, 0.0, 8.0, 90.0, false, 0.0)
+	_put_tone(b, 55.0, 0.3, "sine", 0.0, 8.0, 0.0, 0.0)
+	_put_tone(b, 110.0, 0.08, "sine", 0.0, 8.0, 0.0, 0.0)
+	for i in b.size():
+		var t := float(i) / rate
+		var br := 0.5 + 0.5 * sin(TAU * t / 4.0)
+		b[i] *= 0.3 + 0.7 * br * br
+	bank["stalk_loop"] = _loop_wav(b)
 
 
 func _mj_groove() -> PackedFloat32Array:
@@ -431,11 +516,29 @@ func _mj_groove() -> PackedFloat32Array:
 
 
 # ---------- playback ----------
+func _free2d() -> AudioStreamPlayer:
+	# R4: never cut a playing voice while an idle one exists (kills the pops).
+	for p in pool2d:
+		if not p.playing:
+			return p
+	var p := pool2d[i2d]
+	i2d = (i2d + 1) % pool2d.size()
+	return p
+
+
+func _free3d(pool: Array[AudioStreamPlayer3D]) -> AudioStreamPlayer3D:
+	for p in pool:
+		if not p.playing:
+			return p
+	var p := pool[i3d % pool.size()]
+	i3d = (i3d + 1) % pool.size()
+	return p
+
+
 func _play2d(sound: String, vol_db := 0.0, pitch := 1.0) -> void:
 	if not bank.has(sound):
 		return
-	var p := pool2d[i2d]
-	i2d = (i2d + 1) % pool2d.size()
+	var p := _free2d()
 	p.stream = bank[sound]
 	p.volume_db = vol_db
 	p.pitch_scale = pitch
@@ -445,8 +548,8 @@ func _play2d(sound: String, vol_db := 0.0, pitch := 1.0) -> void:
 func _play3d(sound: String, pos: Vector3, vol_db := 0.0, pitch := 1.0) -> void:
 	if not bank.has(sound):
 		return
-	var p := pool3d[i3d]
-	i3d = (i3d + 1) % pool3d.size()
+	# R4: walls muffle — occluded sounds route to the lowpassed pool.
+	var p := _free3d(pool3d_muf if _occluded(pos) else pool3d)
 	p.global_position = pos
 	p.stream = bank[sound]
 	p.volume_db = vol_db
@@ -454,7 +557,18 @@ func _play3d(sound: String, pos: Vector3, vol_db := 0.0, pitch := 1.0) -> void:
 	p.play()
 
 
+func _occluded(pos: Vector3) -> bool:
+	if listener == null:
+		return false
+	var from: Vector3 = listener.global_position + Vector3(0, 1.6, 0)
+	var to := Vector3(pos.x, 1.2 if pos.y < 0.5 else pos.y, pos.z)
+	var q := PhysicsRayQueryParameters3D.create(from, to, 3, occlude_excludes)
+	return not get_tree().root.get_world_3d().direct_space_state.intersect_ray(q).is_empty()
+
+
 func _process(delta: float) -> void:
+	if tv_player.playing: # R4: the TV muffles through walls, live
+		tv_player.bus = "Muffled" if _occluded(tv_player.global_position) else "SFX"
 	if heart_on:
 		heart_t -= delta
 		if heart_t <= 0.0:
@@ -491,9 +605,10 @@ func stop_rain() -> void:
 	rain_player.stop()
 
 
-func set_rain_level(x: float) -> void:
+func set_rain_level(x: float, muffle := false) -> void:
 	if rain_player.playing:
 		rain_player.volume_db = lerpf(-40.0, -19.0, clampf(x, 0.0, 1.0))
+		rain_player.bus = "Muffled" if muffle else "SFX"
 
 
 func set_shower(on: bool) -> void:
@@ -507,12 +622,13 @@ func set_shower(on: bool) -> void:
 
 func thunder() -> void:
 	_play2d("thunder", randf_range(-4.0, 1.0), randf_range(0.9, 1.1))
+	cue("[thunder rumbles]")
 
 
 func set_tv(on: bool) -> void:
 	if on and not tv_player.playing:
 		tv_player.stream = bank["tv_loop"]
-		tv_player.volume_db = -16.0
+		tv_player.volume_db = -8.0
 		tv_player.play()
 	elif not on:
 		tv_player.stop()
@@ -584,10 +700,12 @@ func locked() -> void:
 
 func knock_at(pos: Vector3, kind := "soft3") -> void:
 	_play3d("knock_soft" if kind == "soft3" else ("knock_heavy" if kind == "heavy3" else ("knock2" if kind == "heavy2" else "knock1")), pos, 2.0)
+	cue("[knocking]")
 
 
 func glass_at(pos: Vector3) -> void:
 	_play3d("glass", pos, 2.0)
+	cue("[glass shatters]")
 
 
 func text_ding() -> void:
@@ -596,10 +714,13 @@ func text_ding() -> void:
 
 func phone_buzz() -> void:
 	_play2d("buzz", 0.0)
+	cue("[phone buzzing]")
 
 
 func microwave_beep(final := false) -> void:
 	_play2d("beep3" if final else "beep1", 0.0)
+	if final:
+		cue("[microwave beeps]")
 
 
 func sting() -> void:
@@ -608,14 +729,17 @@ func sting() -> void:
 
 func siren() -> void:
 	_play2d("siren", 2.0)
+	cue("[sirens wail outside]")
 
 
 func power_down() -> void:
 	_play2d("power_down", 0.0)
+	cue("[the power dies]")
 
 
 func power_up() -> void:
 	_play2d("power_up", 0.0)
+	cue("[the power hums back]")
 
 
 func ui_click() -> void:
@@ -679,9 +803,7 @@ func voice(id: String, db := 0.0) -> void:
 		if not ResourceLoader.exists(p):
 			return
 		vox[id] = ResourceLoader.load(p)
-	var pl := pool2d[i2d]
-	i2d = (i2d + 1) % pool2d.size()
-	pl.stream = vox[id]
-	pl.volume_db = db
-	pl.pitch_scale = 1.0
-	pl.play()
+	voice_player.stream = vox[id] # R4: dedicated Voice-bus player — one voice at a time
+	voice_player.volume_db = db
+	voice_player.pitch_scale = 1.0
+	voice_player.play()
