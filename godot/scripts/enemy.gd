@@ -54,32 +54,65 @@ func _build_mesh() -> void:
 	var skin := StandardMaterial3D.new()
 	skin.albedo_color = Color(0.55, 0.52, 0.46)
 	skin.roughness = 0.9
-	_part(0.5, 0.9, 0.3, cloth, Vector3(0, 1.15, 0))
-	_part(0.42, 0.75, 0.26, cloth, Vector3(0, 0.38, 0))
+	var dark := StandardMaterial3D.new()
+	dark.albedo_color = Color(0.02, 0.02, 0.03)
+	dark.roughness = 1.0
+	# Long coat, flared at the hem; shoulders; collar.
+	var coat := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.22
+	cm.bottom_radius = 0.32
+	cm.height = 1.1
+	coat.mesh = cm
+	coat.material_override = cloth
+	coat.position = Vector3(0, 0.75, 0)
+	mesh_root.add_child(coat)
+	_part(0.52, 0.35, 0.3, cloth, Vector3(0, 1.42, 0))
+	_part(0.3, 0.18, 0.26, cloth, Vector3(0, 1.62, 0))
+	# Head + face: brow shadow, socketed glowing eyes, nose, grim mouth.
 	var head := MeshInstance3D.new()
 	var hm := SphereMesh.new()
-	hm.radius = 0.16
-	hm.height = 0.32
+	hm.radius = 0.155
+	hm.height = 0.34
 	head.mesh = hm
 	head.material_override = skin
-	head.position = Vector3(0, 1.78, 0)
+	head.position = Vector3(0, 1.82, 0)
 	mesh_root.add_child(head)
+	_part(0.24, 0.07, 0.05, dark, Vector3(0, 1.875, 0.12))
+	var sock_m := StandardMaterial3D.new()
+	sock_m.albedo_color = Color(0.01, 0.01, 0.015)
+	sock_m.roughness = 1.0
 	var eye_m := StandardMaterial3D.new()
 	eye_m.albedo_color = Color.BLACK
 	eye_m.emission_enabled = true
 	eye_m.emission = Color.WHITE
 	eye_m.emission_energy_multiplier = 1.2
 	for sx in [-0.06, 0.06]:
+		var so := MeshInstance3D.new()
+		var som := SphereMesh.new()
+		som.radius = 0.035
+		som.height = 0.07
+		so.mesh = som
+		so.material_override = sock_m
+		so.position = Vector3(sx, 1.81, 0.125)
+		mesh_root.add_child(so)
 		var e := MeshInstance3D.new()
 		var em := SphereMesh.new()
-		em.radius = 0.022
-		em.height = 0.044
+		em.radius = 0.02
+		em.height = 0.04
 		e.mesh = em
 		e.material_override = eye_m
-		e.position = Vector3(sx, 1.8, 0.14)
+		e.position = Vector3(sx, 1.81, 0.148)
 		mesh_root.add_child(e)
-	for sx in [-0.32, 0.32]:
-		_part(0.11, 0.85, 0.11, cloth, Vector3(sx, 1.05, 0))
+	_part(0.04, 0.08, 0.05, skin, Vector3(0, 1.755, 0.15))
+	_part(0.08, 0.015, 0.02, dark, Vector3(0, 1.695, 0.143))
+	# Thinner arms with pale hands; legs + shoes under the hem.
+	for sx in [-0.31, 0.31]:
+		_part(0.09, 0.8, 0.09, cloth, Vector3(sx, 1.05, 0))
+		_part(0.09, 0.12, 0.09, skin, Vector3(sx, 0.6, 0))
+	for sx in [-0.11, 0.11]:
+		_part(0.13, 0.2, 0.13, cloth, Vector3(sx, 0.1, 0))
+		_part(0.14, 0.08, 0.24, dark, Vector3(sx, 0.04, 0.04))
 
 
 func place(x: float, z: float, p_face: float) -> void:
@@ -198,6 +231,10 @@ func _door_factor(dt: float, story: RefCounted) -> float:
 
 func update_enemy(dt: float, player: CharacterBody3D, story: RefCounted) -> String:
 	if state == "dormant" or state == "gone" or state == "perch":
+		if state == "perch" and mesh_root != null:
+			var pt := float(Time.get_ticks_msec()) * 0.001
+			mesh_root.rotation.z = sin(pt * 0.9) * 0.015
+			mesh_root.position.y = sin(pt * 1.3) * 0.012
 		return state
 	var e: Dictionary = CFG.ENEMY
 	var pp: Vector3 = player.global_position

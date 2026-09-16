@@ -453,6 +453,7 @@ func build() -> void:
 	_fixtures()
 	_window_dressing()
 	_dressing()
+	_dressing2()
 	_furnish2()
 	_baseboards()
 	_build_clock()
@@ -848,6 +849,79 @@ func _dressing() -> void:
 	box(0.7, 0.15, 0.45, white, Vector3(0.25, 0.78, -4.9))
 	box(0.7, 0.15, 0.45, white, Vector3(0.95, 0.78, -4.9))
 	box(2.0, 0.02, 1.4, mat(Color(0.35, 0.3, 0.4), 1.0), Vector3(0.6, 0.02, -2.6))
+
+
+func _dressing2() -> void:
+	# Second clutter pass: small lived-in props. All visual (no collide), tucked
+	# against walls and on furniture, clear of door swings and walk lines.
+	var white := mat(Color(0.85, 0.85, 0.85), 0.6)
+	var dark := mat(Color(0.16, 0.14, 0.12), 0.6)
+	var wood := mat(Color(0.31, 0.23, 0.15), 0.7)
+	var steel := mat(Color(0.54, 0.56, 0.58), 0.35, 0.5)
+	# ENTRY: shoes, umbrella stand, coat rail on the partition.
+	box(0.13, 0.1, 0.3, dark, Vector3(0.85, 0.05, 5.05))
+	box(0.13, 0.1, 0.3, dark, Vector3(1.02, 0.05, 5.12), 0.2)
+	_cyl(0.11, 0.09, 0.45, mat(Color(0.2, 0.25, 0.35), 0.8), Vector3(1.35, 0.22, 5.1))
+	_cyl(0.015, 0.015, 0.8, dark, Vector3(1.35, 0.6, 5.1))
+	box(0.06, 0.08, 1.2, wood, Vector3(-0.14, 1.62, 2.4))
+	box(0.14, 0.7, 0.32, mat(Color(0.25, 0.2, 0.28), 1.0), Vector3(-0.2, 1.2, 2.15))
+	box(0.14, 0.6, 0.3, mat(Color(0.2, 0.3, 0.25), 1.0), Vector3(-0.2, 1.25, 2.7))
+	# LIVING: book spines, throw blanket, side table + mug, floor cushion.
+	var spines := [Color(0.55, 0.2, 0.2), Color(0.2, 0.35, 0.55), Color(0.55, 0.5, 0.2),
+		Color(0.25, 0.5, 0.25), Color(0.5, 0.25, 0.5), Color(0.6, 0.4, 0.25)]
+	for i in 6:
+		var bh := 0.32 + float(i % 3) * 0.04
+		box(0.06, bh, 0.16, mat(spines[i], 0.9), Vector3(-7.48, 1.35 + bh * 0.5, 1.85 + float(i) * 0.19))
+	box(0.5, 0.06, 0.7, mat(Color(0.55, 0.35, 0.2), 1.0), Vector3(-1.0, 0.86, 3.3))
+	box(0.5, 0.4, 0.06, mat(Color(0.55, 0.35, 0.2), 1.0), Vector3(-1.0, 0.65, 3.62))
+	box(0.4, 0.45, 0.4, wood, Vector3(-0.5, 0.22, 3.75), 0.0, true)
+	_cyl(0.045, 0.04, 0.11, mat(Color(0.2, 0.35, 0.5), 0.7), Vector3(-0.5, 0.5, 3.75))
+	_cyl(0.22, 0.24, 0.12, mat(Color(0.4, 0.25, 0.2), 1.0), Vector3(-3.3, 0.06, 2.3))
+	# KITCHEN: cereal, dish rack + plates, soap, towel, trash can, calendar.
+	box(0.18, 0.28, 0.08, mat(Color(0.75, 0.5, 0.15), 0.8), Vector3(4.75, 1.1, 3.55))
+	box(0.18, 0.26, 0.08, mat(Color(0.3, 0.5, 0.7), 0.8), Vector3(4.75, 1.09, 3.4), 0.15)
+	box(0.4, 0.08, 0.3, mat(Color(0.7, 0.7, 0.7), 0.7), Vector3(7.5, 1.0, 3.9))
+	for i in 3:
+		box(0.03, 0.24, 0.24, white, Vector3(7.42 + float(i) * 0.08, 1.15, 3.9))
+	_cyl(0.04, 0.045, 0.16, mat(Color(0.3, 0.6, 0.3), 0.6), Vector3(7.62, 1.04, 4.45))
+	box(0.06, 0.04, 0.12, mat(Color(0.8, 0.7, 0.2), 0.8), Vector3(7.45, 0.98, 4.45))
+	box(0.02, 0.35, 0.25, mat(Color(0.75, 0.3, 0.25), 1.0), Vector3(7.18, 0.55, 2.6))
+	_cyl(0.16, 0.13, 0.42, steel, Vector3(7.5, 0.21, 5.15))
+	box(0.015, 0.3, 0.24, white, Vector3(6.94, 1.25, 1.35))
+	box(0.016, 0.06, 0.24, mat(Color(0.7, 0.15, 0.15), 0.7), Vector3(6.94, 1.37, 1.35))
+	# HALL: north-wall frames, corner plant.
+	box(0.4, 0.5, 0.03, dark, Vector3(-2.0, 1.7, -1.37))
+	box(0.32, 0.42, 0.035, mat(Color(0.3, 0.35, 0.45), 0.9), Vector3(-2.0, 1.7, -1.368))
+	box(0.4, 0.5, 0.03, dark, Vector3(3.4, 1.7, -1.37))
+	box(0.32, 0.42, 0.035, mat(Color(0.45, 0.4, 0.3), 0.9), Vector3(3.4, 1.7, -1.368))
+	_cyl(0.14, 0.11, 0.28, mat(Color(0.5, 0.28, 0.16), 0.8), Vector3(7.6, 0.14, -0.5))
+	_ball(0.26, mat(Color(0.12, 0.25, 0.12), 1.0), Vector3(7.6, 0.5, -0.5))
+	# GUEST: bedside books + clock + glass, laundry pile, backpack.
+	box(0.3, 0.05, 0.22, mat(Color(0.25, 0.35, 0.5), 0.8), Vector3(-7.5, 0.58, -4.88))
+	box(0.26, 0.04, 0.2, mat(Color(0.6, 0.3, 0.2), 0.8), Vector3(-7.5, 0.62, -4.88), 0.2)
+	box(0.16, 0.08, 0.06, dark, Vector3(-7.32, 0.6, -5.22))
+	_cyl(0.035, 0.03, 0.09, mat(Color(0.7, 0.75, 0.8, 0.5), 0.2), Vector3(-7.62, 0.6, -5.2))
+	_ball(0.22, mat(Color(0.4, 0.45, 0.55), 1.0), Vector3(-7.5, 0.15, -2.0))
+	_ball(0.18, mat(Color(0.55, 0.4, 0.35), 1.0), Vector3(-7.35, 0.32, -2.1))
+	box(0.35, 0.45, 0.25, mat(Color(0.45, 0.15, 0.15), 0.9), Vector3(-3.7, 0.22, -4.5))
+	# BATH: toothbrush cup + brushes, soap, hamper.
+	_cyl(0.05, 0.04, 0.1, mat(Color(0.3, 0.5, 0.6), 0.6), Vector3(5.05, 0.86, -2.0))
+	_cyl(0.008, 0.008, 0.16, white, Vector3(5.03, 0.96, -2.0))
+	_cyl(0.008, 0.008, 0.16, mat(Color(0.3, 0.5, 0.8), 0.6), Vector3(5.07, 0.96, -2.0))
+	box(0.1, 0.03, 0.07, mat(Color(0.85, 0.8, 0.7), 0.6), Vector3(5.35, 0.82, -2.0))
+	_cyl(0.2, 0.17, 0.55, mat(Color(0.6, 0.55, 0.45), 0.9), Vector3(6.1, 0.27, -2.2))
+	# LAUNDRY: folded towels on the washer.
+	box(0.4, 0.08, 0.35, white, Vector3(6.95, 0.99, -5.0))
+	box(0.36, 0.07, 0.32, mat(Color(0.4, 0.55, 0.7), 1.0), Vector3(6.95, 1.06, -5.0))
+	# PORCH: boots by the door, hanging plant.
+	box(0.14, 0.22, 0.3, mat(Color(0.2, 0.15, 0.1), 0.9), Vector3(-0.95, 0.29, 5.95))
+	box(0.14, 0.22, 0.3, mat(Color(0.2, 0.15, 0.1), 0.9), Vector3(-0.78, 0.29, 6.0), -0.15)
+	_cyl(0.12, 0.09, 0.18, mat(Color(0.5, 0.28, 0.16), 0.8), Vector3(2.3, 2.55, 7.9))
+	_ball(0.2, mat(Color(0.12, 0.25, 0.12), 1.0), Vector3(2.3, 2.35, 7.9))
+	# STREET: trash bags by the curb, manhole.
+	_ball(0.3, mat(Color(0.08, 0.1, 0.08), 0.9), Vector3(-8.5, 0.25, 12.3))
+	_ball(0.26, mat(Color(0.08, 0.1, 0.08), 0.9), Vector3(-8.0, 0.22, 12.5))
+	_cyl(0.35, 0.35, 0.012, mat(Color(0.08, 0.08, 0.1), 0.6), Vector3(2.0, 0.045, 15.5))
 
 
 func _bb_h(z: float, x1: float, x2: float, gaps: Array) -> void:
@@ -1290,7 +1364,7 @@ func reset_dread_props() -> void:
 
 
 func _light_rig() -> void:
-	_omni("living", Color(1.0, 0.85, 0.63), 2.2, 11.0, Vector3(-4, 2.3, 3), true)
+	_omni("living", Color(1.0, 0.85, 0.63), 2.2, 11.0, Vector3(-4, 2.62, 3), true)
 	_omni("living", Color(1.0, 0.9, 0.64), 1.0, 6.0, Vector3(-7.3, 1.9, 4.9))
 	_omni("kitchen", Color(1.0, 0.95, 0.85), 1.8, 11.0, Vector3(4, 2.4, 3), true)
 	_omni("hall", Color(1.0, 0.91, 0.77), 1.5, 9.0, Vector3(0, 2.4, -0.5), true)
