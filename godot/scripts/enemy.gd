@@ -26,6 +26,9 @@ var waypoints := [
 	Vector3(4.5, 0, -0.5), Vector3(4.5, 0, 1.5), Vector3(2.9, 0, 1.5),
 	Vector3(2.9, 0, 4.0), Vector3(2.9, 0, 1.5), Vector3(4.5, 0, 1.5), Vector3(4.5, 0, -0.5),
 	Vector3(6.0, 0, -0.5), Vector3(5.2, 0, -0.5), Vector3(5.2, 0, -2.6), Vector3(5.2, 0, -0.5),
+	# R6: garage leg — every segment crosses the x=8 wall inside the door hole.
+	Vector3(7.4, 0, -0.5), Vector3(8.6, 0, -0.5), Vector3(9.0, 0, 2.8),
+	Vector3(8.6, 0, -0.5), Vector3(7.4, 0, -0.5),
 	Vector3(1.8, 0, -0.5), Vector3(2.3, 0, -3.0), Vector3(1.8, 0, -0.5),
 ]
 

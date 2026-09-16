@@ -969,13 +969,10 @@ func cellar_exit() -> void:
 func _pack_use() -> void:
 	if bool(flags.get("pack", false)):
 		return
-	if float(items.get("battery", 0.0)) >= 99.0:
-		sub("Flashlight's already full — leave the spares for later.", 3.0)
-		return
 	flags["pack"] = true
-	items["battery"] = 100.0
+	items["batteries"] = int(items.get("batteries", 0)) + 2
 	audio.pickup()
-	toast("🔋 Spare AAs! Flashlight recharged to 100%.")
+	toast("🔋 Spare AAs pocketed (%d). Press F to hot-swap when the light dies." % int(items.get("batteries", 0)))
 
 
 func _furnace_stare() -> void:
@@ -1426,6 +1423,14 @@ func on_room(room: String) -> void:
 		world.spawn_glimpse(Vector3(0.0, 1.2, -4.0), 0.7)
 		audio.sting()
 		sub("At the end of the hall — tall — GONE. He was never there. Keep telling yourself that.", 5.0)
+	if room == "laundry" and chapter == 5 and not bool(flags.get("laun5", false)):
+		flags["laun5"] = true
+		audio.knock_at(Vector3(7.8, 1.5, -2.6), "one")
+		sub("One slow knock from inside the wall by the breaker box. Then nothing.", 5.0)
+	if room == "garage" and chapter == 4 and not bool(flags.get("gar4", false)):
+		flags["gar4"] = true
+		audio.sting()
+		sub("The sedan's headlights flash once. The keys are in the house. The car is empty.", 5.0)
 	# Dread director: the house gaslights you before he arrives. No cues, no
 	# explanations — you simply find things wrong.
 	if (room == "living" or room == "kitchen") and chapter == 1 and not bool(flags.get("dread_e1", false)):
@@ -1571,7 +1576,14 @@ func toggle_flash() -> void:
 		toast("🔦 You don't have a flashlight yet.")
 		return
 	if float(items.get("battery", 0.0)) <= 0.0:
-		toast("🔦 Battery dead — find batteries (kitchen drawer).")
+		if int(items.get("batteries", 0)) > 0:
+			items["batteries"] = int(items.get("batteries", 0)) - 1
+			items["battery"] = 100.0
+			items["flash_on"] = true
+			audio.pickup()
+			toast("🔋 Swapped in spares — 100% (%d left)." % int(items.get("batteries", 0)))
+			return
+		toast("🔦 Battery dead — find batteries (kitchen drawer, cellar workbench).")
 		return
 	items["flash_on"] = not bool(items.get("flash_on", false))
 	if bool(items.get("flash_on", false)) and String(player.get("hidden")) != "":
