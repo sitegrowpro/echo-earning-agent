@@ -464,6 +464,7 @@ func _enter_cellar_now() -> void:
 	player.bounds_max = Cellar.BOUNDS_MAX
 	player.global_position = Cellar.SPAWN
 	player.call("set_look", 0.0, 0.0)
+	audio.set_drone(true)
 	story.cellar_enter()
 	update_mouse()
 
@@ -475,6 +476,7 @@ func exit_cellar() -> void:
 func _exit_cellar_now() -> void:
 	story.flags["in_cellar"] = false
 	story.cellar_exit()
+	audio.set_drone(story.chapter >= 5)
 	player.bounds_min = Vector2(-26.0, -38.5)
 	player.bounds_max = Vector2(26.0, 16.4)
 	player.global_position = Vector3(6.1, 0, 1.8)

@@ -385,6 +385,8 @@ func goto_chapter(n: int) -> void:
 			_setup5()
 		6:
 			_setup6()
+	if n >= 3:
+		audio.sting()
 	render_obj()
 	ui.autosave()
 
