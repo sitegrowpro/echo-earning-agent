@@ -20,6 +20,7 @@ const NOTES := {
 	"shed": {"title": "Clippings — the shed wall", "body": "Newspaper clippings, taped to the shed wall in neat rows.\n\n'HOLLOW CREEK FAMILY OF THREE SETTLES IN' ... 'MILLER REJOINS HOA BOARD' ... 'LOCAL TEEN WINS REGIONAL SPELLING BEE' — that one's about YOU, from two years ago.\n\nIn every photo of Dana, the eyes are scratched out. Not angrily. Carefully.\n\nOn the doorframe, a height chart in pencil. The top mark reads 6'4\".\n\nUnder it, one word: 'PATIENT.'"},
 	"cellar": {"title": "Unsent letter — Martin", "body": "Dana —\n\nThird one this month. Same handwriting, same words: 'coming home soon.'\n\nWe never HAD a son. I burned the others. Don't show Jamie. Don't tell the HOA — they already think we're dramatic.\n\n— M.\n\nP.S. The height chart in the shed wasn't us."},
 	"shrine": {"title": "Waterlogged prayer card", "body": "A prayer card, ink half-washed away: '...rest the soul of...' The name is scratched out. Deliberately. With something sharp.\n\nUnder the cross: candle stubs, a dead flashlight, and one child's mitten. The other is nowhere.\n\nOn the back, in pencil: 'I'M SORRY I LEFT.'"},
+	"attic": {"title": "Nursery box — attic", "body": "A moving box labeled 'NURSERY' in marker that isn't Dana's looping hand or Martin's block print.\n\nInside: one folded baby blanket. A height chart torn from a doorframe — the top mark reads 6'4\".\n\nUnderneath, where no one was meant to look: a newer tag that just says 'MINE.'\n\nThe box smells like him. Rain and old pennies."},
 }
 
 const CHAPTERS := [
@@ -98,6 +99,7 @@ var pet_def := {}
 var eggs: Array = []
 var market_defs: Array = []
 var cellar_defs: Array = []
+var attic_defs: Array = []
 var bolt_t := 12.0
 var mic_cool := 0.0
 var mic_warned := false
@@ -168,8 +170,11 @@ func reset_state() -> void:
 			I.remove(id)
 		for id in cellar_defs:
 			I.remove(id)
+		for id in attic_defs:
+			I.remove(id)
 	market_defs = []
 	cellar_defs = []
+	attic_defs = []
 
 
 func ui_busy() -> bool:
@@ -403,7 +408,7 @@ func check_advance() -> void:
 			goto_chapter(2)
 	elif chapter == 2 and is_done("dinner") and is_done("news") and is_done("priya") and is_done("woods"):
 		goto_chapter(3)
-	elif chapter == 3 and is_done("peep") and is_done("door") and is_done("millersreply"):
+	elif chapter == 3 and is_done("peep") and is_done("door") and is_done("millersreply") and is_done("attic"):
 		goto_chapter(4)
 	elif chapter == 4 and is_done("flash") and is_done("fuse") and is_done("cellar"):
 		goto_chapter(5)
@@ -663,6 +668,7 @@ func after_stranger() -> void:
 	done("door")
 	enemy.call("vanish")
 	stranger_out = false
+	obj("attic", "Search the ATTIC for proof he's lying (laundry ladder?)")
 	await tree.create_timer(7.0, false).timeout
 	if t != script_token:
 		return
@@ -672,6 +678,7 @@ func after_stranger() -> void:
 		"📷 [photo attached: this house, from the street. A TALL FIGURE stands under the streetlamp, facing your window.]",
 		"A neighbor just sent me this!!! There is a MAN outside the house",
 		"And Jamie... WE DON'T HAVE A SON. Lock EVERYTHING. I'm calling the police.",
+		"Martin says check the attic — if he lived here there'd be PROOF. Ladder's in the laundry.",
 	], 1.4, t, func(): _after_stranger_msgs())
 
 
@@ -749,6 +756,7 @@ func _unknown_call_end(accepted: bool) -> void:
 
 func _setup5() -> void:
 	audio.set_drone(true)
+	audio.set_tense(true)
 	obj("key", "Find the master bedroom key (kitchen drawer?)")
 	obj("carkeys", "Get the CAR KEYS from the master bedroom")
 	_ch5_seq()
@@ -958,6 +966,59 @@ func _furnace_stare() -> void:
 	world.spawn_glimpse(Vector3(-111.0, 1.0, -5.0), 1.0)
 	_egg_found("furnace", "The Furnace Man")
 	sub("For one second the inspection window isn't a window. It's an EYE. Then it's rust again.", 5.0)
+
+
+func _attic_prompt() -> String:
+	if chapter == 6:
+		return "No time — RUN"
+	var est := String(enemy.get("state"))
+	if est == "chase" or est == "investigate":
+		return "Not with HIM that close"
+	return "Climb up to the ATTIC"
+
+
+func _attic_use() -> void:
+	if chapter == 6:
+		return
+	var est := String(enemy.get("state"))
+	if est == "chase" or est == "investigate":
+		audio.locked()
+		sub("You hear him moving. The attic is a dead end with one ladder.", 4.0)
+		return
+	root.enter_attic()
+
+
+func attic_enter() -> void:
+	attic_defs.append("a-exit")
+	I.add({"id": "a-exit", "area": I.halo(Vector3(0, 1.2, -119.2), 1.0),
+		"prompt": func(_c): return "Climb back DOWN",
+		"on_use": func(_c): root.exit_attic()})
+	attic_defs.append("sw-attic")
+	_sw_def(I, "attic", Vector3(0, 1.4, -123.6), "Attic")
+	attic_defs.append("note-attic")
+	_note_def(I, "attic", Vector3(-8.0, 1.0, -133.0))
+	attic_defs.append("a-music")
+	I.add({"id": "a-music", "area": I.halo(Vector3(7.5, 1.0, -131.0), 0.6),
+		"prompt": func(_c): return "Wind the music box (hold)" if not eggs.has("musicbox") else "The music box sits silent",
+		"hold": func(_c): return 5.0 if not eggs.has("musicbox") else 0.0,
+		"on_use": func(_c): _music_use()})
+	if chapter == 3 and not is_done("attic"):
+		done("attic")
+	sub("Heat, dust, and mothballs. Rain hammers the roof like fingers. Somebody small lived up here once. Or was supposed to.", 6.0)
+
+
+func attic_exit() -> void:
+	for id in attic_defs:
+		I.remove(id)
+	attic_defs = []
+
+
+func _music_use() -> void:
+	if eggs.has("musicbox"):
+		return
+	audio.musicbox()
+	_egg_found("musicbox", "The Nursery Rhyme")
+	sub("Eight notes. A lullaby you almost know. The cylinder keeps turning after the song ends. It should not do that.", 6.0)
 
 
 func market_enter() -> void:
@@ -1247,7 +1308,7 @@ func update(dt: float) -> void:
 	if not pet_def.is_empty():
 		var area := pet_def.get("area") as Area3D
 		if area and is_instance_valid(area) and cat:
-			area.position = cat.head_pos() if not (bool(flags.get("in_market", false)) or bool(flags.get("in_cellar", false))) else Vector3(0, -50, 0)
+			area.position = cat.head_pos() if not (bool(flags.get("in_market", false)) or bool(flags.get("in_cellar", false)) or bool(flags.get("in_attic", false))) else Vector3(0, -50, 0)
 
 
 func _pa_update(dt: float) -> void:
@@ -1262,7 +1323,7 @@ func _pa_update(dt: float) -> void:
 
 
 func _bolt_update(dt: float) -> void:
-	if finished or bool(flags.get("in_market", false)) or bool(flags.get("in_cellar", false)):
+	if finished or bool(flags.get("in_market", false)) or bool(flags.get("in_cellar", false)) or bool(flags.get("in_attic", false)):
 		return
 	if chapter == 0 or chapter == 3:
 		return
@@ -1278,7 +1339,7 @@ func _mic_update(dt: float) -> void:
 	mic_cool = maxf(0.0, mic_cool - dt)
 	if finished or not mic.enabled or mic.muted or not mic.available:
 		return
-	if bool(flags.get("in_market", false)) or bool(flags.get("in_cellar", false)):
+	if bool(flags.get("in_market", false)) or bool(flags.get("in_cellar", false)) or bool(flags.get("in_attic", false)):
 		mic.consume_heard()
 		return
 	if not mic.consume_heard():
@@ -1617,6 +1678,7 @@ func finish(id: String, custom := "") -> void:
 	audio.set_subbass(false)
 	audio.set_tv(false)
 	audio.set_drone(false)
+	audio.set_tense(false)
 	tick_on = false
 	var mins := int((Time.get_ticks_msec() - start_msec) / 60000.0)
 	var texts := {
@@ -1800,6 +1862,9 @@ func register(inter) -> void:
 	inter.add({"id": "cellardoor", "area": inter.halo(Vector3(6.1, 1.2, 1.5), 0.7),
 		"prompt": func(_c): return _cellar_prompt(),
 		"on_use": func(_c): _cellar_use()})
+	inter.add({"id": "atticdoor", "area": inter.halo(Vector3(6.9, 1.2, -2.6), 0.7),
+		"prompt": func(_c): return _attic_prompt(),
+		"on_use": func(_c): _attic_use()})
 	inter.add({"id": "flashlight", "area": inter.halo(Vector3(6.8, 1.25, -3.6), 0.6),
 		"prompt": func(_c): return "Take the flashlight" if not bool(items.get("flash", false)) else "",
 		"on_use": func(_c): _take_flash()})

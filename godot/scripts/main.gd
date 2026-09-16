@@ -8,6 +8,7 @@ const Save := preload("res://scripts/save.gd")
 const Mic := preload("res://scripts/mic.gd")
 const Market := preload("res://scripts/market.gd")
 const Cellar := preload("res://scripts/cellar.gd")
+const Attic := preload("res://scripts/attic.gd")
 const Cat := preload("res://scripts/cat.gd")
 
 @onready var world = $World
@@ -25,6 +26,7 @@ var interact
 var mic
 var market
 var cellar
+var attic
 var cat
 var settings := {}
 var state := "menu"
@@ -55,6 +57,10 @@ func _ready() -> void:
 	cellar.name = "Cellar"
 	add_child(cellar)
 	cellar.setup(world)
+	attic = Attic.new()
+	attic.name = "Attic"
+	add_child(attic)
+	attic.setup(world)
 	cat = Cat.new()
 	cat.name = "Cat"
 	add_child(cat)
@@ -337,11 +343,11 @@ func _physics_process(dt: float) -> void:
 	player.indoor = room != "porch" and room != "yard" and room != "street" and room != "backyard" and room != "woods"
 	world.set_slabs_outside(not player.indoor)
 	# R4: rain follows shelter — full storm outside, muffled patter inside.
-	if bool(story.flags.get("in_market", false)) or bool(story.flags.get("in_cellar", false)):
+	if bool(story.flags.get("in_market", false)) or bool(story.flags.get("in_cellar", false)) or bool(story.flags.get("in_attic", false)):
 		audio.set_rain_level(0.12, true)
 	else:
 		audio.set_rain_level(0.35 if player.indoor else 1.0, player.indoor)
-	var house_in: bool = player.indoor and not bool(story.flags.get("in_market", false)) and not bool(story.flags.get("in_cellar", false))
+	var house_in: bool = player.indoor and not bool(story.flags.get("in_market", false)) and not bool(story.flags.get("in_cellar", false)) and not bool(story.flags.get("in_attic", false))
 	audio.set_glass_rain(house_in)
 	audio.set_wind(not player.indoor)
 	story.update(dt)
@@ -373,6 +379,8 @@ func _physics_process(dt: float) -> void:
 		dread = 0.55
 	elif bool(story.flags.get("in_cellar", false)):
 		dread = 0.5
+	elif bool(story.flags.get("in_attic", false)):
+		dread = 0.55
 	elif bool(story.flags.get("in_market", false)):
 		dread = 0.15
 	ui.set_dread(dread)
@@ -404,6 +412,8 @@ func _physics_process(dt: float) -> void:
 
 
 func room_of(p: Vector3) -> String:
+	if p.z < -60.0:
+		return "attic"
 	if p.x > 60.0:
 		return "market"
 	if p.x < -60.0:
@@ -482,6 +492,33 @@ func _exit_cellar_now() -> void:
 	player.call("set_look", 0.0, 0.0)
 
 
+func enter_attic() -> void:
+	ui.fade_swap(_enter_attic_now)
+
+
+func _enter_attic_now() -> void:
+	story.flags["in_attic"] = true
+	player.bounds_min = Attic.BOUNDS_MIN
+	player.bounds_max = Attic.BOUNDS_MAX
+	player.global_position = Attic.SPAWN
+	player.call("set_look", 0.0, 0.0)
+	story.attic_enter()
+	update_mouse()
+
+
+func exit_attic() -> void:
+	ui.fade_swap(_exit_attic_now)
+
+
+func _exit_attic_now() -> void:
+	story.flags["in_attic"] = false
+	story.attic_exit()
+	player.bounds_min = Vector2(-26.0, -38.5)
+	player.bounds_max = Vector2(26.0, 16.4)
+	player.global_position = Vector3(7.3, 0, -3.4)
+	player.call("set_look", PI * 0.5, 0.0)
+
+
 func flash_lightning() -> void:
 	if bool(settings.get("photosafe", false)):
 		audio.thunder() # R4: photosafe users get the cue without the strobe
@@ -503,6 +540,7 @@ func _reset_run() -> void:
 	audio.set_hum(false)
 	audio.set_whisper(false)
 	audio.set_drone(false)
+	audio.set_tense(false)
 	audio.set_stalk(false)
 	audio.set_subbass(false)
 	world.reset_dread_props()
@@ -699,6 +737,7 @@ func quit_to_menu() -> void:
 	audio.set_hum(false)
 	audio.set_heart(false) # R4: loops driven by update() must die here — update() stops on menu
 	audio.set_drone(false)
+	audio.set_tense(false)
 	audio.set_stalk(false)
 	audio.set_whisper(false)
 	audio.set_subbass(false)

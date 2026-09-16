@@ -27,6 +27,7 @@ var pool3d_muf: Array[AudioStreamPlayer3D] = [] # R4: occluded (through-wall) vo
 var voice_player: AudioStreamPlayer
 var stalk_player: AudioStreamPlayer
 var sub_player: AudioStreamPlayer
+var tense_player: AudioStreamPlayer
 var glass_player: AudioStreamPlayer
 var night_player: AudioStreamPlayer
 var fridge_player: AudioStreamPlayer3D
@@ -99,6 +100,7 @@ func _ready() -> void:
 	add_child(voice_player)
 	stalk_player = _loop_player("SFX")
 	sub_player = _loop_player("SFX")
+	tense_player = _loop_player("Music")
 	glass_player = _loop_player("SFX")
 	night_player = _loop_player("SFX")
 	fridge_player = AudioStreamPlayer3D.new()
@@ -560,6 +562,21 @@ func _build_bank() -> void:
 		var t := float(i) / rate
 		b[i] *= 0.5 + 0.5 * (0.5 + 0.5 * sin(TAU * t / 8.0))
 	bank["subbass_loop"] = _loop_wav(b)
+	b = _empty(7.0) # R6: music-box lullaby (attic egg) — sine + octave, slow decay
+	var lull := [659.25, 587.33, 523.25, 587.33, 659.25, 783.99, 659.25, 523.25]
+	for ni in lull.size():
+		_put_tone(b, lull[ni], 0.28, "sine", float(ni) * 0.8, 1.4, 0.0, 6.0)
+		_put_tone(b, lull[ni] * 2.0, 0.07, "sine", float(ni) * 0.8, 1.0, 0.0, 8.0)
+	bank["musicbox"] = _wav(b)
+	b = _empty(8.0) # R6: late-game tension layer — dissonant film strings
+	_put_tone(b, 220.0, 0.10, "saw", 0.0, 8.0, 0.0, 0.0)
+	_put_tone(b, 233.08, 0.10, "saw", 0.0, 8.0, 0.0, 0.0)
+	_put_tone(b, 110.0, 0.12, "tri", 0.0, 8.0, 0.0, 0.0)
+	_put_noise(b, 0.05, 0.0, 8.0, 3000.0, false, 0.0)
+	for i in b.size():
+		var t2 := float(i) / rate
+		b[i] *= 0.6 + 0.4 * sin(TAU * t2 / 8.0)
+	bank["tense_loop"] = _loop_wav(b)
 	# R5: rain-on-glass patter (near-window indoor layer) + night wind bed.
 	b = _empty(6.0)
 	_put_noise(b, 0.13, 0.0, 6.0, 1700.0, true, 0.0)
@@ -892,8 +909,21 @@ func mj_groove() -> void:
 	mj_player.play()
 
 
+func musicbox() -> void:
+	_play2d("musicbox", 0.0)
+
+
 func mj_stop() -> void:
 	mj_player.stop()
+
+
+func set_tense(on: bool) -> void:
+	if on and not tense_player.playing:
+		tense_player.stream = bank["tense_loop"]
+		tense_player.volume_db = -18.0
+		tense_player.play()
+	elif not on:
+		tense_player.stop()
 
 
 func set_drone(on: bool) -> void:

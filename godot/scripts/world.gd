@@ -1470,6 +1470,14 @@ func _furnish2() -> void:
 	_cyl(0.035, 0.035, 0.14, mat(Color(0.7, 0.4, 0.2), 0.6), Vector3(6.28, 1.59, -3.0))
 	_cyl(0.035, 0.035, 0.14, mat(Color(0.5, 0.2, 0.5), 0.6), Vector3(6.28, 1.59, -2.8))
 	_cyl(0.06, 0.06, 0.11, white, Vector3(5.5, 0.51, -4.9))
+	# ---- laundry: pull-down attic ladder (travel runs through the story) ----
+	var lad := mat(Color(0.4, 0.31, 0.2), 0.85)
+	box(0.06, 2.6, 0.06, lad, Vector3(6.68, 1.3, -2.9), 0.0, true)
+	box(0.06, 2.6, 0.06, lad, Vector3(6.68, 1.3, -2.3), 0.0, true)
+	for i in 5:
+		box(0.05, 0.05, 0.6, lad, Vector3(6.68, 0.4 + float(i) * 0.45, -2.6))
+	box(0.9, 0.08, 0.9, mat(Color(0.3, 0.22, 0.14), 0.8), Vector3(6.9, 2.76, -2.6))
+	box(0.7, 0.06, 0.7, mat(Color(0.02, 0.02, 0.03), 1.0), Vector3(6.9, 2.7, -2.6))
 	# ---- laundry: flashlight shelf + prop, shelf, detergent ----
 	box(0.4, 0.05, 0.5, wood, Vector3(6.8, 1.2, -3.6))
 	box(0.05, 0.05, 0.2, dark, Vector3(6.8, 1.26, -3.62))
@@ -2019,6 +2027,6 @@ func room_name(r: String) -> String:
 		"living": "LIVING ROOM", "kitchen": "KITCHEN", "hall": "HALLWAY",
 		"guest": "GUEST ROOM", "master": "MASTER BEDROOM", "bath": "BATHROOM",
 		"laundry": "LAUNDRY", "porch": "FRONT PORCH", "yard": "YARD", "street": "STREET",
-		"market": "FRESHMART", "garage": "GARAGE", "backyard": "BACKYARD", "woods": "THE WOODS", "cellar": "THE CELLAR",
+		"market": "FRESHMART", "garage": "GARAGE", "backyard": "BACKYARD", "woods": "THE WOODS", "cellar": "THE CELLAR", "attic": "THE ATTIC",
 	}
 	return names.get(r, r.to_upper())

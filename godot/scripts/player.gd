@@ -84,6 +84,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func surface_at() -> String:
 	var p := global_position
+	if p.z < -60.0:
+		return "wood"
 	if p.x > 60.0:
 		return "conc"
 	if p.x < -60.0:
