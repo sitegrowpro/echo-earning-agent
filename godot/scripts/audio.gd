@@ -642,6 +642,23 @@ func _build_bank() -> void:
 		var t := float(i) / rate
 		b[i] *= 0.6 + 0.4 * sin(TAU * t / 12.0 + 1.0) * sin(TAU * t / 5.0)
 	bank["night_loop"] = _loop_wav(b)
+	# R7c: heavy-file overrides — multi-minute WAVs replace synth loops
+	# when present; the synth bank stays as a bulletproof fallback.
+	_file_override("rain_loop", "res://audio/rain_exterior_heavy.wav", true)
+	_file_override("glassrain_loop", "res://audio/window_patter.wav", true)
+	_file_override("roofrain_loop", "res://audio/roof_thuds.wav", true)
+	_file_override("night_loop", "res://audio/night_wind.wav", true)
+	_file_override("thunder", "res://audio/thunder_far.wav", false)
+
+
+func _file_override(key: String, path: String, loop: bool) -> void:
+	if not ResourceLoader.exists(path):
+		return
+	var s := ResourceLoader.load(path) as AudioStreamWAV
+	if s == null:
+		return
+	s.loop_mode = AudioStreamWAV.LOOP_FORWARD if loop else AudioStreamWAV.LOOP_DISABLED
+	bank[key] = s
 
 
 func _mj_groove() -> PackedFloat32Array:

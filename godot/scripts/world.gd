@@ -433,7 +433,7 @@ func flash_lightning() -> void:
 func build() -> void:
 	_build_env()
 	var wall_in := TEX.mat_for("drywall", Color(0.72, 0.67, 0.56), 0.9)
-	var wall_out := TEX.mat_for("stucco", Color(0.45, 0.43, 0.38), 0.95)
+	var wall_out := TEX.mat_for("siding", Color(0.52, 0.5, 0.45), 0.9)
 	var wood := TEX.mat_for("planks", Color(0.48, 0.36, 0.24), 0.8)
 	var tile := TEX.mat_for("tile", Color(0.6, 0.63, 0.64), 0.4)
 	var bathtile := TEX.mat_for("bathtile", Color(0.62, 0.68, 0.72), 0.35)
@@ -455,7 +455,7 @@ func build() -> void:
 	ceil_mi.rotation.x = PI
 	ceil_mi.position = Vector3(0, H, 0)
 	add_child(ceil_mi)
-	box(X1 - X0 + 1.6, 0.25, ZS - ZN + 1.6, mat(Color(0.1, 0.1, 0.13), 1.0), Vector3(0, H + 0.2, 0))
+	box(X1 - X0 + 1.6, 0.25, ZS - ZN + 1.6, TEX.mat_for("shingles", Color(0.3, 0.3, 0.32), 0.95), Vector3(0, H + 0.2, 0))
 	# exterior walls
 	run_h(ZS, X0, X1, [
 		{"at": 3.5, "w": 1.9, "y0": 0.95, "y1": 2.25, "kind": "window"},
@@ -869,14 +869,14 @@ func _liners() -> void:
 func _garage() -> void:
 	# R5: attached garage, x 8..13, z -3.5..3.5. One real door (hall side),
 	# one sectional door (dressed wall, never interactive), one window.
-	var go := TEX.mat_for("stucco", Color(0.45, 0.43, 0.38), 0.95)
+	var go := TEX.mat_for("siding", Color(0.52, 0.5, 0.45), 0.9)
 	var gf := TEX.mat_for("concrete", Color(0.4, 0.4, 0.42), 0.95)
 	_floor(8.0, -3.5, 13.0, 3.5, gf)
 	run_h(-3.5, 8.0, 13.0, [], go)
 	run_h(3.5, 8.0, 13.0, [], go)
 	run_v(13.0, -3.5, 3.5, [{"at": 3.5, "w": 1.2, "y0": 1.2, "y1": 2.2, "kind": "window"}], go)
 	box(5.4, 0.15, 7.4, TEX.mat_for("ceiling", Color(0.55, 0.55, 0.53), 0.95), Vector3(10.5, H + 0.07, 0))
-	box(5.6, 0.12, 7.6, mat(Color(0.07, 0.07, 0.08), 1.0), Vector3(10.5, H + 0.2, 0))
+	box(5.6, 0.12, 7.6, TEX.mat_for("shingles", Color(0.3, 0.3, 0.32), 0.95), Vector3(10.5, H + 0.2, 0))
 	box(3.0, 0.04, 10.0, gf, Vector3(10.5, 0.0, 8.5)) # driveway to the street
 	# The Millers' sedan (decor car: parked, cold, never driven).
 	var car := mat(Color(0.16, 0.2, 0.28), 0.35, 0.4)
@@ -939,7 +939,7 @@ func _backyard() -> void:
 	box(1.1, 0.24, 0.12, sm, Vector3(-9.0, 2.18, -10.0))
 	box(0.08, 2.1, 0.16, sm, Vector3(-9.54, 1.05, -10.0))
 	box(0.08, 2.1, 0.16, sm, Vector3(-8.46, 1.05, -10.0))
-	box(2.3, 0.1, 2.3, mat(Color(0.08, 0.08, 0.09), 1.0), Vector3(-9.0, 2.33, -11.0))
+	box(2.3, 0.1, 2.3, TEX.mat_for("shingles", Color(0.22, 0.22, 0.24), 0.95), Vector3(-9.0, 2.33, -11.0))
 	add_door("shed", -9.5, -10.0, 0.9, 1.92, {"label": "Shed door"})
 	var cm2 := mat(Color(0.42, 0.33, 0.2), 0.9)
 	box(0.6, 0.6, 0.6, cm2, Vector3(-9.4, 0.3, -11.4), 0.0, true)
@@ -1817,7 +1817,7 @@ func _outside() -> void:
 	box(6.4, 0.18, 2.6, deck, Vector3(0, 0.09, 6.8), 0.0, true)
 	box(0.18, 3.0, 0.18, mat(Color(0.23, 0.18, 0.12), 0.9), Vector3(-2.9, 1.5, 7.9), 0.0, true)
 	box(0.18, 3.0, 0.18, mat(Color(0.23, 0.18, 0.12), 0.9), Vector3(2.9, 1.5, 7.9), 0.0, true)
-	box(6.8, 0.15, 3.0, mat(Color(0.08, 0.08, 0.09), 1.0), Vector3(0, 3.05, 6.8))
+	box(6.8, 0.15, 3.0, TEX.mat_for("shingles", Color(0.28, 0.28, 0.3), 0.95), Vector3(0, 3.05, 6.8))
 	var step_ramp := box(6.4, 0.06, 0.75, deck, Vector3(0, 0.09, 8.42), 0.0, true)
 	step_ramp.rotation.x = 0.27
 	# R7: threshold ramp INSIDE the doorway — the 0.18 deck lip was an
@@ -1858,7 +1858,7 @@ func _outside() -> void:
 	# R7b: fake streetlamp cone deleted — the volumetric moon does the work.
 	# neighbor house (escape A)
 	box(7, 3.6, 5.5, TEX.mat_for("brick", Color(0.38, 0.24, 0.22), 1.0), Vector3(-17, 1.8, 10), 0.0, true)
-	box(7.6, 0.4, 6.1, mat(Color(0.06, 0.06, 0.08), 1.0), Vector3(-17, 3.8, 10))
+	box(7.6, 0.4, 6.1, TEX.mat_for("shingles", Color(0.3, 0.3, 0.32), 0.95), Vector3(-17, 3.8, 10))
 	var nwin := MeshInstance3D.new()
 	var nw := PlaneMesh.new()
 	nw.size = Vector2(1.4, 1.0)
@@ -1875,7 +1875,7 @@ func _outside() -> void:
 	nramp.rotation.z = -0.27 # step up from the east, like the Millers' ramp
 	box(0.18, 3.0, 0.18, mat(Color(0.23, 0.18, 0.12), 0.9), Vector3(-19.3, 1.5, 5.4), 0.0, true)
 	box(0.18, 3.0, 0.18, mat(Color(0.23, 0.18, 0.12), 0.9), Vector3(-14.7, 1.5, 5.4), 0.0, true)
-	box(5.4, 0.15, 2.4, mat(Color(0.08, 0.08, 0.09), 1.0), Vector3(-17, 3.0, 6.2))
+	box(5.4, 0.15, 2.4, TEX.mat_for("shingles", Color(0.28, 0.28, 0.3), 0.95), Vector3(-17, 3.0, 6.2))
 	box(0.08, 0.9, 2.0, mat(Color(0.3, 0.24, 0.16), 0.9), Vector3(-19.4, 0.65, 6.2), 0.0, true)
 	box(5.0, 0.9, 0.08, mat(Color(0.3, 0.24, 0.16), 0.9), Vector3(-17, 0.65, 5.3), 0.0, true)
 	box(0.9, 0.03, 0.6, mat(Color(0.43, 0.23, 0.23), 1.0), Vector3(-18.2, 0.2, 6.9))

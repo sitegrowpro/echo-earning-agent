@@ -16,6 +16,7 @@ const TILE_METERS := {
 	"pinefloor": 4.0, "bark": 1.5,
 	"block": 2.0, "cellar": 3.0,
 	"porch": 2.0, "lino": 2.0, "asphalt2": 4.0,
+	"siding": 2.0, "shingles": 2.0,
 }
 
 const PHOTO := {
@@ -28,6 +29,7 @@ const PHOTO := {
 	"pinefloor": "pinefloor", "bark": "bark",
 	"block": "block", "cellar": "cellar",
 	"porch": "porch", "lino": "lino", "asphalt2": "asphalt2",
+	"siding": "siding", "shingles": "shingles",
 }
 
 
