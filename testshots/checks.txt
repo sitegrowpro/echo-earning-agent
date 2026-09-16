@@ -1,5 +1,6 @@
 OK: res://scripts/audio.gd
 OK: res://scripts/cat.gd
+OK: res://scripts/cellar.gd
 OK: res://scripts/config.gd
 OK: res://scripts/door.gd
 OK: res://scripts/enemy.gd

@@ -6,7 +6,7 @@
 [SHOT] intro card captured; simulating Continue-during-intro
 [SHOT] intro buried verdict=INTRO-OK
 [SHOT] card dismissed; front open; TV on; walking in
-[SHOT] walk-in final pos=(0.093459, 0.000122, 1.840933) verdict=WALKIN-OK
+[SHOT] walk-in final pos=(0.093459, 0.000203, 1.840157) verdict=WALKIN-OK
 [SHOT] saved /tmp/shot_02_spawn.png err=0
 [SHOT] stop 2 saved
 [SHOT] saved /tmp/shot_03_living.png err=0
