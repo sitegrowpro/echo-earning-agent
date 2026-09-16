@@ -1,4 +1,6 @@
 [SHOT] main instanced
+SHADER ERROR: No matching function found for: 'clampf'.
+ERROR: Shader compilation failed.
 [SHOT] saved /tmp/shot_01_menu.png err=0
 [SHOT] menu captured; starting WITH intro (regression: menu must hide)
 [SHOT] intro menu-hidden verdict=MENU-OK
@@ -6,27 +8,33 @@
 [SHOT] intro card captured; simulating Continue-during-intro
 [SHOT] intro buried verdict=INTRO-OK
 [SHOT] card dismissed; front open; TV on; walking in
-[SHOT] walk-in final pos=(0.093458, 0.000123, 1.840928) verdict=WALKIN-OK
-[SHOT] saved /tmp/shot_02_spawn.png err=0
-[SHOT] stop 2 saved
-[SHOT] saved /tmp/shot_03_living.png err=0
-[SHOT] stop 3 saved
-[SHOT] saved /tmp/shot_04_kitchen.png err=0
-[SHOT] stop 4 saved
-[SHOT] saved /tmp/shot_05_guest.png err=0
-[SHOT] stop 5 saved
-[SHOT] saved /tmp/shot_06_bath.png err=0
-[SHOT] stop 6 saved
-[SHOT] saved /tmp/shot_07_hall.png err=0
-[SHOT] stop 7 saved
-[SHOT] phone opened
-[SHOT] saved /tmp/shot_08_phone.png err=0
-[SHOT] stop 8 saved
-[SHOT] phone closed
-[SHOT] saved /tmp/shot_09_street.png err=0
-[SHOT] stop 9 saved
-[SHOT] Daniel perched for finale; cams open
-[SHOT] saved /tmp/shot_10_daniel.png err=0
-[SHOT] stop 10 saved
-[SHOT] DONE
-ERROR: 4 resources still in use at exit (run with --verbose for details).
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
+SCRIPT ERROR: Invalid type in function 'update' in base 'RefCounted (disturb.gd)'. The Object-derived class of argument 3 (RefCounted (story.gd)) is not a subclass of the expected argument class.
