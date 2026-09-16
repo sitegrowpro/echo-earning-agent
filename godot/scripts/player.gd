@@ -86,6 +86,8 @@ func surface_at() -> String:
 	var p := global_position
 	if p.x > 60.0:
 		return "conc"
+	if p.x < -60.0:
+		return "conc"
 	if p.z >= 5.5:
 		if absf(p.x) < 3.4 and p.z < 8.4:
 			return "wood"

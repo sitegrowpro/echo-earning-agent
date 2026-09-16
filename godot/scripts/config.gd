@@ -20,7 +20,7 @@ const POLICE_WAIT := 150.0
 const NEWS_TIME := 130.0
 const MIC_STREAK := 0.45
 const MIC_COOL := 4.0
-const EGGS_TOTAL := 3 # R5: wick, adapter-hunt vinyl, cat whisperer
+const EGGS_TOTAL := 5 # R6: + trailcam (WOODS cam), furnace (cellar stare)
 const MARKET_CHAPTER := 1
 
 const ENEMY := {

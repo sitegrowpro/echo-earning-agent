@@ -14,6 +14,7 @@ const TILE_METERS := {
 	"wallpaper": 2.0, "bathtile": 1.0, "lace": 1.0,
 	"wooddoor": 2.0, "shrub": 1.0, "grave": 2.0, "gravedirt": 1.0,
 	"pinefloor": 4.0, "bark": 1.5,
+	"block": 2.0, "cellar": 3.0,
 }
 
 const PHOTO := {
@@ -24,6 +25,7 @@ const PHOTO := {
 	"wallpaper": "wallpaper", "bathtile": "bathtile", "lace": "lace",
 	"wooddoor": "wooddoor", "shrub": "shrub", "grave": "grave", "gravedirt": "gravedirt",
 	"pinefloor": "pinefloor", "bark": "bark",
+	"block": "block", "cellar": "cellar",
 }
 
 

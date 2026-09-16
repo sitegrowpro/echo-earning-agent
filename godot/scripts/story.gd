@@ -18,6 +18,8 @@ const NOTES := {
 	"priya_note": {"title": "Note slipped under the door", "body": "In Priya's handwriting, shaky:\n\n\"jamie i drove by and there was a guy standing by the side of the house just STARING at the windows. i honked and he looked RIGHT at me and smiled. i'm going home. DO NOT open the door tonight. call me\"\n\nThe ink is smeared, like it was written fast."},
 	"grocery": {"title": "Dana's grocery list (fridge)", "body": "FRESHMART RUN — please!! 🙏\n\n☐ Milk (2%!!)\n☐ Eggs\n☐ Bread\n☐ Biscuit's cat food (the EXPENSIVE one, he knows the difference)\n☐ AA batteries (storm!!)\n☐ Mint chip ice cream (for you, obviously)\n\nTake the $50 from the cookie jar. Keep the change, sweetie. — Dana"},
 	"shed": {"title": "Clippings — the shed wall", "body": "Newspaper clippings, taped to the shed wall in neat rows.\n\n'HOLLOW CREEK FAMILY OF THREE SETTLES IN' ... 'MILLER REJOINS HOA BOARD' ... 'LOCAL TEEN WINS REGIONAL SPELLING BEE' — that one's about YOU, from two years ago.\n\nIn every photo of Dana, the eyes are scratched out. Not angrily. Carefully.\n\nOn the doorframe, a height chart in pencil. The top mark reads 6'4\".\n\nUnder it, one word: 'PATIENT.'"},
+	"cellar": {"title": "Unsent letter — Martin", "body": "Dana —\n\nThird one this month. Same handwriting, same words: 'coming home soon.'\n\nWe never HAD a son. I burned the others. Don't show Jamie. Don't tell the HOA — they already think we're dramatic.\n\n— M.\n\nP.S. The height chart in the shed wasn't us."},
+	"shrine": {"title": "Waterlogged prayer card", "body": "A prayer card, ink half-washed away: '...rest the soul of...' The name is scratched out. Deliberately. With something sharp.\n\nUnder the cross: candle stubs, a dead flashlight, and one child's mitten. The other is nowhere.\n\nOn the back, in pencil: 'I'M SORRY I LEFT.'"},
 }
 
 const CHAPTERS := [
@@ -95,6 +97,7 @@ var I
 var pet_def := {}
 var eggs: Array = []
 var market_defs: Array = []
+var cellar_defs: Array = []
 var bolt_t := 12.0
 var mic_cool := 0.0
 var mic_warned := false
@@ -163,7 +166,10 @@ func reset_state() -> void:
 	if I:
 		for id in market_defs:
 			I.remove(id)
+		for id in cellar_defs:
+			I.remove(id)
 	market_defs = []
+	cellar_defs = []
 
 
 func ui_busy() -> bool:
@@ -872,6 +878,77 @@ func go_market() -> void:
 	root.enter_market()
 
 
+func _cellar_prompt() -> String:
+	if chapter == 6:
+		return "No time — RUN"
+	var est := String(enemy.get("state"))
+	if est == "chase" or est == "investigate":
+		return "Not with HIM that close"
+	return "Go down to the CELLAR"
+
+
+func _cellar_use() -> void:
+	if chapter == 6:
+		return
+	var est := String(enemy.get("state"))
+	if est == "chase" or est == "investigate":
+		audio.locked()
+		sub("You hear him moving. Going down there now would corner you like a rat.", 4.0)
+		return
+	root.enter_cellar()
+
+
+func cellar_enter() -> void:
+	cellar_defs.append("c-exit")
+	I.add({"id": "c-exit", "area": I.halo(Vector3(-120.0, 1.2, 9.8), 1.0),
+		"prompt": func(_c): return "Climb back UPSTAIRS",
+		"on_use": func(_c): root.exit_cellar()})
+	cellar_defs.append("sw-cellar")
+	_sw_def(I, "cellar", Vector3(-119.0, 1.35, 10.7), "Cellar")
+	cellar_defs.append("note-cellar")
+	_note_def(I, "cellar", Vector3(-130.5, 1.15, -8.5))
+	cellar_defs.append("c-pack")
+	I.add({"id": "c-pack", "area": I.halo(Vector3(-128.0, 1.0, -7.5), 0.6),
+		"prompt": func(_c): return "Take the spare AA pack" if not bool(flags.get("pack", false)) else "",
+		"on_use": func(_c): _pack_use()})
+	cellar_defs.append("c-furnace")
+	I.add({"id": "c-furnace", "area": I.halo(Vector3(-111.0, 1.0, -5.2), 0.9),
+		"prompt": func(_c): return "Stare into the furnace window (hold)" if not eggs.has("furnace") else "The furnace ticks as it cools",
+		"hold": func(_c): return 6.0 if not eggs.has("furnace") else 0.0,
+		"on_use": func(_c): _furnace_stare()})
+	sub("Concrete, oil, and dust. The furnace ticks. The dark down here feels... occupied.", 5.0)
+
+
+func cellar_exit() -> void:
+	for id in cellar_defs:
+		I.remove(id)
+	cellar_defs = []
+
+
+func _pack_use() -> void:
+	if bool(flags.get("pack", false)):
+		return
+	if float(items.get("battery", 0.0)) >= 99.0:
+		sub("Flashlight's already full — leave the spares for later.", 3.0)
+		return
+	flags["pack"] = true
+	items["battery"] = 100.0
+	audio.pickup()
+	toast("🔋 Spare AAs! Flashlight recharged to 100%.")
+
+
+func _furnace_stare() -> void:
+	if eggs.has("furnace"):
+		return
+	if flash_is_on:
+		sub("The flashlight washes it out. Whatever's in there, it only shows in the dark.", 4.0)
+		return
+	audio.sting()
+	world.spawn_glimpse(Vector3(-111.0, 1.0, -5.0), 1.0)
+	_egg_found("furnace", "The Furnace Man")
+	sub("For one second the inspection window isn't a window. It's an EYE. Then it's rust again.", 5.0)
+
+
 func market_enter() -> void:
 	pa_t = 25.0
 	var taken: Array = flags.get("groceries", [])
@@ -1071,6 +1148,11 @@ func update(dt: float) -> void:
 	var s := clock_str()
 	ui.vhs(s)
 	phone.call("set_clock", s)
+	if cam_open and chapter >= 4 and not bool(flags.get("camegg", false)) and world.cam_idx < world.cam_labels.size() and String(world.cam_labels[world.cam_idx]).find("WOODS") >= 0:
+		flags["camegg"] = true
+		world.spawn_glimpse(Vector3(-3.2, 1.0, -31.5), 1.2)
+		audio.sting()
+		_egg_found("trailcam", "Smile for the camera")
 	flash_is_on = bool(items.get("flash_on", false)) and bool(items.get("flash", false)) and float(items.get("battery", 0.0)) > 0.0
 	if flash_is_on:
 		items["battery"] = float(items["battery"]) - CFG.FLASH_DRAIN * dt
@@ -1154,7 +1236,7 @@ func update(dt: float) -> void:
 	if not pet_def.is_empty():
 		var area := pet_def.get("area") as Area3D
 		if area and is_instance_valid(area) and cat:
-			area.position = cat.head_pos() if not bool(flags.get("in_market", false)) else Vector3(0, -50, 0)
+			area.position = cat.head_pos() if not (bool(flags.get("in_market", false)) or bool(flags.get("in_cellar", false))) else Vector3(0, -50, 0)
 
 
 func _pa_update(dt: float) -> void:
@@ -1169,7 +1251,7 @@ func _pa_update(dt: float) -> void:
 
 
 func _bolt_update(dt: float) -> void:
-	if finished or bool(flags.get("in_market", false)):
+	if finished or bool(flags.get("in_market", false)) or bool(flags.get("in_cellar", false)):
 		return
 	if chapter == 0 or chapter == 3:
 		return
@@ -1185,7 +1267,7 @@ func _mic_update(dt: float) -> void:
 	mic_cool = maxf(0.0, mic_cool - dt)
 	if finished or not mic.enabled or mic.muted or not mic.available:
 		return
-	if bool(flags.get("in_market", false)):
+	if bool(flags.get("in_market", false)) or bool(flags.get("in_cellar", false)):
 		mic.consume_heard()
 		return
 	if not mic.consume_heard():
@@ -1698,6 +1780,9 @@ func register(inter) -> void:
 	inter.add({"id": "drawer", "area": inter.halo(Vector3(4.2, 0.75, 2.8), 0.6),
 		"prompt": func(_c): return _drawer_prompt(),
 		"on_use": func(_c): _drawer_use()})
+	inter.add({"id": "cellardoor", "area": inter.halo(Vector3(6.1, 1.2, 1.5), 0.7),
+		"prompt": func(_c): return _cellar_prompt(),
+		"on_use": func(_c): _cellar_use()})
 	inter.add({"id": "flashlight", "area": inter.halo(Vector3(6.8, 1.25, -3.6), 0.6),
 		"prompt": func(_c): return "Take the flashlight" if not bool(items.get("flash", false)) else "",
 		"on_use": func(_c): _take_flash()})
@@ -1772,6 +1857,7 @@ func register(inter) -> void:
 	inter.add(pet_def)
 	_note_def(inter, "grocery", Vector3(6.55, 1.45, 0.55), "grocery_note")
 	_note_def(inter, "shed", Vector3(-9.4, 0.8, -11.4))
+	_note_def(inter, "shrine", Vector3(-3.2, 1.0, -31.0))
 
 
 func _feed_biscuit() -> void:

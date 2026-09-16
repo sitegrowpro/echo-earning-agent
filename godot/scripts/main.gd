@@ -7,6 +7,7 @@ const Interact := preload("res://scripts/interact.gd")
 const Save := preload("res://scripts/save.gd")
 const Mic := preload("res://scripts/mic.gd")
 const Market := preload("res://scripts/market.gd")
+const Cellar := preload("res://scripts/cellar.gd")
 const Cat := preload("res://scripts/cat.gd")
 
 @onready var world = $World
@@ -23,6 +24,7 @@ var phone
 var interact
 var mic
 var market
+var cellar
 var cat
 var settings := {}
 var state := "menu"
@@ -49,6 +51,10 @@ func _ready() -> void:
 	market = Market.new()
 	market.name = "Market"
 	add_child(market)
+	cellar = Cellar.new()
+	cellar.name = "Cellar"
+	add_child(cellar)
+	cellar.setup(world)
 	cat = Cat.new()
 	cat.name = "Cat"
 	add_child(cat)
@@ -332,11 +338,11 @@ func _physics_process(dt: float) -> void:
 	player.indoor = room != "porch" and room != "yard" and room != "street" and room != "backyard" and room != "woods"
 	world.set_slabs_outside(not player.indoor)
 	# R4: rain follows shelter — full storm outside, muffled patter inside.
-	if bool(story.flags.get("in_market", false)):
+	if bool(story.flags.get("in_market", false)) or bool(story.flags.get("in_cellar", false)):
 		audio.set_rain_level(0.12, true)
 	else:
 		audio.set_rain_level(0.35 if player.indoor else 1.0, player.indoor)
-	var house_in: bool = player.indoor and not bool(story.flags.get("in_market", false))
+	var house_in: bool = player.indoor and not bool(story.flags.get("in_market", false)) and not bool(story.flags.get("in_cellar", false))
 	audio.set_glass_rain(house_in)
 	audio.set_wind(not player.indoor)
 	story.update(dt)
@@ -366,6 +372,8 @@ func _physics_process(dt: float) -> void:
 		dread = 0.8
 	elif story.chapter >= 5:
 		dread = 0.55
+	elif bool(story.flags.get("in_cellar", false)):
+		dread = 0.5
 	elif bool(story.flags.get("in_market", false)):
 		dread = 0.15
 	ui.set_dread(dread)
@@ -399,6 +407,8 @@ func _physics_process(dt: float) -> void:
 func room_of(p: Vector3) -> String:
 	if p.x > 60.0:
 		return "market"
+	if p.x < -60.0:
+		return "cellar"
 	if p.z >= 5.5:
 		if absf(p.x) < 3.4 and p.z < 8.4:
 			return "porch"
@@ -436,12 +446,39 @@ func _exit_market_now() -> void:
 	story.market_exit()
 	world.set_market_mood(false)
 	audio.set_rain_level(1.0)
-	player.bounds_min = Vector2(-26.0, -7.6)
+	player.bounds_min = Vector2(-26.0, -38.5) # R6: was a stale pre-R5 value — locked the yard after shopping
 	player.bounds_max = Vector2(26.0, 16.4)
 	player.global_position = Vector3(0, 0, 7.4)
 	player.call("set_look", 0.0, 0.0)
 	story.clock_min += 25.0
 	story.done("market")
+
+
+func enter_cellar() -> void:
+	ui.fade_swap(_enter_cellar_now)
+
+
+func _enter_cellar_now() -> void:
+	story.flags["in_cellar"] = true
+	player.bounds_min = Cellar.BOUNDS_MIN
+	player.bounds_max = Cellar.BOUNDS_MAX
+	player.global_position = Cellar.SPAWN
+	player.call("set_look", 0.0, 0.0)
+	story.cellar_enter()
+	update_mouse()
+
+
+func exit_cellar() -> void:
+	ui.fade_swap(_exit_cellar_now)
+
+
+func _exit_cellar_now() -> void:
+	story.flags["in_cellar"] = false
+	story.cellar_exit()
+	player.bounds_min = Vector2(-26.0, -38.5)
+	player.bounds_max = Vector2(26.0, 16.4)
+	player.global_position = Vector3(6.1, 0, 1.8)
+	player.call("set_look", 0.0, 0.0)
 
 
 func flash_lightning() -> void:

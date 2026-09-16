@@ -1433,6 +1433,13 @@ func _furnish2() -> void:
 	_ball(0.06, mat(Color(0.7, 0.1, 0.1), 0.7), Vector3(4.27, 1.08, 3.03))
 	_ball(0.06, mat(Color(0.4, 0.65, 0.15), 0.7), Vector3(4.2, 1.08, 2.93))
 	art_props["trashbag"] = box(0.45, 0.55, 0.45, mat(Color(0.08, 0.1, 0.08), 0.9), Vector3(4.9, 0.28, 2.6), 0.0, true)
+	# ---- kitchen: the cellar door (fake panel; travel runs through the story) ----
+	var cframe := mat(Color(0.3, 0.22, 0.14), 0.8)
+	box(1.1, 0.12, 0.14, cframe, Vector3(6.1, 2.12, 0.66))
+	box(0.12, 2.2, 0.14, cframe, Vector3(5.58, 1.05, 0.66))
+	box(0.12, 2.2, 0.14, cframe, Vector3(6.62, 1.05, 0.66))
+	box(0.95, 2.05, 0.08, TEX.mat_for("wooddoor", Color(0.5, 0.42, 0.3), 0.8), Vector3(6.1, 1.03, 0.68))
+	_ball(0.045, mat(Color(0.79, 0.64, 0.15), 0.35, 0.7), Vector3(6.45, 1.02, 0.76))
 	# ---- hall: vase on the console ----
 	_cyl(0.07, 0.1, 0.28, mat(Color(0.2, 0.4, 0.4), 0.6), Vector3(-3.8, 0.94, -1.25))
 	_ball(0.07, mat(Color(0.15, 0.35, 0.15), 1.0), Vector3(-3.8, 1.15, -1.25))
@@ -2001,6 +2008,6 @@ func room_name(r: String) -> String:
 		"living": "LIVING ROOM", "kitchen": "KITCHEN", "hall": "HALLWAY",
 		"guest": "GUEST ROOM", "master": "MASTER BEDROOM", "bath": "BATHROOM",
 		"laundry": "LAUNDRY", "porch": "FRONT PORCH", "yard": "YARD", "street": "STREET",
-		"market": "FRESHMART", "garage": "GARAGE", "backyard": "BACKYARD", "woods": "THE WOODS",
+		"market": "FRESHMART", "garage": "GARAGE", "backyard": "BACKYARD", "woods": "THE WOODS", "cellar": "THE CELLAR",
 	}
 	return names.get(r, r.to_upper())
