@@ -74,6 +74,7 @@ func _ready() -> void:
 	mic.setup(get_tree())
 	disturb = Disturb.new()
 	disturb.setup(world, enemy)
+	flash.light_projector = _flash_cookie()
 	player.audio = audio
 	player.world = world
 	enemy.audio = audio
@@ -186,6 +187,33 @@ func _apply_keys() -> void:
 			ev.device = -1
 			ev.physical_keycode = code
 			InputMap.action_add_event(a, ev)
+
+
+func _flash_cookie() -> Texture2D:
+	# R7b: a real light_projector cookie — scratched plastic lens, uneven
+	# filament blob, noisy falloff. Deterministic: the same cheap flashlight.
+	var img := Image.create_empty(128, 128, false, Image.FORMAT_RGBA8)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 1337
+	var scratch: Array = []
+	for s in 7:
+		scratch.append(rng.randf() * TAU)
+	for y in 128:
+		for x in 128:
+			var dx := (float(x) - 64.0) / 64.0
+			var dy := (float(y) - 64.0) / 64.0
+			var d := sqrt(dx * dx + dy * dy)
+			var v := clampf(1.0 - d * 1.15, 0.0, 1.0)
+			var ang := atan2(dy, dx)
+			for s in scratch:
+				if absf(wrapf(ang - float(s), -PI, PI)) < 0.012 and d < 0.9:
+					v *= 0.55
+			v *= 0.82 + rng.randf() * 0.18
+			var fil := Vector2(dx - 0.12, dy + 0.1).length()
+			if fil < 0.33:
+				v = clampf(v + 0.35 * (1.0 - fil * 3.0), 0.0, 1.0)
+			img.set_pixel(x, y, Color(v, v, v))
+	return ImageTexture.create_from_image(img)
 
 
 func rebind(action: String, code: int) -> void:
@@ -357,6 +385,7 @@ func _physics_process(dt: float) -> void:
 		audio.set_rain_level(0.35 if player.indoor else 1.0, player.indoor)
 	var house_in: bool = player.indoor and not bool(story.flags.get("in_market", false)) and not bool(story.flags.get("in_cellar", false)) and not bool(story.flags.get("in_attic", false))
 	audio.set_glass_rain(house_in)
+	audio.set_rain_proximity(audio.rain_proximity(player.global_position) if house_in else 1.0)
 	audio.set_wind(not player.indoor)
 	story.update(dt)
 	# R4: Daniel freezes while MODAL ui holds the player — being caught

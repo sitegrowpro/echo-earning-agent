@@ -46,6 +46,7 @@ collide_with_bodies = false
 [node name="Flashlight" type="SpotLight3D" parent="Player/Camera3D"]
 light_energy = 0.0
 shadow_enabled = true
+shadow_blur = 2.0
 spot_range = 22.0
 spot_angle = 24.0
 spot_attenuation = 1.2

@@ -408,7 +408,7 @@ func set_market_mood(inside: bool) -> void:
 		env.fog_enabled = false
 	else:
 		env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-		env.ambient_light_energy = 0.4
+		env.ambient_light_energy = 0.0
 		env.fog_enabled = true
 
 
@@ -426,7 +426,7 @@ func flash_lightning() -> void:
 	t.tween_callback(func(): moon.light_energy = 2.2)
 	t.tween_interval(0.25)
 	t.tween_property(moon, "light_energy", 0.5, 0.6)
-	t.parallel().tween_property(env, "ambient_light_energy", 0.4, 0.6)
+	t.parallel().tween_property(env, "ambient_light_energy", 0.0, 0.6)
 	t.tween_callback(func(): moon.light_color = Color(0.56, 0.66, 1.0))
 
 
@@ -434,7 +434,7 @@ func build() -> void:
 	_build_env()
 	var wall_in := TEX.mat_for("drywall", Color(0.72, 0.67, 0.56), 0.9)
 	var wall_out := TEX.mat_for("stucco", Color(0.45, 0.43, 0.38), 0.95)
-	var wood := TEX.mat_for("planks", Color(0.48, 0.36, 0.24), 0.7)
+	var wood := TEX.mat_for("planks", Color(0.48, 0.36, 0.24), 0.8)
 	var tile := TEX.mat_for("tile", Color(0.6, 0.63, 0.64), 0.4)
 	var bathtile := TEX.mat_for("bathtile", Color(0.62, 0.68, 0.72), 0.35)
 	var carpet := TEX.mat_for("carpet", Color(0.3, 0.27, 0.35), 1.0)
@@ -547,10 +547,14 @@ func _build_env() -> void:
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_energy = 0.32
+	# R7b: no light, no sight. Unlit rooms are crushing black now.
+	env.ambient_light_energy = 0.0
 	# Filmic + bloom: lamps, TV and windows bleed like a camcorder at night.
 	env.tonemap_mode = Environment.TONE_MAPPER_ACES
 	env.tonemap_exposure = 1.15
+	env.adjustment_enabled = true
+	env.adjustment_saturation = 0.85
+	env.adjustment_contrast = 0.95
 	env.glow_enabled = true
 	env.glow_intensity = 0.6
 	env.glow_strength = 1.1
@@ -558,7 +562,7 @@ func _build_env() -> void:
 	env.ssao_enabled = true
 	env.ssr_enabled = true
 	env.volumetric_fog_enabled = true
-	env.volumetric_fog_density = 0.05
+	env.volumetric_fog_density = 0.01
 	env.fog_enabled = true
 	env.fog_mode = Environment.FOG_MODE_EXPONENTIAL
 	env.fog_density = 0.012
@@ -571,6 +575,7 @@ func _build_env() -> void:
 	moon.light_energy = 0.5
 	moon.shadow_enabled = true
 	moon.shadow_blur = 2.0
+	moon.light_volumetric_fog_energy = 2.0
 	moon.rotation_degrees = Vector3(-50, -30, 0)
 	add_child(moon)
 	_ground_collision()
@@ -1054,6 +1059,8 @@ func _curtain(cx: float, z: float, rod_y: float, w: float, panels: Array, short:
 	var h := 1.2 if short else 1.7
 	var y := 1.7 if short else 1.45
 	var fm := TEX.mat_for("lace", c.lightened(0.55), 1.0) # R5: curtains get real lace
+	fm.backlight_enabled = true # R7b: moonlight bleeds through the fabric
+	fm.backlight = Color(0.45, 0.42, 0.38)
 	for px in panels:
 		box(0.42, h, 0.09, fm, Vector3(px, y, z))
 
@@ -1079,6 +1086,8 @@ func _sheer(cx: float, z: float, w: float) -> void:
 	m.albedo_texture = TEX.art("curtainlace") # R5b: sheers get real lace (null-safe)
 	m.cull_mode = BaseMaterial3D.CULL_DISABLED
 	m.roughness = 0.9
+	m.backlight_enabled = true
+	m.backlight = Color(0.35, 0.42, 0.52)
 	box(w * 0.46, 1.35, 0.02, m, Vector3(cx - w * 0.26, 1.6, z))
 	box(w * 0.46, 1.35, 0.02, m, Vector3(cx + w * 0.26, 1.6, z))
 
@@ -1570,6 +1579,8 @@ func _omni(room: String, color: Color, energy: float, dist: float, pos: Vector3,
 	l.light_energy = energy
 	l.omni_range = dist
 	l.shadow_enabled = shadow
+	l.shadow_blur = 2.0
+	l.shadow_bias = 0.04
 	l.position = pos
 	add_child(l)
 	room_light(room, l)
@@ -1743,6 +1754,7 @@ func _light_rig() -> void:
 	porch_light.light_energy = 2.5
 	porch_light.omni_range = 10.0
 	porch_light.shadow_enabled = true
+	porch_light.shadow_blur = 2.0
 	porch_light.position = Vector3(1.3, 2.75, 6.5)
 	add_child(porch_light)
 	var bulb := MeshInstance3D.new()
@@ -1755,10 +1767,7 @@ func _light_rig() -> void:
 	add_child(bulb)
 	box(0.07, 0.07, 1.2, mat(Color(0.16, 0.14, 0.12), 0.6), Vector3(1.3, 2.95, 5.95))
 	box(0.06, 0.28, 0.06, mat(Color(0.16, 0.14, 0.12), 0.6), Vector3(1.3, 2.82, 6.5))
-	_cone(0.15, 1.1, 1.6, Color(1.0, 0.95, 0.85, 0.07), Vector3(4, 1.5, 3))
-	_cone(0.12, 1.3, 2.4, Color(1.0, 0.85, 0.63, 0.08), Vector3(1.3, 1.6, 6.5))
-	_cone(0.12, 0.9, 1.4, Color(1.0, 0.85, 0.63, 0.07), Vector3(-4.5, 1.5, -3.5))
-	_cone(0.1, 1.0, 1.6, Color(1.0, 0.85, 0.63, 0.06), Vector3(-4, 1.6, 3))
+	# R7b: fake lamp-cone meshes deleted — volumetric fog does this honestly now.
 	# R7: blue moon-shaft sheets removed — they read as floating plastic.
 	# R7: dust motes removed — they read as dust ON the lens, not in the air.
 	var moonspot := SpotLight3D.new()
@@ -1841,24 +1850,12 @@ func _outside() -> void:
 	spot.spot_range = 13.0
 	spot.spot_angle = 38.0
 	spot.shadow_enabled = true
+	spot.shadow_blur = 2.0
 	street_spot = spot
 	spot.position = Vector3(8, 5.1, 12.5)
 	spot.rotation.x = -PI / 2.0
 	add_child(spot)
-	var cone := MeshInstance3D.new()
-	var cm := CylinderMesh.new()
-	cm.top_radius = 0.25
-	cm.bottom_radius = 2.4
-	cm.height = 4.6
-	cone.mesh = cm
-	var cmat := StandardMaterial3D.new()
-	cmat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	cmat.albedo_color = Color(1.0, 0.9, 0.7, 0.10)
-	cmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	cmat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	cone.material_override = cmat
-	cone.position = Vector3(8, 2.7, 12.5)
-	add_child(cone)
+	# R7b: fake streetlamp cone deleted — the volumetric moon does the work.
 	# neighbor house (escape A)
 	box(7, 3.6, 5.5, TEX.mat_for("brick", Color(0.38, 0.24, 0.22), 1.0), Vector3(-17, 1.8, 10), 0.0, true)
 	box(7.6, 0.4, 6.1, mat(Color(0.06, 0.06, 0.08), 1.0), Vector3(-17, 3.8, 10))

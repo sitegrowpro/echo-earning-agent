@@ -33,6 +33,7 @@ const PHOTO := {
 
 static var _tex_cache := {}
 static var _mat_cache := {}
+static var _grain_nrm: ImageTexture = null
 
 
 ## Finished, cached, world-triplanar material for a surface kind.
@@ -53,6 +54,7 @@ static func mat_for(kind: String, tint: Color, rough: float, metal := 0.0) -> St
 	var s := 1.0 / float(TILE_METERS.get(kind, 2.0))
 	m.uv1_scale = Vector3(s, s, s)
 	m.uv1_triplanar_sharpness = 12.0
+	m.normal_map = _grain_normal()
 	_mat_cache[key] = m
 	return m
 
@@ -233,6 +235,28 @@ static func _grass(size: int, seed_v: int) -> Image:
 
 ## Wrapped-offset blend: averages each pixel with its half-tile offsets,
 ## guaranteeing the result wraps seamlessly in both axes.
+static func _grain_normal() -> ImageTexture:
+	# R7b: one shared high-frequency normal map — drywall bumps, wood grain
+	# teeth. Flashlights catch it; flat shading dies. Wrapped sampling tiles.
+	if _grain_nrm != null:
+		return _grain_nrm
+	var n := _noise(2, 2.2, 808)
+	var s := 64
+	var h := Image.create_empty(s, s, false, Image.FORMAT_RF)
+	for y in s:
+		for x in s:
+			h.set_pixel(x, y, Color(n.get_noise_2d(float(x), float(y)), 0, 0))
+	var img := Image.create_empty(s, s, false, Image.FORMAT_RGBA8)
+	for y in s:
+		for x in s:
+			var dx := h.get_pixel((x + 1) % s, y).r - h.get_pixel((x - 1 + s) % s, y).r
+			var dy := h.get_pixel(x, (y + 1) % s).r - h.get_pixel(x, (y - 1 + s) % s).r
+			var nv := Vector3(-dx * 1.4, -dy * 1.4, 1.0).normalized()
+			img.set_pixel(x, y, Color(nv.x * 0.5 + 0.5, nv.y * 0.5 + 0.5, nv.z * 0.5 + 0.5))
+	_grain_nrm = ImageTexture.create_from_image(img)
+	return _grain_nrm
+
+
 static func _tileable(img: Image) -> Image:
 	var w := img.get_width()
 	var h := img.get_height()

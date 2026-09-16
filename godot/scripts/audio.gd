@@ -29,6 +29,8 @@ var stalk_player: AudioStreamPlayer
 var sub_player: AudioStreamPlayer
 var tense_player: AudioStreamPlayer
 var glass_player: AudioStreamPlayer
+var roof_player: AudioStreamPlayer
+var rainwin_lp: AudioEffectLowPassFilter
 var night_player: AudioStreamPlayer
 var fridge_player: AudioStreamPlayer3D
 var rain_on := false
@@ -65,6 +67,11 @@ func _ready() -> void:
 	var lp: AudioEffectLowPassFilter = AudioEffectLowPassFilter.new()
 	lp.cutoff_hz = 550.0
 	AudioServer.add_bus_effect(AudioServer.get_bus_index("Muffled"), lp)
+	_ensure_bus("RainWin")
+	rainwin_lp = AudioEffectLowPassFilter.new()
+	rainwin_lp.cutoff_hz = 6000.0
+	rainwin_lp.resonance = 0.4
+	AudioServer.add_bus_effect(AudioServer.get_bus_index("RainWin"), rainwin_lp)
 	for i in 10:
 		var p := AudioStreamPlayer.new()
 		p.bus = "SFX"
@@ -101,7 +108,8 @@ func _ready() -> void:
 	stalk_player = _loop_player("SFX")
 	sub_player = _loop_player("SFX")
 	tense_player = _loop_player("Music")
-	glass_player = _loop_player("SFX")
+	glass_player = _loop_player("RainWin")
+	roof_player = _loop_player("SFX")
 	night_player = _loop_player("SFX")
 	fridge_player = AudioStreamPlayer3D.new()
 	fridge_player.bus = "SFX"
@@ -132,6 +140,7 @@ func set_mix(m: float, s: float, v: float) -> void:
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("SFX"), sfx_db)
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Voice"), voice_db)
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Muffled"), sfx_db - 4.0)
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("RainWin"), sfx_db)
 
 
 func set_dread_mix(d: float) -> void:
@@ -174,8 +183,33 @@ func set_glass_rain(indoor: bool) -> void:
 			glass_player.stream = bank["glassrain_loop"]
 			glass_player.volume_db = -24.0
 			glass_player.play()
+		if bank.has("roofrain_loop") and not roof_player.playing:
+			roof_player.stream = bank["roofrain_loop"]
+			roof_player.volume_db = -21.0
+			roof_player.play()
 	elif glass_player:
 		glass_player.stop()
+		roof_player.stop()
+
+
+const RAIN_WINDOWS := [Vector3(-4.5, 1.6, 5.5), Vector3(4.5, 1.6, 5.5), Vector3(-5.5, 1.5, -5.5), Vector3(1.5, 1.6, -5.5), Vector3(5.2, 1.9, -5.5), Vector3(-8.0, 1.6, 3.0), Vector3(8.0, 1.6, 3.0)]
+
+
+func rain_proximity(pos: Vector3) -> float:
+	var best := 999.0
+	for w in RAIN_WINDOWS:
+		best = minf(best, pos.distance_to(w))
+	return clampf(1.0 - best / 7.0, 0.0, 1.0)
+
+
+func set_rain_proximity(near: float) -> void:
+	# R7b: walk away from the glass and the patter dies through the drywall.
+	if rainwin_lp == null:
+		return
+	var n := clampf(near, 0.0, 1.0)
+	rainwin_lp.cutoff_hz = lerpf(float(rainwin_lp.cutoff_hz), lerpf(700.0, 6500.0, n), 0.08)
+	if glass_player.playing:
+		glass_player.volume_db = lerpf(-32.0, -19.0, n)
 
 
 func set_wind(outdoor: bool) -> void:
@@ -198,7 +232,7 @@ func scare_duck() -> void:
 
 
 func _apply_duck(db: float) -> void:
-	for b in ["Music", "SFX", "Voice", "Muffled"]:
+	for b in ["Music", "SFX", "Voice", "Muffled", "RainWin"]:
 		var bn: String = b
 		AudioServer.set_bus_volume_db(AudioServer.get_bus_index(bn), db)
 
@@ -208,6 +242,7 @@ func _restore_mix() -> void:
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("SFX"), sfx_db)
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Voice"), voice_db)
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Muffled"), sfx_db - 4.0)
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("RainWin"), sfx_db)
 
 
 # ---------- synthesis helpers ----------
@@ -592,6 +627,15 @@ func _build_bank() -> void:
 		var at := rng.randf() * 6.0
 		_put_tone(b, rng.randf_range(1200.0, 2400.0), 0.035, "sine", at, 0.06, 0.0, 30.0)
 	bank["glassrain_loop"] = _loop_wav(b)
+	# R7b: Track 1 — the ROOF. Low hollow thuds over a deep rumble bed.
+	b = _empty(8.0)
+	_put_noise(b, 0.16, 0.0, 8.0, 150.0, false, 0.0)
+	var rng2 := RandomNumberGenerator.new()
+	rng2.seed = 917
+	for th in 10:
+		var tat := rng2.randf() * 8.0
+		_put_tone(b, rng2.randf_range(48.0, 70.0), 0.10, "sine", tat, 0.5, 0.0, 6.0)
+	bank["roofrain_loop"] = _loop_wav(b)
 	b = _empty(12.0)
 	_put_noise(b, 0.14, 0.0, 12.0, 300.0, false, 0.0)
 	for i in b.size():

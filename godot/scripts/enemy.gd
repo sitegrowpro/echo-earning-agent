@@ -222,7 +222,7 @@ func step_toward(tx: float, tz: float, speed: float, dt: float) -> bool:
 	estep_t -= dt
 	if estep_t <= 0.0:
 		var run := speed > 2.6
-		estep_t = 0.3 if run else 0.5
+		estep_t = (0.3 if run else 0.5) * randf_range(0.9, 1.1)
 		audio.step_at(global_position, run)
 	# R6: hard map containment — he can never leave the playable rect
 	# (void-falls used to soft-lock the hunt with no recovery).
@@ -249,7 +249,7 @@ func _door_factor(dt: float, story: RefCounted) -> float:
 			d.set("is_open", true)
 			d.set("target", float(d.get("swing")))
 			audio.door_creak(true)
-			door_wait = 0.9
+			door_wait = randf_range(0.7, 1.2)
 			return 0.12
 	return 1.0
 
